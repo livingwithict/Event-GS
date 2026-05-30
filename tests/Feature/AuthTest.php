@@ -61,8 +61,10 @@ class AuthTest extends TestCase
         $manager = User::factory()->create(['role' => 'event_manager']);
         $event = Event::factory()->create();
 
+        // Manager passes authorization but gets 422 validation (file required)
+        // This proves the role middleware allows access; scanner would get 403
         $this->actingAs($manager)
             ->postJson("/api/event/{$event->id}/import", [])
-            ->assertOk(); // Stub returns 200, not 403
+            ->assertStatus(422);
     }
 }
