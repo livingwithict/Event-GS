@@ -12,9 +12,16 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
 class EventResource extends Resource
@@ -74,13 +81,36 @@ class EventResource extends Resource
                     ->sortable(),
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(),
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+            ->recordActions([
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('export')
+                        ->label('Export CSV')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(function (Collection $records) {
+                            $csv = "Name,Slug,Date,Venue,Meal Types,Max Capacity\n";
+                            foreach ($records as $event) {
+                                $csv .= sprintf(
+                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    str_replace('"', '""', $event->name ?? ''),
+                                    str_replace('"', '""', $event->slug ?? ''),
+                                    $event->event_date?->format('Y-m-d') ?? '',
+                                    str_replace('"', '""', $event->venue ?? ''),
+                                    implode(', ', $event->meal_types ?? []),
+                                    $event->max_capacity ?? ''
+                                );
+                            }
+
+                            return response($csv, 200, [
+                                'Content-Type' => 'text/csv',
+                                'Content-Disposition' => 'attachment; filename="events.csv"',
+                            ]);
+                        }),
                 ]),
             ]);
     }

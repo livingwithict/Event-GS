@@ -4,11 +4,18 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RegistrationResource\Pages;
 use App\Models\Registration;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class RegistrationResource extends Resource
 {
@@ -60,13 +67,38 @@ class RegistrationResource extends Resource
                     ->relationship('event', 'name')
                     ->label('Event'),
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+            ->recordActions([
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('export')
+                        ->label('Export CSV')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(function (Collection $records) {
+                            $csv = "Name,Email,Phone,Organization,Designation,Entry Time,Lunch Used,Dinner Used\n";
+                            foreach ($records as $registration) {
+                                $csv .= sprintf(
+                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    str_replace('"', '""', $registration->name ?? ''),
+                                    str_replace('"', '""', $registration->email ?? ''),
+                                    str_replace('"', '""', $registration->phone ?? ''),
+                                    str_replace('"', '""', $registration->organization ?? ''),
+                                    str_replace('"', '""', $registration->designation ?? ''),
+                                    $registration->entry_time?->format('Y-m-d H:i:s') ?? '',
+                                    $registration->lunch_used_at ? 'Yes' : 'No',
+                                    $registration->dinner_used_at ? 'Yes' : 'No'
+                                );
+                            }
+
+                            return response($csv, 200, [
+                                'Content-Type' => 'text/csv',
+                                'Content-Disposition' => 'attachment; filename="registrations.csv"',
+                            ]);
+                        }),
                 ]),
             ]);
     }
