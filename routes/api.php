@@ -10,7 +10,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Scanner endpoints (scanner, event_manager, super_admin)
-    Route::middleware(['role:scanner,event_manager,super_admin', 'throttle:60,1'])->group(function () {
+    Route::middleware(['role:scanner,event_manager,super_admin', 'throttle:60,1', 'idempotent'])->group(function () {
         Route::post('/scan', [App\Http\Controllers\Api\ScanController::class, 'store']);
         Route::post('/entry', [App\Http\Controllers\Api\EntryController::class, 'store']);
         Route::post('/meal', [App\Http\Controllers\Api\MealController::class, 'store']);

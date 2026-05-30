@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
+            'idempotent' => \App\Http\Middleware\IdempotentScan::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
