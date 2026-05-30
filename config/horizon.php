@@ -214,16 +214,25 @@ return [
 
     'environments' => [
         'production' => [
-            'supervisor-1' => [
-                'maxProcesses' => 10,
-                'balanceMaxShift' => 1,
-                'balanceCooldown' => 3,
+            'supervisor-default' => [
+                'connection' => 'redis',
+                'queue' => ['high', 'default', 'low'],
+                'balance' => 'auto',
+                'autoScalingStrategy' => 'time',
+                'processes' => 10,
+                'tries' => 3,
+                'maxTime' => 60,
+                'maxJobs' => 1000,
+                'balanceCooldown' => 1,
             ],
         ],
-
         'local' => [
-            'supervisor-1' => [
-                'maxProcesses' => 3,
+            'supervisor-default' => [
+                'connection' => 'redis',
+                'queue' => ['high', 'default', 'low'],
+                'balance' => 'auto',
+                'processes' => 3,
+                'tries' => 3,
             ],
         ],
     ],

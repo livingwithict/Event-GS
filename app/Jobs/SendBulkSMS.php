@@ -16,7 +16,9 @@ class SendBulkSMS implements ShouldQueue
         public array $registrationIds,
         public int $eventId,
         public string $message,
-    ) {}
+    ) {
+        $this->onQueue('high');
+    }
 
     public function handle(CommunicationService $service): void
     {

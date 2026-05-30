@@ -17,7 +17,9 @@ class SendBulkEmail implements ShouldQueue
         public array $registrationIds,
         public int $eventId,
         public string $subject,
-    ) {}
+    ) {
+        $this->onQueue('high');
+    }
 
     public function handle(CommunicationService $service): void
     {
