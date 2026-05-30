@@ -15,6 +15,11 @@ class MealController extends Controller
         $mealType = $request->meal_type;
 
         if (!$reg->recordMeal($mealType)) {
+            activity()
+                ->performedOn($reg)
+                ->withProperties(['action' => 'duplicate_meal', 'meal_type' => $mealType])
+                ->log('Duplicate ' . $mealType . ' attempt');
+
             $label = ucfirst($mealType);
             return response()->json(['message' => "{$label} already recorded for this guest."], 409);
         }

@@ -24,5 +24,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/event/{event}/send-invites', [App\Http\Controllers\Api\CommunicationController::class, 'sendInvites']);
         Route::get('/reports/attendance/{event}', [App\Http\Controllers\Api\ReportController::class, 'attendance']);
         Route::get('/reports/noshow/{event}', [App\Http\Controllers\Api\ReportController::class, 'noShow']);
+        Route::get('/reports/duplicate-scans/{event}', [App\Http\Controllers\Api\ReportController::class, 'duplicateScans']);
     });
 });

@@ -14,6 +14,11 @@ class EntryController extends Controller
         $reg = Registration::findOrFail($request->registration_id);
 
         if (!$reg->recordEntry()) {
+            activity()
+                ->performedOn($reg)
+                ->withProperties(['action' => 'duplicate_entry'])
+                ->log('Duplicate entry attempt');
+
             return response()->json(['message' => 'Entry already recorded.'], 409);
         }
 
