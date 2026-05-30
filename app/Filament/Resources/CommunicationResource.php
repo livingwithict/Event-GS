@@ -4,6 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CommunicationResource\Pages;
 use App\Models\Communication;
+use App\Services\CommunicationService;
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -41,8 +44,25 @@ class CommunicationResource extends Resource
                 Tables\Filters\SelectFilter::make('type')->options(['email' => 'Email', 'sms' => 'SMS']),
                 Tables\Filters\SelectFilter::make('status')->options(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed']),
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
+            ->recordActions([
+                ViewAction::make(),
+                Action::make('resend')
+                    ->label('Resend')
+                    ->icon('heroicon-o-arrow-path')
+                    ->visible(fn ($record) => $record->status === 'failed')
+                    ->action(function ($record) {
+                        $record->update(['status' => 'pending']);
+
+                        $commService = app(CommunicationService::class);
+                        $reg = $record->registration;
+
+                        if ($record->type === 'email' && $reg && $reg->email) {
+                            $event = $reg->event;
+                            $commService->sendEmail($reg, $event, $record->subject ?? 'Invitation');
+                        } elseif ($record->type === 'sms' && $reg && $reg->phone) {
+                            $commService->sendSms($reg, $record->content ?? '');
+                        }
+                    }),
             ]);
     }
 
