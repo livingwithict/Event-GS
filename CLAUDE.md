@@ -8,78 +8,109 @@ Event management system for ICT Foundation Nepal. Manages pre-event registration
 
 ## Tech Stack
 
-- **Backend:** Laravel 11, PHP 8.2+, PostgreSQL 15, Redis 7
-- **Admin Panel:** FilamentPHP 3 (built on Livewire)
-- **Scanner App:** React 18 + Vite PWA in `scanner-app/` (separate build)
+- **Backend:** Laravel 13, PHP 8.2+, PostgreSQL 15, Redis 7
+- **Admin Panel:** FilamentPHP v5 (built on Livewire)
+- **Scanner App:** React 18 + Vite PWA in `scanner-app/` (separate build, port 5173)
 - **QR Scanning:** `html5-qrcode` + `simplesoftwareio/simple-qrcode`
 - **Queue:** Laravel Horizon (Redis driver)
 - **Excel:** `maatwebsite/excel`
 - **Auth:** Laravel Sanctum (token-based for API)
 - **Audit:** `spatie/laravel-activitylog`
+- **Roles:** `spatie/laravel-permission`
 
 ## Commands
 
 ```bash
-# Laravel
+# Tests (43 tests, uses in-memory SQLite)
 php artisan test                          # run all tests
-php artisan test tests/Feature/ScanTest   # run single test file
+php artisan test tests/Feature/ScanTest   # run single file
 php artisan test --parallel               # parallel tests
-php artisan horizon                       # start queue worker
+
+# Queue
+php artisan horizon                       # start queue worker (requires Redis)
 
 # Scanner PWA
-cd scanner-app && npm run dev             # PWA dev server (port 5173)
+cd scanner-app && npm run dev             # dev server (port 5173)
 cd scanner-app && npm run build           # production build
 
 # Code quality
 ./vendor/bin/pint                         # fix code style
-./vendor/bin/phpstan analyse              # static analysis (target level 8)
 ```
 
 ## Architecture
 
 **Two separate applications sharing one Laravel backend:**
-1. **FilamentPHP admin panel** at `/admin` — CRUD for events, registrations, communications, reporting
-2. **React PWA scanner** at `/scanner` — mobile QR scanning, entry/meal recording
+1. **FilamentPHP admin panel** at `/admin` -- CRUD for events, registrations, communications, reporting
+2. **React PWA scanner** (port 5173) -- mobile QR scanning, entry/meal recording
+
+**Filament Resources** (`app/Filament/Resources/`):
+- `EventResource` -- event CRUD with registrations relation manager
+- `RegistrationResource` -- registration management
+- `CommunicationResource` -- communication logs
+- `EventStatsOverview` widget on dashboard
 
 **API surface** (`routes/api.php`):
-- Scanner endpoints: `/api/scan`, `/api/entry`, `/api/meal`, `/api/guest/search` — role: scanner+
-- Manager endpoints: `/api/event/{id}/import`, `/api/event/{id}/send-invites`, `/api/reports/*` — role: event_manager+
-- Auth: `/api/login`, `/api/logout`
+- Auth: `POST /api/login`, `GET /api/user`, `POST /api/logout`
+- Scanner (role: scanner+): `POST /api/scan`, `POST /api/entry`, `POST /api/meal`, `GET /api/guest/search`
+- Manager (role: event_manager+): `GET /api/event/{id}/dashboard`, `POST /api/event/{id}/import`, `POST /api/event/{id}/send-invites`, `GET /api/reports/attendance/{event}`, `GET /api/reports/noshow/{event}`
 
-**Roles:** `super_admin`, `event_manager`, `scanner`, `viewer` — enforced via `EnsureRole` middleware.
+**Roles:** `super_admin`, `event_manager`, `scanner`, `viewer` -- enforced via `EnsureRole` middleware (`app/Http/Middleware/EnsureRole.php`).
 
-**Data flow for scanning:**
+**Models** (`app/Models/`): `Event` -> hasMany `Registration` -> hasMany `Communication`. All use `SoftDeletes` + `LogsActivity`.
+
+**App structure:**
+- `app/Services/` -- `QRCodeService`, `CommunicationService`
+- `app/DTOs/` -- `ScanResponseDTO`
+- `app/Jobs/` -- `SendBulkEmail`, `SendBulkSMS`
+- `app/Events/` -- `EntryRecorded`, `MealUsed`
+- `app/Listeners/` -- `UpdateRedisCache`
+- `app/Imports/` -- `RegistrationsImport`
+- `app/Exports/` -- `AttendanceExport`, `NoShowExport`
+
+**Scanning flow:**
 ```
-Scan QR → /api/scan (Redis lookup first, then DB) → display guest → Record Entry / Mark Meal
-Entry/Meal writes are idempotent (model returns false if already recorded)
+Scan QR -> POST /api/scan (Redis lookup, fallback DB) -> display guest -> POST /api/entry or /api/meal
+Entry/Meal writes are idempotent (return false if already recorded)
 Events dispatched (EntryRecorded, MealUsed) update Redis cache async
 ```
 
-**QR codes:** UUID v4 per registration, HMAC-SHA256 signed with `APP_KEY`. QR payload is the raw UUID. `QRCodeService` handles generation and resolution.
+**QR codes:** UUID v4 per registration. `QRCodeService` handles generation and resolution.
 
-**Key models:** `Event` → hasMany `Registration` → hasMany `Communication`. All models use `SoftDeletes` + `LogsActivity` (Spatie).
+**Scanner PWA** (`scanner-app/src/`):
+- Pages: `Login`, `Scanner`
+- Components: `QrScanner`, `GuestCard`, `ActionButtons`, `SearchFallback`
+- Hook: `useAuth` (token management)
 
-**Queue jobs:** `SendBulkEmail` (high), `SendBulkSMS` (high), `GenerateQRCodes` (low). Configured in `config/horizon.php`.
+**CORS:** `config/cors.php` allows `FRONTEND_URL` origin with credentials. `max_age` 86400.
+
+## Test Structure
+
+Tests use in-memory SQLite (`phpunit.xml`). 43 tests across:
+- `tests/Feature/` -- AuthTest, ScanTest, EntryTest, MealTest, CommunicationTest, RegistrationImportTest, ReportTest, IntegrationTest
+- `tests/Unit/` -- Model tests (Event, Registration, User), QRCodeServiceTest
+
+## Key Config
+
+- `config/cors.php` -- CORS origins from `FRONTEND_URL` env
+- `config/horizon.php` -- queue supervisor config
+- `config/sanctum.php` -- stateful domains
+- `.env.example` -- reference for all required env vars
 
 ## Design Decisions
 
-- **Modular architecture** under `app/`: Services, DTOs, Events/Listeners, Jobs, Imports/Exports
-- **Repository pattern** for data access in services (see `docs/best-coding-practice.md`)
-- **DTOs** for API responses (e.g., `ScanResponseDTO`) — models don't leak directly to API
-- **Event-driven:** Laravel events for cache updates, audit logging, notifications
-- **Idempotency:** `recordEntry()` and `recordMeal()` return bool — false if already done
+- **DTOs** for API responses -- models don't leak to API
+- **Event-driven:** Laravel events for cache updates, audit logging
+- **Idempotency:** `recordEntry()` / `recordMeal()` return bool
 - **Validation in three layers:** Frontend (React), FormRequest classes, database constraints
 
-## Documentation Index
+## Documentation
 
-- `docs/PRD.md` — full requirements with FR/NFR IDs
-- `docs/system-design.md` — database schema (SQL), API endpoint table, Redis key design
-- `docs/architectural-design.md` — C4 diagrams, data flows, deployment architecture
-- `docs/tech-stacks.md` — technology rationale, cost estimates, env setup
-- `docs/best-coding-practice.md` — patterns, testing strategy, Git workflow
-- `docs/superpowers/plans/2026-05-30-event-management-system.md` — 16-task TDD implementation plan
+- `docs/PRD.md` -- full requirements
+- `docs/system-design.md` -- database schema, API endpoints, Redis keys
+- `docs/architectural-design.md` -- C4 diagrams, data flows
+- `docs/tech-stacks.md` -- technology rationale
+- `docs/best-coding-practice.md` -- patterns, testing strategy
 
 ## Git Workflow
 
-- `main` — production, `staging` — pre-prod, `feature/*` — individual features
 - Commit format: `feat:`, `fix:`, `docs:`, `chore:`
