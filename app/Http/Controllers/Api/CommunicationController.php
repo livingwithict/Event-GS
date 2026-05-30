@@ -3,52 +3,35 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBulkEmail;
+use App\Jobs\SendBulkSMS;
+use App\Models\Event;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CommunicationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function sendInvites(Request $request, Event $event): JsonResponse
     {
-        //
-    }
+        $validated = $request->validate([
+            'type' => 'required|in:email,sms',
+            'subject' => 'required_if:type,email|string|max:255',
+            'message' => 'required_if:type,sms|string|max:160',
+            'registration_ids' => 'array',
+            'registration_ids.*' => 'exists:registrations,id',
+        ]);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $regIds = $validated['registration_ids'] ?? $event->registrations()->pluck('registrations.id')->toArray();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        if ($validated['type'] === 'email') {
+            dispatch(new SendBulkEmail($regIds, $event->id, $validated['subject']));
+        } else {
+            dispatch(new SendBulkSMS($regIds, $event->id, $validated['message']));
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
-
-    public function sendInvites(Request $request, string $event)
-    {
-        //
+        return response()->json([
+            'message' => ucfirst($validated['type']) . ' jobs dispatched.',
+            'count' => count($regIds),
+        ]);
     }
 }

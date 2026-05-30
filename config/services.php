@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'sparrow' => [
+        'token' => env('SPARROW_SMS_TOKEN'),
+        'from' => env('SPARROW_SMS_FROM', 'ICTFoundation'),
+    ],
+
 ];
