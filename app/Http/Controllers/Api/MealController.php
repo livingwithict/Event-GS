@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\MealUsed;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MealRequest;
 use App\Models\Registration;
@@ -17,6 +18,8 @@ class MealController extends Controller
             $label = ucfirst($mealType);
             return response()->json(['message' => "{$label} already recorded for this guest."], 409);
         }
+
+        event(new MealUsed($reg, $mealType));
 
         return response()->json(['message' => ucfirst($mealType) . ' recorded.']);
     }
