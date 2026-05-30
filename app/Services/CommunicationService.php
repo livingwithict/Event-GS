@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Communication;
 use App\Models\Event;
 use App\Models\Registration;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
 class CommunicationService
@@ -51,11 +52,25 @@ class CommunicationService
             $token = config('services.sparrow.token');
             $from = config('services.sparrow.from');
 
-            // In production, send via Sparrow SMS API
-            // For now, log the attempt
-            logger()->info("SMS to {$registration->phone}: {$message}");
+            if (empty($token)) {
+                // In development without credentials, log instead
+                logger()->info("SMS to {$registration->phone}: {$message}");
+                $comm->markSent();
+                return $comm;
+            }
 
-            $comm->markSent();
+            $response = Http::asForm()->post('https://api.sparrowsms.com/v2/sms/', [
+                'token' => $token,
+                'from' => $from,
+                'to' => $registration->phone,
+                'text' => $message,
+            ]);
+
+            if ($response->successful()) {
+                $comm->markSent($response->json('response_id'));
+            } else {
+                $comm->markFailed(['response' => $response->body(), 'status' => $response->status()]);
+            }
         } catch (\Throwable $e) {
             $comm->markFailed(['error' => $e->getMessage()]);
         }
