@@ -2,58 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\AttendanceExport;
+use App\Exports\NoShowExport;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Event;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function attendance(Event $event)
     {
-        //
+        return Excel::download(new AttendanceExport($event), "attendance-{$event->slug}.csv", \Maatwebsite\Excel\Excel::CSV);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function noShow(Event $event)
     {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
-
-    public function attendance(string $event)
-    {
-        //
-    }
-
-    public function noShow(string $event)
-    {
-        //
+        return Excel::download(new NoShowExport($event), "noshow-{$event->slug}.csv", \Maatwebsite\Excel\Excel::CSV);
     }
 }
