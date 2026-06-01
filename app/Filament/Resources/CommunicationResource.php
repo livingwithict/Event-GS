@@ -6,17 +6,20 @@ use App\Filament\Resources\CommunicationResource\Pages;
 use App\Models\Communication;
 use App\Services\CommunicationService;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class CommunicationResource extends Resource
 {
     protected static ?string $model = Communication::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-envelope';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
 
     public static function form(Schema $schema): Schema
     {
@@ -63,6 +66,35 @@ class CommunicationResource extends Resource
                             $commService->sendSms($reg, $record->content ?? '');
                         }
                     }),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    BulkAction::make('export')
+                        ->label('Export CSV')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(function (Collection $records) {
+                            $csv = "Guest Name,Email,Phone,Event,Type,Subject,Status,Sent At,Error\n";
+                            foreach ($records as $comm) {
+                                $csv .= sprintf(
+                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    str_replace('"', '""', $comm->registration?->name ?? ''),
+                                    str_replace('"', '""', $comm->registration?->email ?? ''),
+                                    str_replace('"', '""', $comm->registration?->phone ?? ''),
+                                    str_replace('"', '""', $comm->registration?->event?->name ?? ''),
+                                    $comm->type,
+                                    str_replace('"', '""', $comm->subject ?? ''),
+                                    $comm->status,
+                                    $comm->sent_at?->format('Y-m-d H:i:s') ?? '',
+                                    str_replace('"', '""', $comm->metadata['error'] ?? ''),
+                                );
+                            }
+
+                            return response($csv, 200, [
+                                'Content-Type' => 'text/csv',
+                                'Content-Disposition' => 'attachment; filename="communications.csv"',
+                            ]);
+                        }),
+                ]),
             ]);
     }
 

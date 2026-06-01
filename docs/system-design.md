@@ -1,4 +1,5 @@
 
+> **Note (2026-06-01):** Redis cache keys and Horizon queue references in this document are not currently implemented. The project uses database driver for queue and cache. See `docs/deployment.md` for current setup.
 
 ## 📁 File 3: `System_Design.md` (Detailed Database & API)
 

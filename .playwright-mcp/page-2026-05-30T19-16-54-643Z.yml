@@ -1,0 +1,6 @@
+- generic [ref=e3]:
+  - heading "Event Scanner" [level=1] [ref=e4]
+  - generic [ref=e5]:
+    - textbox "Email" [ref=e7]
+    - textbox "Password" [ref=e9]
+    - button "Login" [ref=e10] [cursor=pointer]

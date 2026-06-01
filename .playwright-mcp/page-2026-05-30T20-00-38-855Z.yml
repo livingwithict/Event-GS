@@ -1,0 +1,98 @@
+- generic [ref=e1]:
+  - navigation [ref=e3]:
+    - link "Event Management" [ref=e5] [cursor=pointer]:
+      - /url: http://localhost:8000/admin
+      - generic [ref=e6]: Event Management
+    - generic [ref=e7]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: Global search
+        - generic [ref=e12]:
+          - img [ref=e14]
+          - searchbox "Global search" [ref=e17]
+      - button "User menu" [ref=e20] [cursor=pointer]:
+        - img "Avatar of Admin" [ref=e21]
+  - generic [ref=e22]:
+    - complementary [ref=e24]:
+      - navigation [ref=e25]:
+        - list [ref=e26]:
+          - listitem [ref=e27]:
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - link "Dashboard" [ref=e30] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin
+                  - img [ref=e31]
+                  - generic [ref=e33]: Dashboard
+              - listitem [ref=e34]:
+                - link "Communications" [ref=e35] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/communications
+                  - img [ref=e36]
+                  - generic [ref=e38]: Communications
+              - listitem [ref=e39]:
+                - link "Events" [ref=e40] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/events
+                  - img [ref=e41]
+                  - generic [ref=e43]: Events
+              - listitem [ref=e44]:
+                - link "Registrations" [ref=e45] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/registrations
+                  - img [ref=e46]
+                  - generic [ref=e48]: Registrations
+    - main [ref=e50]:
+      - generic [ref=e52]:
+        - generic [ref=e54]:
+          - navigation [ref=e55]:
+            - list [ref=e56]:
+              - listitem [ref=e57]:
+                - link "Events" [ref=e58] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/events
+              - listitem [ref=e59]:
+                - img [ref=e60]
+                - generic [ref=e62]: Create
+          - heading "Create Event" [level=1] [ref=e63]
+        - generic [ref=e69]:
+          - generic [ref=e73]:
+            - generic [ref=e77]:
+              - heading "Event Details" [level=2] [ref=e80]
+              - generic [ref=e82]:
+                - generic [ref=e85]:
+                  - generic [ref=e89]:
+                    - text: Name
+                    - superscript [ref=e90]: "*"
+                  - textbox "Name*" [ref=e94]: ICT Annual Conference 2026
+                - generic [ref=e97]:
+                  - generic [ref=e101]:
+                    - text: Slug
+                    - superscript [ref=e102]: "*"
+                  - textbox "Slug*" [active] [ref=e106]
+                - generic [ref=e109]:
+                  - generic [ref=e113]:
+                    - text: Event date
+                    - superscript [ref=e114]: "*"
+                  - textbox "Event date*" [ref=e118]: 2026-07-15
+                - generic [ref=e121]:
+                  - generic [ref=e125]: Venue
+                  - textbox "Venue" [ref=e130]: Kathmandu Convention Center
+            - generic [ref=e134]:
+              - heading "Settings" [level=2] [ref=e137]
+              - generic [ref=e139]:
+                - generic [ref=e142]:
+                  - generic [ref=e146]:
+                    - text: Meal types
+                    - superscript [ref=e147]: "*"
+                  - generic [ref=e150]:
+                    - generic [ref=e152]:
+                      - checkbox "Lunch" [checked] [ref=e153]
+                      - generic [ref=e155]: Lunch
+                    - generic [ref=e157]:
+                      - checkbox "Dinner" [checked] [ref=e158]
+                      - generic [ref=e160]: Dinner
+                - generic [ref=e163]:
+                  - generic [ref=e167]: Max capacity
+                  - spinbutton "Max capacity" [ref=e171]
+          - generic [ref=e176]:
+            - button "Create" [ref=e177] [cursor=pointer]:
+              - generic [ref=e178]: Create
+            - button "Create & create another" [ref=e179] [cursor=pointer]
+            - button "Cancel" [ref=e180] [cursor=pointer]
+  - generic:
+    - status

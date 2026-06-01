@@ -1,3 +1,4 @@
+> **Note (2026-06-01):** Redis and Laravel Horizon have been temporarily removed from the project for shared hosting deployment. Queue and cache now use the database driver. The Redis sections below represent the intended architecture and will be re-implemented when migrating to a VPS. See `docs/deployment.md` for current setup details.
 
 ## 📁 File 6: `Tech_Stack_Details.md`
 

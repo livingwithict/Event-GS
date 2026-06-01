@@ -1,3 +1,5 @@
+> **Note (2026-06-01):** Redis and Laravel Horizon references in this document are not currently implemented. The project uses database driver for queue and cache. Scanning does direct PostgreSQL lookups instead of Redis caching. See `docs/deployment.md` for current setup.
+
 ## 📁 File 2: `Architectural_Design.md`
 
 ```markdown

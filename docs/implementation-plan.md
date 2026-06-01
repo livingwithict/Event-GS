@@ -1,3 +1,4 @@
+> **Note (2026-06-01):** Redis and Horizon items in this roadmap are deferred. The project currently uses database driver for queue and cache. These items will be picked up when migrating to a VPS.
 
 ## 📁 File 5: `Implementation_Plan.md` (Roadmap)
 

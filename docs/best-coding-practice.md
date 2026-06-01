@@ -1,3 +1,4 @@
+> **Note (2026-06-01):** Redis code examples in this document are not currently in use. The project uses database driver for queue and cache. These patterns will be re-implemented when migrating to a VPS.
 
 ## 📁 File 4: `Best_Coding_Practices.md`
 

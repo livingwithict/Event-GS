@@ -1,0 +1,88 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e3]:
+    - link "Event Management" [ref=e5] [cursor=pointer]:
+      - /url: http://localhost:8000/admin
+      - generic [ref=e6]: Event Management
+    - generic [ref=e7]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: Global search
+        - generic [ref=e12]:
+          - img [ref=e14]
+          - searchbox "Global search" [ref=e17]
+      - button "User menu" [ref=e20] [cursor=pointer]:
+        - img "Avatar of Admin" [ref=e21]
+  - generic [ref=e22]:
+    - complementary [ref=e24]:
+      - navigation [ref=e25]:
+        - list [ref=e26]:
+          - listitem [ref=e27]:
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - link "Dashboard" [ref=e30] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin
+                  - img [ref=e31]
+                  - generic [ref=e33]: Dashboard
+              - listitem [ref=e34]:
+                - link "Communications" [ref=e35] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/communications
+                  - img [ref=e36]
+                  - generic [ref=e38]: Communications
+              - listitem [ref=e39]:
+                - link "Events" [ref=e40] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/events
+                  - img [ref=e41]
+                  - generic [ref=e43]: Events
+              - listitem [ref=e44]:
+                - link "Registrations" [ref=e45] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/registrations
+                  - img [ref=e46]
+                  - generic [ref=e48]: Registrations
+    - main [ref=e50]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - navigation [ref=e55]:
+              - list [ref=e56]:
+                - listitem [ref=e57]:
+                  - link "Events" [ref=e58] [cursor=pointer]:
+                    - /url: http://localhost:8000/admin/events
+                - listitem [ref=e59]:
+                  - img [ref=e60]
+                  - generic [ref=e62]: List
+            - heading "Events" [level=1] [ref=e63]
+          - link "New event" [ref=e66] [cursor=pointer]:
+            - /url: http://localhost:8000/admin/events/create
+        - generic [ref=e74]:
+          - generic [ref=e77]:
+            - generic [ref=e78]:
+              - generic [ref=e79]: Search
+              - generic [ref=e80]:
+                - img [ref=e82]
+                - searchbox "Search" [ref=e85]
+            - button "Column manager" [ref=e88] [cursor=pointer]:
+              - img [ref=e89]
+          - table [ref=e92]:
+            - rowgroup [ref=e93]:
+              - row "Name Event date Venue Registrations Created at" [ref=e94]:
+                - columnheader "Name" [ref=e95]:
+                  - button "Name" [ref=e96] [cursor=pointer]:
+                    - text: Name
+                    - img [ref=e97]
+                - columnheader "Event date" [ref=e99]:
+                  - button "Event date" [ref=e100] [cursor=pointer]:
+                    - text: Event date
+                    - img [ref=e101]
+                - columnheader "Venue" [ref=e103]
+                - columnheader "Registrations" [ref=e104]:
+                  - button "Registrations" [ref=e105] [cursor=pointer]:
+                    - text: Registrations
+                    - img [ref=e106]
+                - columnheader "Created at" [ref=e108]:
+                  - button "Created at" [ref=e109] [cursor=pointer]:
+                    - text: Created at
+                    - img [ref=e110]
+          - generic [ref=e113]:
+            - img [ref=e115]
+            - heading "No events" [level=2] [ref=e117]
+  - generic:
+    - status

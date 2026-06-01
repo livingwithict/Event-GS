@@ -1,0 +1,132 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e3]:
+    - link "Event Management" [ref=e5] [cursor=pointer]:
+      - /url: http://localhost:8000/admin
+      - generic [ref=e6]: Event Management
+    - generic [ref=e7]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: Global search
+        - generic [ref=e12]:
+          - img [ref=e14]
+          - searchbox "Global search" [ref=e17]
+      - button "User menu" [ref=e20] [cursor=pointer]:
+        - img "Avatar of Admin" [ref=e21]
+  - generic [ref=e22]:
+    - complementary [ref=e24]:
+      - navigation [ref=e25]:
+        - list [ref=e26]:
+          - listitem [ref=e27]:
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - link "Dashboard" [ref=e30] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin
+                  - img [ref=e31]
+                  - generic [ref=e33]: Dashboard
+              - listitem [ref=e34]:
+                - link "Communications" [ref=e35] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/communications
+                  - img [ref=e36]
+                  - generic [ref=e38]: Communications
+              - listitem [ref=e39]:
+                - link "Events" [ref=e40] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/events
+                  - img [ref=e41]
+                  - generic [ref=e43]: Events
+              - listitem [ref=e44]:
+                - link "Registrations" [ref=e45] [cursor=pointer]:
+                  - /url: http://localhost:8000/admin/registrations
+                  - img [ref=e46]
+                  - generic [ref=e48]: Registrations
+    - main [ref=e50]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - navigation [ref=e55]:
+              - list [ref=e56]:
+                - listitem [ref=e57]:
+                  - link "Events" [ref=e58] [cursor=pointer]:
+                    - /url: http://localhost:8000/admin/events
+                - listitem [ref=e59]:
+                  - img [ref=e60]
+                  - generic [ref=e62]: List
+            - heading "Events" [level=1] [ref=e63]
+          - link "New event" [ref=e66] [cursor=pointer]:
+            - /url: http://localhost:8000/admin/events/create
+        - generic [ref=e74]:
+          - generic [ref=e77]:
+            - generic [ref=e78]:
+              - generic [ref=e79]: Search
+              - generic [ref=e80]:
+                - img [ref=e82]
+                - searchbox "Search" [ref=e85]
+            - button "Column manager" [ref=e88] [cursor=pointer]:
+              - img [ref=e89]
+          - table [ref=e92]:
+            - rowgroup [ref=e93]:
+              - row "Select/deselect all items for bulk actions. Name Event date Venue Registrations Created at Actions" [ref=e94]:
+                - columnheader "Select/deselect all items for bulk actions." [ref=e95]:
+                  - checkbox "Select/deselect all items for bulk actions." [ref=e96]
+                - columnheader "Name" [ref=e97]:
+                  - button "Name" [ref=e98] [cursor=pointer]:
+                    - text: Name
+                    - img [ref=e99]
+                - columnheader "Event date" [ref=e101]:
+                  - button "Event date" [ref=e102] [cursor=pointer]:
+                    - text: Event date
+                    - img [ref=e103]
+                - columnheader "Venue" [ref=e105]
+                - columnheader "Registrations" [ref=e106]:
+                  - button "Registrations" [ref=e107] [cursor=pointer]:
+                    - text: Registrations
+                    - img [ref=e108]
+                - columnheader "Created at" [ref=e110]:
+                  - button "Created at" [ref=e111] [cursor=pointer]:
+                    - text: Created at
+                    - img [ref=e112]
+                - columnheader "Actions" [ref=e114]
+            - rowgroup [ref=e115]:
+              - row "Select/deselect item 1 for bulk actions. ICT Annual Conference 2026 Jul 15, 2026 Kathmandu Convention Center 1 May 30, 2026 20:02:02 View Edit Delete" [ref=e116]:
+                - cell "Select/deselect item 1 for bulk actions." [ref=e117]:
+                  - checkbox "Select/deselect item 1 for bulk actions." [ref=e118]
+                - cell "ICT Annual Conference 2026" [ref=e119]:
+                  - link "ICT Annual Conference 2026" [ref=e120] [cursor=pointer]:
+                    - /url: http://localhost:8000/admin/events/1/edit
+                    - generic [ref=e121]: ICT Annual Conference 2026
+                - cell "Jul 15, 2026" [ref=e122]:
+                  - link "Jul 15, 2026" [ref=e123] [cursor=pointer]:
+                    - /url: http://localhost:8000/admin/events/1/edit
+                    - generic [ref=e124]: Jul 15, 2026
+                - cell "Kathmandu Convention Center" [ref=e125]:
+                  - link "Kathmandu Convention Center" [ref=e126] [cursor=pointer]:
+                    - /url: http://localhost:8000/admin/events/1/edit
+                    - generic [ref=e127]: Kathmandu Convention Center
+                - cell "1" [ref=e128]:
+                  - link "1" [ref=e129] [cursor=pointer]:
+                    - /url: http://localhost:8000/admin/events/1/edit
+                    - generic [ref=e130]: "1"
+                - cell "May 30, 2026 20:02:02" [ref=e131]:
+                  - link "May 30, 2026 20:02:02" [ref=e132] [cursor=pointer]:
+                    - /url: http://localhost:8000/admin/events/1/edit
+                    - generic [ref=e133]: May 30, 2026 20:02:02
+                - cell "View Edit Delete" [ref=e134]:
+                  - generic [ref=e135]:
+                    - button "View" [ref=e136] [cursor=pointer]:
+                      - img [ref=e137]
+                      - text: View
+                    - link "Edit" [ref=e140] [cursor=pointer]:
+                      - /url: http://localhost:8000/admin/events/1/edit
+                      - img [ref=e141]
+                      - text: Edit
+                    - button "Delete" [ref=e144] [cursor=pointer]:
+                      - img [ref=e145]
+                      - text: Delete
+          - navigation "Pagination navigation" [ref=e147]:
+            - generic [ref=e150]:
+              - generic [ref=e152]: Per page
+              - combobox "Per page" [ref=e154]:
+                - option "5"
+                - option "10" [selected]
+                - option "25"
+                - option "50"
+  - generic:
+    - status
