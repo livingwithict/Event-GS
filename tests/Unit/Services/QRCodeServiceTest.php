@@ -16,7 +16,7 @@ class QRCodeServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new QRCodeService();
+        $this->service = new QRCodeService;
     }
 
     public function test_generate_qr_code_svg_for_registration(): void
@@ -28,20 +28,42 @@ class QRCodeServiceTest extends TestCase
         $this->assertStringContainsString('<svg', $svg);
     }
 
-    public function test_qr_payload_contains_uuid(): void
+    public function test_qr_payload_contains_checkin_url(): void
     {
         $reg = Registration::factory()->create();
 
         $payload = $this->service->getPayload($reg);
 
-        $this->assertEquals($reg->unique_code, $payload);
+        $this->assertStringContainsString('/checkin/t/', $payload);
+        $this->assertStringContainsString($reg->qr_hash, $payload);
     }
 
-    public function test_resolve_valid_code_returns_registration(): void
+    public function test_resolve_valid_uuid_returns_registration(): void
     {
         $reg = Registration::factory()->create();
 
         $found = $this->service->resolve($reg->unique_code);
+
+        $this->assertNotNull($found);
+        $this->assertEquals($reg->id, $found->id);
+    }
+
+    public function test_resolve_checkin_url_returns_registration(): void
+    {
+        $reg = Registration::factory()->create();
+        $url = $this->service->getPayload($reg);
+
+        $found = $this->service->resolve($url);
+
+        $this->assertNotNull($found);
+        $this->assertEquals($reg->id, $found->id);
+    }
+
+    public function test_resolve_token_directly_returns_registration(): void
+    {
+        $reg = Registration::factory()->create();
+
+        $found = $this->service->resolveFromToken($reg->qr_hash);
 
         $this->assertNotNull($found);
         $this->assertEquals($reg->id, $found->id);

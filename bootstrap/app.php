@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\IdempotentScan;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,9 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role' => \App\Http\Middleware\EnsureRole::class,
-            'idempotent' => \App\Http\Middleware\IdempotentScan::class,
+            'role' => EnsureRole::class,
+            'idempotent' => IdempotentScan::class,
         ]);
+
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('admin/*')
+            ? $request->expectsJson()
+                ? response()->json(['message' => 'Unauthenticated.'], 401)
+                : route('filament.admin.auth.login')
+            : route('filament.admin.auth.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

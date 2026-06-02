@@ -11,140 +11,153 @@ Event management system for ICT Foundation Nepal. Manages pre-event registration
 - **Backend:** Laravel 13, PHP 8.3+, PostgreSQL 15
 - **Admin Panel:** FilamentPHP v5 (built on Livewire)
 - **Scanner App:** React 19 + Vite PWA in `scanner-app/` (separate build, port 5173)
-- **QR Scanning:** `html5-qrcode` + `simplesoftwareio/simple-qrcode`
-- **Queue:** Database driver (Redis removed for shared hosting; see docs/deployment.md for re-adding)
-- **Cache:** Database driver (Redis removed for shared hosting)
+- **PDF:** `dompdf/dompdf` v3 (barryvdh/laravel-dompdf is incompatible with Laravel 13 — use dompdf directly)
+- **QR:** `html5-qrcode` (scanner) + `simplesoftwareio/simple-qrcode` (backend)
 - **Excel:** `maatwebsite/excel`
 - **Auth:** Laravel Sanctum (token-based for API)
 - **Audit:** `spatie/laravel-activitylog`
-- **Roles:** `spatie/laravel-permission`
+- **Queue/Cache:** Database driver (no Redis — suitable for shared hosting)
+- **Payment:** Connect IPS gateway (Nepal)
 
 ## Local Dev Setup
 
 - PostgreSQL via Homebrew: `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `DB_USERNAME=manojghale` (macOS username, no password)
 - Start service: `brew services start postgresql@15`
 - Run migrations: `php artisan migrate`
-- Seed admin user: `php artisan db:seed --class=RoleSeeder` (creates `admin@ictfoundation.org.np` / `password`)
-- Admin panel: `http://localhost:8000/admin`
+- Seed users: `php artisan db:seed --class=RoleSeeder` (creates 6 demo users for all roles, all with password `password`)
+- Admin panel: `http://localhost:8000/admin` (login: `admin@ictfoundation.org.np`)
 - Scanner PWA: `http://localhost:5173`
 
 ## Commands
 
 ```bash
-# Full setup from scratch
 composer setup                            # install, env, key, migrate, npm
-
-# Dev (all services concurrently: server, queue, logs, vite)
-composer dev
-
-# Tests (43 tests, uses in-memory SQLite)
-composer test                             # clear config + run tests
-php artisan test                          # run all tests
-php artisan test tests/Feature/ScanTest   # run single file
+composer dev                              # server + queue + logs + vite concurrently
+composer test                             # config:clear + php artisan test
+php artisan test tests/Feature/ScanTest   # run single test file
 php artisan test --parallel               # parallel tests
 
-# Queue (database driver)
 php artisan queue:work --tries=3          # process queued jobs
-php artisan queue:work --stop-when-empty  # process and exit when empty
+php artisan queue:work --stop-when-empty  # process and exit
 
-# Scanner PWA
-cd scanner-app && npm run dev             # dev server (port 5173)
-cd scanner-app && npm run build           # production build
+cd scanner-app && npm run dev             # PWA dev server (port 5173)
+cd scanner-app && npm run build           # PWA production build
 
-# Code quality
 ./vendor/bin/pint                         # fix code style
 ./vendor/bin/pint --test                  # check only
 
-# Backup
 php artisan db:backup                     # pg_dump with gzip (retains 90 days)
 php artisan db:backup --retain=30         # custom retention
 ```
 
 ## Architecture
 
-**Two separate applications sharing one Laravel backend:**
-1. **FilamentPHP admin panel** at `/admin` -- CRUD for events, registrations, communications, reporting, archive management
-2. **React PWA scanner** (port 5173) -- mobile QR scanning, entry/meal recording
+**Two applications sharing one Laravel backend:**
+1. **FilamentPHP admin panel** at `/admin` — CRUD, reporting, label printing, import tracking
+2. **React PWA scanner** (port 5173) — mobile QR scanning, entry/meal/card delivery recording
 
-**Filament Resources** (`app/Filament/Resources/`):
-- `EventResource` -- event CRUD with year filter, trashed/archive filter, meal usage report, event summary report bulk actions
-- `RegistrationResource` -- registration management with CSV export, trashed/archive filter, restore/force-delete
-- `CommunicationResource` -- communication logs with resend failed action, bulk CSV delivery report export
-- `EventStatsOverview` widget on dashboard
+### Filament v5 API (non-obvious — has caused repeated issues)
 
-**Filament v5 API notes** (non-obvious, caused issues):
-- Forms use `Filament\Schemas\Schema` with `->components([])`, not `Filament\Forms\Form`
-- Table row actions use `->recordActions([])`, not `->actions([])`
-- Action imports: `Filament\Actions\ViewAction`, `Filament\Actions\EditAction`, etc. (not `Tables\Actions\`)
+- Forms: `Filament\Schemas\Schema` with `->components([])`, **not** `Filament\Forms\Form`
+- Table row actions: `->recordActions([])`, **not** `->actions([])`
+- Action imports: `Filament\Actions\ViewAction`, `Filament\Actions\EditAction` etc. (**not** `Tables\Actions\`)
 - Bulk actions: `Filament\Actions\BulkActionGroup`, `Filament\Actions\DeleteBulkAction`
+- ChartWidget: `$heading` and `$maxHeight` are **non-static** properties (declaring static causes fatal error)
+- `Resource::$navigationGroup` must not be declared as a property — causes type error with `UnitEnum`
+- View-only resources: use empty form schema `return $schema->components([])`, not infolist
 
-**API surface** (`routes/api.php`):
-- Auth: `POST /api/login`, `GET /api/user`, `POST /api/logout`
-- Scanner (role: scanner+): `POST /api/scan`, `POST /api/entry`, `POST /api/meal`, `GET /api/guest/search`
-- Manager (role: event_manager+): `GET /api/event/{id}/dashboard`, `POST /api/event/{id}/import`, `POST /api/event/{id}/send-invites`
-- Reports: `GET /api/reports/attendance/{event}`, `GET /api/reports/noshow/{event}`, `GET /api/reports/duplicate-scans/{event}`, `GET /api/reports/communications/{event}`, `GET /api/reports/meal-usage/{event}`, `GET /api/reports/event-summary/{event}`
+### Roles & Access Control
 
-**Roles:** `super_admin`, `event_manager`, `scanner`, `viewer` -- stored as `role` column on `users` table, enforced via `EnsureRole` middleware (`app/Http/Middleware/EnsureRole.php`). `spatie/laravel-permission` is installed but role checks use the direct column, not Spatie's role assignment.
+**6 roles** stored as `role` string column on users (not Spatie traits):
+| Role | Filament Access | Scope |
+|------|----------------|-------|
+| `super_admin` | Full | All resources |
+| `event_manager` | Full | All resources |
+| `registration_staff` | Limited | Events (read), Registrations, Import Batches, Communications (read) |
+| `finance` | Limited | Events (read), Payments, Registrations (read) |
+| `scanner` | None | API-only (scan/entry/meal) |
+| `viewer` | None | API-only |
 
-**Models** (`app/Models/`): `Event` -> hasMany `Registration` -> hasMany `Communication`. All use `SoftDeletes` + `LogsActivity`.
+Implementation: `HasRoleBasedVisibility` trait in `app/Filament/Resources/Concerns/` — override `getVisibleRoles()` per resource. `EnsureFilamentAccess` middleware blocks non-admin roles from `/admin`. `EnsureRole` middleware enforces roles on API routes.
 
-**App structure:**
-- `app/Services/` -- `QRCodeService`, `CommunicationService`
-- `app/DTOs/` -- `ScanResponseDTO`
-- `app/Jobs/` -- `SendBulkEmail`, `SendBulkSMS`
-- `app/Events/` -- `EntryRecorded`, `MealUsed`
-- `app/Imports/` -- `RegistrationsImport`
-- `app/Exports/` -- `AttendanceExport`, `NoShowExport`, `CommunicationExport`, `MealUsageExport`
-- `app/Http/Requests/` -- `ScanRequest`, `EntryRequest`, `MealRequest`, `ImportRegistrationsRequest`
-- `app/Http/Middleware/` -- `EnsureRole`, `IdempotentScan` (deduplicates via X-Request-Id, caches 5s)
-- `app/Console/Commands/` -- `BackupDatabase`
+### Filament Resources
 
-**Scanning flow:**
+| Resource | Purpose |
+|----------|---------|
+| EventResource | Event CRUD, year/trashed filters, meal usage report, event summary, import CSV action |
+| RegistrationResource | Registration CRUD, CSV export, ticket download, label print, trashed filter |
+| ParticipantCategoryResource | Category management per event |
+| ScanActionTypeResource | Configurable scan actions per event |
+| PaymentResource | Payment list with status filters, CSV export |
+| CommunicationResource | Comm logs, resend failed, bulk CSV delivery report |
+| LabelTemplateResource | Label template CRUD per event |
+| ImportBatchResource | Import history with status/error tracking |
+
+### API Routes (`routes/api.php`)
+
+- **Auth:** `POST /login`, `GET /user`, `POST /logout`
+- **Scanner** (scanner, event_manager, super_admin, registration_staff): `/scan`, `/entry`, `/meal`, `/scan-action`, `/guest/search`
+- **Manager+** (event_manager, super_admin, registration_staff, finance): `/event/{id}/dashboard`, all report endpoints
+- **Manager-only** (event_manager, super_admin): `/event/{id}/import`, `/event/{id}/send-invites`
+- **Reports:** attendance, noshow, duplicate-scans, communications, meal-usage, event-summary, event-summary-pdf, payments, scanner-activity, category-summary (all accept `?format=xlsx`)
+
+### Web Routes (`routes/web.php`)
+
+- `/event/{slug}/register` — public self-registration with Connect IPS payment
+- `/checkin/t/{token}` — QR code verification page
+- `/ticket/{token}` and `/ticket/{token}/download` — HTML/PDF ticket view
+- `/labels` — label printing endpoint
+
+### Models & Relationships
+
+`Event` → hasMany `Registration` → hasMany `Communication`. All use `SoftDeletes` + `LogsActivity`.
+Additional: `Payment`, `ParticipantCategory`, `ScanActionType`, `ScanLog`, `LabelTemplate`, `ImportBatch`, `ImportError`.
+
+### Key Services
+
+| Service | Purpose |
+|---------|---------|
+| `QRCodeService` | QR generation and resolution (UUID v4 per registration) |
+| `CommunicationService` | Email/SMS dispatch with type-specific templates |
+| `TicketService` | PDF ticket generation via dompdf (A6 landscape) |
+| `LabelService` | Label sheet PDF generation, mark-as-printed tracking |
+| `ConnectIPSService` | Connect IPS payment gateway (SHA256 + RSA + base64 token) |
+
+### Scheduled Tasks (`routes/console.php`)
+
+- `db:backup` — daily at 02:00
+- `event:send-reminders` — daily at 09:00
+- `event:send-thankyou` — daily at 10:00
+
+### Scanning Flow
+
 ```
-Scan QR -> POST /api/scan (DB lookup) -> display guest -> POST /api/entry or /api/meal
+Scan QR → POST /api/scan (DB lookup by UUID) → display guest → POST /api/entry|/meal|/scan-action
 Entry/Meal writes are idempotent (return false if already recorded)
 ```
 
-**QR codes:** UUID v4 per registration. `QRCodeService` handles generation and resolution.
+### Scanner PWA (`scanner-app/src/`)
 
-**Scanner PWA** (`scanner-app/src/`):
 - Pages: `Login`, `Scanner`
 - Components: `QrScanner`, `GuestCard`, `ActionButtons`, `SearchFallback`
 - Hook: `useAuth` (token management)
-
-**CORS:** `config/cors.php` allows `FRONTEND_URL` origin with credentials. `max_age` 86400.
+- CORS: `config/cors.php` allows `FRONTEND_URL` origin with credentials
 
 ## Test Structure
 
-Tests use in-memory SQLite (`phpunit.xml`). 43 tests across:
-- `tests/Feature/` -- AuthTest, ScanTest, EntryTest, MealTest, CommunicationTest, RegistrationImportTest, ReportTest, IntegrationTest
-- `tests/Unit/` -- Model tests (Event, Registration, User), QRCodeServiceTest
-
-## Key Config
-
-- `config/cors.php` -- CORS origins from `FRONTEND_URL` env
-- `config/sanctum.php` -- stateful domains
-- `.env.example` -- reference for all required env vars
+Tests use in-memory SQLite (`phpunit.xml`). 45 tests across:
+- `tests/Feature/` — AuthTest, ScanTest, EntryTest, MealTest, CommunicationTest, RegistrationImportTest, ReportTest, IntegrationTest
+- `tests/Unit/` — UserModelTest, EventModelTest, RegistrationModelTest, QRCodeServiceTest
 
 ## Design Decisions
 
-- **DTOs** for API responses -- models don't leak to API
-- **Event-driven:** Laravel events for audit logging
+- **DTOs** for API responses — models don't leak to API
+- **Event-driven:** Laravel events (`EntryRecorded`, `MealUsed`) for audit logging
 - **Idempotency:** `recordEntry()` / `recordMeal()` return bool
-- **Validation in three layers:** Frontend (React), FormRequest classes, database constraints
-- **Archive via soft deletes:** TrashedFilter on Event/Registration resources with restore and force-delete actions
-- **No Redis dependency:** Queue and cache use database driver, suitable for shared hosting
-
-## Documentation
-
-- `docs/PRD.md` -- full requirements
-- `docs/Event_Management_System_Requirement.md` -- original requirements from ICT Foundation Nepal
-- `docs/system-design.md` -- database schema, API endpoints
-- `docs/architectural-design.md` -- C4 diagrams, data flows
-- `docs/tech-stacks.md` -- technology rationale
-- `docs/best-coding-practice.md` -- patterns, testing strategy
-- `docs/run-commands.md` -- complete run command reference
-- `docs/deployment.md` -- shared hosting deployment guide
+- **Archive via soft deletes:** TrashedFilter with restore/force-delete actions
+- **dompdf directly:** barryvdh/laravel-dompdf requires `illuminate/support ^6-^11`, incompatible with Laravel 13
+- **Simple role column:** No Spatie migration — string `role` column suffices for this project's scale
+- **Database queue/cache:** No Redis dependency, suitable for shared hosting
 
 ## Git Workflow
 

@@ -14,7 +14,7 @@
     <div class="container">
         <div class="header">
             <h1>{{ $event->name }}</h1>
-            <p>{{ $event->event_date->format('F j, Y') }} | {{ $event->venue }}</p>
+            <p>{{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }} | {{ $event->venue }}</p>
         </div>
         <div class="content">
             <p>Dear {{ $registration->name }},</p>

@@ -13,6 +13,7 @@ class EnsureRole
         if (! in_array($request->user()?->role, $roles)) {
             abort(403, 'Insufficient permissions.');
         }
+
         return $next($request);
     }
 }

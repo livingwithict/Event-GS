@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 
 class BackupDatabase extends Command
 {
@@ -14,10 +13,10 @@ class BackupDatabase extends Command
     public function handle(): int
     {
         $retain = (int) $this->option('retain');
-        $filename = 'backup-' . now()->format('Y-m-d-His') . '.sql.gz';
+        $filename = 'backup-'.now()->format('Y-m-d-His').'.sql.gz';
         $path = storage_path('app/backups');
 
-        if (!is_dir($path)) {
+        if (! is_dir($path)) {
             mkdir($path, 0755, true);
         }
 
@@ -47,6 +46,7 @@ class BackupDatabase extends Command
         }
 
         $this->error('Backup failed. Ensure pg_dump is installed and DB credentials are correct.');
+
         return self::FAILURE;
     }
 

@@ -3,7 +3,6 @@
 use App\Imports\RegistrationsImport;
 use App\Models\Event;
 use App\Models\Registration;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;

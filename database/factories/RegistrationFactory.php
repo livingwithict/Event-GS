@@ -22,6 +22,8 @@ class RegistrationFactory extends Factory
     {
         return [
             'event_id' => Event::factory(),
+            'category_id' => null,
+            'registration_source' => 'admin_manual',
             'name' => fake()->name(),
             'email' => fake()->optional()->safeEmail(),
             'phone' => fake()->optional()->numerify('+977##########'),

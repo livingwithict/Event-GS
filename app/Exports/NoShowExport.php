@@ -18,11 +18,11 @@ class NoShowExport implements FromCollection, WithHeadings, WithMapping
 
     public function headings(): array
     {
-        return ['Name', 'Email', 'Phone', 'Organization'];
+        return ['Guest #', 'Name', 'Email', 'Phone', 'Organization', 'Category', 'Source'];
     }
 
     public function map($row): array
     {
-        return [$row->name, $row->email, $row->phone, $row->organization];
+        return [$row->guest_number, $row->name, $row->email, $row->phone, $row->organization, $row->category?->name, $row->registration_source];
     }
 }

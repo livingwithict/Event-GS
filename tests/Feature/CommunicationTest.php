@@ -4,6 +4,7 @@ use App\Jobs\SendBulkEmail;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Models\User;
+use App\Services\CommunicationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -56,8 +57,8 @@ class CommunicationTest extends TestCase
         $reg = Registration::factory()->create(['event_id' => $event->id, 'email' => 'test@example.com']);
 
         // Dispatch job synchronously for testing
-        $job = new \App\Jobs\SendBulkEmail([$reg->id], $event->id, 'Test Subject');
-        $job->handle(app(\App\Services\CommunicationService::class));
+        $job = new SendBulkEmail([$reg->id], $event->id, 'Test Subject');
+        $job->handle(app(CommunicationService::class));
 
         $this->assertDatabaseHas('communications', [
             'registration_id' => $reg->id,

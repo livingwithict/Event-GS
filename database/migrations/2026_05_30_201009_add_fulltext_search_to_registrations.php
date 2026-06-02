@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -25,7 +23,7 @@ return new class extends Migration
                 ) STORED
             ");
 
-            DB::statement("CREATE INDEX registrations_search_idx ON registrations USING GIN (search_vector)");
+            DB::statement('CREATE INDEX registrations_search_idx ON registrations USING GIN (search_vector)');
         }
     }
 
@@ -35,8 +33,8 @@ return new class extends Migration
     public function down(): void
     {
         if (DB::getDriverName() === 'pgsql') {
-            DB::statement("DROP INDEX IF EXISTS registrations_search_idx");
-            DB::statement("ALTER TABLE registrations DROP COLUMN IF EXISTS search_vector");
+            DB::statement('DROP INDEX IF EXISTS registrations_search_idx');
+            DB::statement('ALTER TABLE registrations DROP COLUMN IF EXISTS search_vector');
         }
     }
 };

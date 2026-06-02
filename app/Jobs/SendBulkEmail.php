@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Event;
+use App\Models\Registration;
 use App\Services\CommunicationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -17,6 +18,7 @@ class SendBulkEmail implements ShouldQueue
         public array $registrationIds,
         public int $eventId,
         public string $subject,
+        public string $emailType = 'invitation',
     ) {
         $this->onQueue('high');
     }
@@ -26,9 +28,9 @@ class SendBulkEmail implements ShouldQueue
         $event = Event::findOrFail($this->eventId);
 
         foreach ($this->registrationIds as $regId) {
-            $reg = \App\Models\Registration::find($regId);
+            $reg = Registration::find($regId);
             if ($reg && $reg->email) {
-                $service->sendEmail($reg, $event, $this->subject);
+                $service->sendEmail($reg, $event, $this->subject, $this->emailType);
             }
         }
     }

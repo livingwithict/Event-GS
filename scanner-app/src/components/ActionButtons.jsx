@@ -1,62 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../utils/api';
 
-export default function ActionButtons({ guest, onUpdate }) {
+const ACTION_COLORS = {
+  CHECKIN: '#1a56db',
+  LUNCH: '#16a34a',
+  DINNER: '#d97706',
+  CARD_DELIVERY: '#7c3aed',
+};
+
+export default function ActionButtons({ guest, onUpdate, day }) {
   const [loading, setLoading] = useState(null);
+  const [actions, setActions] = useState([]);
 
-  const handleAction = async (action, payload = {}) => {
-    setLoading(action);
+  useEffect(() => {
+    if (!guest?.id) return;
+
+    const dayParam = day ? `?day=${day}` : '';
+    api.get(`/event/${guest.event_id || guest.unique_code}/actions${dayParam}`).then(({ data }) => {
+      setActions(data.data || []);
+    }).catch(() => {
+      setActions([]);
+    });
+  }, [guest?.id]);
+
+  const handleAction = async (action) => {
+    setLoading(action.action_code);
     try {
-      const endpoint = action === 'entry' ? '/entry' : '/meal';
-      const data = action === 'entry'
-        ? { registration_id: guest.id }
-        : { registration_id: guest.id, meal_type: payload.meal_type };
-
-      const res = await api.post(endpoint, data);
+      const res = await api.post('/scan-action', {
+        registration_id: guest.id,
+        action_type_id: action.id,
+      });
       alert(res.data.message);
       onUpdate();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Action failed';
-      alert(msg);
+      alert(err.response?.data?.message || 'Action failed');
     } finally {
       setLoading(null);
     }
   };
 
+  const getActionStatus = (actionCode) => {
+    const action = guest.actions?.find((a) => a.action_code === actionCode);
+    return action?.completed ?? false;
+  };
+
+  if (actions.length === 0) {
+    return (
+      <div style={styles.container}>
+        <p style={{ color: '#6b7280', fontSize: 14, textAlign: 'center' }}>No actions configured for this event.</p>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.container}>
-      <button
-        onClick={() => handleAction('entry')}
-        disabled={guest.has_entered || loading === 'entry'}
-        style={{
-          ...styles.btn,
-          background: guest.has_entered ? '#9ca3af' : '#1a56db',
-        }}
-      >
-        {guest.has_entered ? 'Already Entered' : 'Record Entry'}
-      </button>
+      {actions.map((action) => {
+        const completed = getActionStatus(action.action_code);
+        const color = ACTION_COLORS[action.action_code] || '#2563eb';
 
-      <button
-        onClick={() => handleAction('meal', { meal_type: 'lunch' })}
-        disabled={guest.lunch_used || loading === 'lunch'}
-        style={{
-          ...styles.btn,
-          background: guest.lunch_used ? '#9ca3af' : '#16a34a',
-        }}
-      >
-        {guest.lunch_used ? 'Lunch Used' : 'Mark Lunch'}
-      </button>
-
-      <button
-        onClick={() => handleAction('meal', { meal_type: 'dinner' })}
-        disabled={guest.dinner_used || loading === 'dinner'}
-        style={{
-          ...styles.btn,
-          background: guest.dinner_used ? '#9ca3af' : '#d97706',
-        }}
-      >
-        {guest.dinner_used ? 'Dinner Used' : 'Mark Dinner'}
-      </button>
+        return (
+          <button
+            key={action.id}
+            onClick={() => handleAction(action)}
+            disabled={completed || loading === action.action_code}
+            style={{
+              ...styles.btn,
+              background: completed ? '#9ca3af' : color,
+            }}
+          >
+            {completed ? `${action.action_name} Done` : action.action_name}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -65,10 +80,12 @@ const styles = {
   container: {
     display: 'flex',
     gap: 8,
+    flexWrap: 'wrap',
     marginBottom: 16,
   },
   btn: {
-    flex: 1,
+    flex: '1 1 auto',
+    minWidth: 100,
     padding: 12,
     fontSize: 14,
     color: 'white',

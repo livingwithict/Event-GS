@@ -15,6 +15,7 @@ class ScanRequest extends FormRequest
     {
         return [
             'code' => 'required|string',
+            'event_id' => 'nullable|integer|exists:events,id',
         ];
     }
 }

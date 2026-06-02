@@ -2,9 +2,13 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\EventResource\Pages;
+use App\Imports\RegistrationsImport;
 use App\Models\Event;
+use App\Models\ImportBatch;
 use App\Models\Registration;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -16,9 +20,13 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
@@ -28,10 +36,18 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Activitylog\Models\Activity;
 
 class EventResource extends Resource
 {
+    use HasRoleBasedVisibility;
+
+    protected static function getVisibleRoles(): array
+    {
+        return ['super_admin', 'event_manager', 'registration_staff', 'finance'];
+    }
+
     protected static ?string $model = Event::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
@@ -55,14 +71,53 @@ class EventResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
-                        DatePicker::make('event_date')
-                            ->required(),
-                        Textarea::make('venue')
-                            ->maxLength(65535),
+                        RichEditor::make('description')
+                            ->maxLength(65535)
+                            ->columnSpanFull(),
+                        TextInput::make('contact_info')
+                            ->label('Contact Info / Main Organizer')
+                            ->maxLength(255),
                     ])->columns(2),
 
-                Section::make('Settings')
+                Section::make('Images')
                     ->schema([
+                        FileUpload::make('logo_path')
+                            ->label('Logo')
+                            ->image()
+                            ->disk('public')
+                            ->directory('events/logos')
+                            ->maxSize(2048),
+                        FileUpload::make('banner_path')
+                            ->label('Banner')
+                            ->image()
+                            ->disk('public')
+                            ->directory('events/banners')
+                            ->maxSize(5120),
+                    ])->columns(2),
+
+                Section::make('Schedule')
+                    ->schema([
+                        DateTimePicker::make('start_datetime')
+                            ->label('Start Date & Time')
+                            ->required()
+                            ->seconds(false),
+                        DateTimePicker::make('end_datetime')
+                            ->label('End Date & Time')
+                            ->seconds(false)
+                            ->after('start_datetime'),
+                        DateTimePicker::make('registration_open_at')
+                            ->label('Registration Opens')
+                            ->seconds(false),
+                        DateTimePicker::make('registration_close_at')
+                            ->label('Registration Closes')
+                            ->seconds(false)
+                            ->after('registration_open_at'),
+                    ])->columns(2),
+
+                Section::make('Venue & Capacity')
+                    ->schema([
+                        TextInput::make('venue')
+                            ->maxLength(65535),
                         CheckboxList::make('meal_types')
                             ->options(['lunch' => 'Lunch', 'dinner' => 'Dinner'])
                             ->default(['lunch', 'dinner'])
@@ -70,6 +125,55 @@ class EventResource extends Resource
                         TextInput::make('max_capacity')
                             ->numeric()
                             ->minValue(1),
+                    ])->columns(3),
+
+                Section::make('Toggle Settings')
+                    ->description('Enable or disable features for this event')
+                    ->schema([
+                        Toggle::make('settings.enable_self_registration')
+                            ->label('Self-Registration')
+                            ->default(true),
+                        Toggle::make('settings.enable_payment')
+                            ->label('Payment')
+                            ->default(false),
+                        Toggle::make('settings.enable_csv_import')
+                            ->label('CSV Import')
+                            ->default(true),
+                        Toggle::make('settings.enable_checkin')
+                            ->label('Check-In Tracking')
+                            ->default(true),
+                        Toggle::make('settings.enable_lunch')
+                            ->label('Lunch Tracking')
+                            ->default(true),
+                        Toggle::make('settings.enable_dinner')
+                            ->label('Dinner Tracking')
+                            ->default(true),
+                        Toggle::make('settings.enable_card_delivery')
+                            ->label('Card Delivery Tracking')
+                            ->default(false),
+                        Toggle::make('settings.enable_label_printing')
+                            ->label('Label Printing')
+                            ->default(false),
+                        Toggle::make('settings.enable_notifications')
+                            ->label('Email/SMS Notifications')
+                            ->default(true),
+                        Toggle::make('settings.auto_generate_day_actions')
+                            ->label('Auto-Generate Day Actions')
+                            ->default(true)
+                            ->helperText('For multi-day events, automatically create day-specific scan actions.'),
+                    ])->columns(3),
+
+                Section::make('Status')
+                    ->schema([
+                        Select::make('status')
+                            ->options([
+                                'draft' => 'Draft',
+                                'published' => 'Published',
+                                'closed' => 'Closed',
+                                'archived' => 'Archived',
+                            ])
+                            ->required()
+                            ->default('draft'),
                     ]),
             ]);
     }
@@ -79,18 +183,48 @@ class EventResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('event_date')->date()->sortable(),
-                TextColumn::make('venue')->limit(30)->searchable(),
+                TextColumn::make('start_datetime')
+                    ->dateTime('M j, Y H:i')
+                    ->sortable()
+                    ->label('Starts'),
+                TextColumn::make('end_datetime')
+                    ->dateTime('M j, Y H:i')
+                    ->sortable()
+                    ->label('Ends')
+                    ->toggleable(),
+                TextColumn::make('duration')
+                    ->label('Duration')
+                    ->state(fn ($record) => $record->isMultiDay()
+                        ? $record->getTotalDays().' days'
+                        : '1 day'
+                    )
+                    ->tooltip(fn ($record) => $record->isMultiDay()
+                        ? $record->start_datetime?->format('M j').' - '.$record->end_datetime?->format('M j, Y')
+                        : $record->start_datetime?->format('M j, Y')
+                    )
+                    ->badge()
+                    ->color(fn ($record) => $record->isMultiDay() ? 'info' : 'gray'),
+                TextColumn::make('venue')->limit(30)->searchable()->toggleable(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->colors([
+                        'draft' => 'gray',
+                        'published' => 'success',
+                        'closed' => 'warning',
+                        'archived' => 'danger',
+                    ])
+                    ->sortable(),
                 TextColumn::make('registrations_count')
                     ->counts('registrations')
                     ->label('Registrations')
                     ->sortable(),
-                TextColumn::make('created_at')->dateTime()->sortable()->toggleable(),
+                TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('start_datetime', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('year')
                     ->label('Year')
-                    ->options(fn () => Event::selectRaw('EXTRACT(YEAR FROM event_date) as year')
+                    ->options(fn () => Event::selectRaw('EXTRACT(YEAR FROM start_datetime) as year')
                         ->distinct()
                         ->orderByDesc('year')
                         ->pluck('year', 'year')
@@ -98,15 +232,50 @@ class EventResource extends Resource
                         ->toArray(),
                     )
                     ->query(fn (Tables\Filters\SelectFilter $filter, $query) => $filter->getState()['value']
-                        ? $query->whereYear('event_date', $filter->getState()['value'])
+                        ? $query->whereYear('start_datetime', $filter->getState()['value'])
                         : $query
                     ),
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'published' => 'Published',
+                        'closed' => 'Closed',
+                        'archived' => 'Archived',
+                    ]),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('import_registrations')
+                    ->label('Import CSV')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->form([
+                        FileUpload::make('file')
+                            ->label('CSV/XLSX File')
+                            ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+                            ->maxSize(10240)
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $record) {
+                        $file = storage_path('app/public/'.$data['file']);
+                        $batch = ImportBatch::create([
+                            'event_id' => $record->id,
+                            'imported_by' => auth()->id(),
+                            'file_name' => basename($data['file']),
+                            'status' => 'pending',
+                        ]);
+                        $import = new RegistrationsImport($record, batch: $batch);
+                        Excel::import($import, $file);
+
+                        Notification::make()
+                            ->title('Import Complete')
+                            ->body("Imported {$import->getImportedCount()} registrations. ".count($import->getErrors()).' errors.')
+                            ->success()
+                            ->send();
+                    }),
                 DeleteAction::make(),
+
                 ForceDeleteAction::make(),
                 RestoreAction::make(),
                 BulkAction::make('meal_usage_report')
@@ -129,10 +298,9 @@ class EventResource extends Resource
                             }
                         }
 
-                        return response($csv, 200, [
-                            'Content-Type' => 'text/csv',
-                            'Content-Disposition' => 'attachment; filename="meal-usage.csv"',
-                        ]);
+                        return response()->streamDownload(function () use ($csv) {
+                            echo $csv;
+                        }, 'meal-usage.csv', ['Content-Type' => 'text/csv']);
                     }),
                 BulkAction::make('summary_report')
                     ->label('Event Summary Report')
@@ -153,7 +321,7 @@ class EventResource extends Resource
                             $csv .= sprintf(
                                 "\"%s\",\"%s\",\"%s\",%d,%d,%d,%d,%d,%d\n",
                                 str_replace('"', '""', $event->name),
-                                $event->event_date?->format('Y-m-d') ?? '',
+                                $event->start_datetime?->format('Y-m-d') ?? '',
                                 str_replace('"', '""', $event->venue ?? ''),
                                 $total,
                                 $stats['total_entries'],
@@ -164,11 +332,35 @@ class EventResource extends Resource
                             );
                         }
 
-                        return response($csv, 200, [
-                            'Content-Type' => 'text/csv',
-                            'Content-Disposition' => 'attachment; filename="event-summaries.csv"',
-                        ]);
+                        return response()->streamDownload(function () use ($csv) {
+                            echo $csv;
+                        }, 'event-summaries.csv', ['Content-Type' => 'text/csv']);
                     }),
+                Action::make('download_pdf_summary')
+                    ->label('PDF Summary')
+                    ->icon('heroicon-o-document-text')
+                    ->url(fn ($record) => url('/api/reports/event-summary-pdf/'.$record->id))
+                    ->openUrlInNewTab(),
+                Action::make('export_payments')
+                    ->label('Payments')
+                    ->icon('heroicon-o-banknotes')
+                    ->url(fn ($record) => url('/api/reports/payments/'.$record->id))
+                    ->openUrlInNewTab(),
+                Action::make('export_scanner_activity')
+                    ->label('Scanner Activity')
+                    ->icon('heroicon-o-qr-code')
+                    ->url(fn ($record) => url('/api/reports/scanner-activity/'.$record->id))
+                    ->openUrlInNewTab(),
+                Action::make('export_category_summary')
+                    ->label('Category Summary')
+                    ->icon('heroicon-o-chart-bar')
+                    ->url(fn ($record) => url('/api/reports/category-summary/'.$record->id))
+                    ->openUrlInNewTab(),
+                Action::make('export_card_delivery')
+                    ->label('Card Delivery')
+                    ->icon('heroicon-o-credit-card')
+                    ->url(fn ($record) => url('/api/reports/card-delivery/'.$record->id))
+                    ->openUrlInNewTab(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -185,17 +377,16 @@ class EventResource extends Resource
                                     "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
                                     str_replace('"', '""', $event->name ?? ''),
                                     str_replace('"', '""', $event->slug ?? ''),
-                                    $event->event_date?->format('Y-m-d') ?? '',
+                                    $event->start_datetime?->format('Y-m-d') ?? '',
                                     str_replace('"', '""', $event->venue ?? ''),
                                     implode(', ', $event->meal_types ?? []),
                                     $event->max_capacity ?? ''
                                 );
                             }
 
-                            return response($csv, 200, [
-                                'Content-Type' => 'text/csv',
-                                'Content-Disposition' => 'attachment; filename="events.csv"',
-                            ]);
+                            return response()->streamDownload(function () use ($csv) {
+                                echo $csv;
+                            }, 'events.csv', ['Content-Type' => 'text/csv']);
                         }),
                 ]),
             ]);

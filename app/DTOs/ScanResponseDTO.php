@@ -17,6 +17,12 @@ readonly class ScanResponseDTO
         public ?string $entryTime,
         public ?string $lunchUsedAt,
         public ?string $dinnerUsedAt,
+        public ?string $categoryName = null,
+        public ?string $categoryColor = null,
+        public ?string $guestNumber = null,
+        public ?string $uniqueCode = null,
+        public ?int $eventId = null,
+        public array $actions = [],
     ) {}
 
     public static function fromModel(Registration $reg): self
@@ -32,6 +38,12 @@ readonly class ScanResponseDTO
             entryTime: $reg->entry_time?->toIso8601String(),
             lunchUsedAt: $reg->lunch_used_at?->toIso8601String(),
             dinnerUsedAt: $reg->dinner_used_at?->toIso8601String(),
+            categoryName: $reg->category?->name,
+            categoryColor: $reg->category?->badge_color,
+            guestNumber: $reg->guest_number,
+            uniqueCode: $reg->unique_code,
+            eventId: $reg->event_id,
+            actions: $reg->getActionStatuses(),
         );
     }
 }

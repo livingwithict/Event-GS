@@ -24,7 +24,7 @@ class MealUsageExport implements FromCollection, WithHeadings, WithMapping
         $mealTypes = $this->event->meal_types ?? ['lunch', 'dinner'];
 
         return [
-            'Name', 'Organization', 'Designation',
+            'Name', 'Organization', 'Designation', 'Category',
             ...collect($mealTypes)->map(fn ($type) => ucfirst($type).' Used')->toArray(),
             ...collect($mealTypes)->map(fn ($type) => ucfirst($type).' Time')->toArray(),
         ];
@@ -50,6 +50,7 @@ class MealUsageExport implements FromCollection, WithHeadings, WithMapping
             $row->name,
             $row->organization,
             $row->designation,
+            $row->category?->name,
             ...$usedColumns,
             ...$timeColumns,
         ];

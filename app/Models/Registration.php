@@ -14,9 +14,12 @@ class Registration extends Model
     use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'event_id', 'unique_code', 'qr_hash', 'name', 'email', 'phone',
+        'event_id', 'category_id', 'registration_source', 'unique_code', 'guest_number', 'qr_hash', 'name', 'email', 'phone',
         'organization', 'designation', 'address', 'website',
+        'photo_path', 'meal_preference', 'special_assistance', 'notes', 'pan_vat', 'gender', 'consented_at',
+        'payment_status', 'paid_at',
         'entry_time', 'lunch_used_at', 'dinner_used_at',
+        'label_printed', 'label_printed_at', 'label_printed_by',
     ];
 
     protected function casts(): array
@@ -25,13 +28,17 @@ class Registration extends Model
             'entry_time' => 'datetime',
             'lunch_used_at' => 'datetime',
             'dinner_used_at' => 'datetime',
+            'consented_at' => 'datetime',
+            'paid_at' => 'datetime',
+            'label_printed' => 'boolean',
+            'label_printed_at' => 'datetime',
         ];
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'phone', 'entry_time', 'lunch_used_at', 'dinner_used_at', 'event_id'])
+            ->logOnly(['name', 'email', 'phone', 'entry_time', 'lunch_used_at', 'dinner_used_at', 'event_id', 'category_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('registration')
@@ -47,7 +54,26 @@ class Registration extends Model
             if (empty($reg->qr_hash)) {
                 $reg->qr_hash = hash_hmac('sha256', $reg->unique_code, config('app.key'));
             }
+            if (empty($reg->guest_number) && $reg->event_id) {
+                $reg->guest_number = self::generateGuestNumber($reg->event_id);
+            }
         });
+    }
+
+    public static function generateGuestNumber(int $eventId): string
+    {
+        $event = Event::find($eventId);
+        $code = strtoupper(Str::slug($event?->slug ?? 'EVT', ''));
+        $code = substr(preg_replace('/[^A-Z0-9]/', '', $code), 0, 6);
+        $code = str_pad($code, 3, 'EVT');
+
+        $chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+        do {
+            $random = substr(str_shuffle($chars), 0, 6);
+            $guestNumber = "{$code}-G-{$random}";
+        } while (self::where('event_id', $eventId)->where('guest_number', $guestNumber)->exists());
+
+        return $guestNumber;
     }
 
     public function event()
@@ -55,9 +81,79 @@ class Registration extends Model
         return $this->belongsTo(Event::class);
     }
 
+    public function category()
+    {
+        return $this->belongsTo(ParticipantCategory::class, 'category_id');
+    }
+
     public function communications()
     {
         return $this->hasMany(Communication::class);
+    }
+
+    public function scanLogs()
+    {
+        return $this->hasMany(ScanLog::class, 'participant_id');
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
+    }
+
+    public function isPaymentRequired(): bool
+    {
+        return $this->category?->is_paid && $this->event->settingEnabled('enable_payment');
+    }
+
+    public function hasAction(ScanActionType $actionType): bool
+    {
+        return ScanLog::where('participant_id', $this->id)
+            ->where('action_type_id', $actionType->id)
+            ->exists();
+    }
+
+    public function recordAction(ScanActionType $actionType, ?int $scannedBy = null): bool
+    {
+        if (! $actionType->allow_multiple && $this->hasAction($actionType)) {
+            return false;
+        }
+
+        if ($actionType->column_mapping) {
+            $column = $actionType->column_mapping;
+            if (! $actionType->allow_multiple && $this->$column !== null) {
+                return false;
+            }
+            $this->update([$column => now()]);
+        }
+
+        ScanLog::create([
+            'event_id' => $this->event_id,
+            'participant_id' => $this->id,
+            'action_type_id' => $actionType->id,
+            'scanned_by' => $scannedBy,
+            'scanned_at' => now(),
+        ]);
+
+        return true;
+    }
+
+    public function getActionStatuses(): array
+    {
+        $actionTypes = $this->event->scanActionTypes()->active()->get();
+        $scanLogs = $this->scanLogs()->with('actionType')->get()->keyBy('action_type_id');
+
+        return $actionTypes->map(function ($type) use ($scanLogs) {
+            $log = $scanLogs->get($type->id);
+
+            return [
+                'action_type_id' => $type->id,
+                'action_code' => $type->action_code,
+                'action_name' => $type->action_name,
+                'completed' => $log !== null,
+                'scanned_at' => $log?->scanned_at?->toIso8601String(),
+            ];
+        })->toArray();
     }
 
     public function hasEntered(): bool
@@ -80,6 +176,7 @@ class Registration extends Model
             return false;
         }
         $this->update(['entry_time' => now()]);
+
         return true;
     }
 
@@ -97,6 +194,7 @@ class Registration extends Model
             return false;
         }
         $this->update([$column => now()]);
+
         return true;
     }
 }

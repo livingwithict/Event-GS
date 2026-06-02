@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CommunicationResource\Pages;
+use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Models\Communication;
 use App\Services\CommunicationService;
 use Filament\Actions\Action;
@@ -17,6 +18,13 @@ use Illuminate\Database\Eloquent\Collection;
 
 class CommunicationResource extends Resource
 {
+    use HasRoleBasedVisibility;
+
+    protected static function getVisibleRoles(): array
+    {
+        return ['super_admin', 'event_manager', 'registration_staff'];
+    }
+
     protected static ?string $model = Communication::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
@@ -35,6 +43,20 @@ class CommunicationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('registration.name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('type')->badge()->colors(['email' => 'info', 'sms' => 'success']),
+                Tables\Columns\TextColumn::make('email_type')
+                    ->label('Notification Type')
+                    ->badge()
+                    ->colors([
+                        'registration_confirmation' => 'info',
+                        'payment_success' => 'success',
+                        'payment_failed' => 'danger',
+                        'event_reminder' => 'warning',
+                        'post_event_thank_you' => 'info',
+                        'invitation' => 'primary',
+                        'urgent_update' => 'danger',
+                    ])
+                    ->formatStateUsing(fn ($state) => str_replace('_', ' ', ucwords($state ?? '')))
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('subject')->searchable()->limit(40),
                 Tables\Columns\TextColumn::make('status')->badge()->colors([
                     'pending' => 'warning',
@@ -45,6 +67,17 @@ class CommunicationResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')->options(['email' => 'Email', 'sms' => 'SMS']),
+                Tables\Filters\SelectFilter::make('email_type')
+                    ->label('Notification Type')
+                    ->options([
+                        'registration_confirmation' => 'Registration Confirmation',
+                        'payment_success' => 'Payment Success',
+                        'payment_failed' => 'Payment Failed',
+                        'event_reminder' => 'Event Reminder',
+                        'post_event_thank_you' => 'Post-Event Thank You',
+                        'invitation' => 'Invitation',
+                        'urgent_update' => 'Urgent Update',
+                    ]),
                 Tables\Filters\SelectFilter::make('status')->options(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed']),
             ])
             ->recordActions([
@@ -54,16 +87,14 @@ class CommunicationResource extends Resource
                     ->icon('heroicon-o-arrow-path')
                     ->visible(fn ($record) => $record->status === 'failed')
                     ->action(function ($record) {
-                        $record->update(['status' => 'pending']);
-
                         $commService = app(CommunicationService::class);
                         $reg = $record->registration;
 
                         if ($record->type === 'email' && $reg && $reg->email) {
                             $event = $reg->event;
-                            $commService->sendEmail($reg, $event, $record->subject ?? 'Invitation');
+                            $commService->sendEmail($reg, $event, $record->subject ?? 'Invitation', $record->email_type ?? 'invitation');
                         } elseif ($record->type === 'sms' && $reg && $reg->phone) {
-                            $commService->sendSms($reg, $record->content ?? '');
+                            $commService->sendSms($reg, $record->content ?? '', $record->email_type);
                         }
                     }),
             ])
@@ -73,15 +104,16 @@ class CommunicationResource extends Resource
                         ->label('Export CSV')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records) {
-                            $csv = "Guest Name,Email,Phone,Event,Type,Subject,Status,Sent At,Error\n";
+                            $csv = "Guest Name,Email,Phone,Event,Type,Notification Type,Subject,Status,Sent At,Error\n";
                             foreach ($records as $comm) {
                                 $csv .= sprintf(
-                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
                                     str_replace('"', '""', $comm->registration?->name ?? ''),
                                     str_replace('"', '""', $comm->registration?->email ?? ''),
                                     str_replace('"', '""', $comm->registration?->phone ?? ''),
                                     str_replace('"', '""', $comm->registration?->event?->name ?? ''),
                                     $comm->type,
+                                    str_replace('_', ' ', $comm->email_type ?? ''),
                                     str_replace('"', '""', $comm->subject ?? ''),
                                     $comm->status,
                                     $comm->sent_at?->format('Y-m-d H:i:s') ?? '',
@@ -89,10 +121,9 @@ class CommunicationResource extends Resource
                                 );
                             }
 
-                            return response($csv, 200, [
-                                'Content-Type' => 'text/csv',
-                                'Content-Disposition' => 'attachment; filename="communications.csv"',
-                            ]);
+                            return response()->streamDownload(function () use ($csv) {
+                                echo $csv;
+                            }, 'communications.csv', ['Content-Type' => 'text/csv']);
                         }),
                 ]),
             ]);

@@ -9,7 +9,7 @@ class QRCodeService
 {
     public function getPayload(Registration $registration): string
     {
-        return $registration->unique_code;
+        return config('app.url').'/checkin/t/'.$registration->qr_hash;
     }
 
     public function generateSvg(Registration $registration): string
@@ -27,8 +27,33 @@ class QRCodeService
             ->generate($this->getPayload($registration));
     }
 
-    public function resolve(string $uniqueCode): ?Registration
+    public function resolve(string $code): ?Registration
     {
-        return Registration::where('unique_code', $uniqueCode)->first();
+        if (empty($code)) {
+            return null;
+        }
+
+        if (str_starts_with($code, 'http')) {
+            $token = basename(parse_url($code, PHP_URL_PATH));
+
+            return $this->resolveFromToken($token);
+        }
+
+        if (str_starts_with($code, '/') || str_contains($code, '/checkin/t/')) {
+            $token = basename($code);
+
+            return $this->resolveFromToken($token);
+        }
+
+        if (strlen($code) === 36 && str_contains($code, '-')) {
+            return Registration::where('unique_code', $code)->first();
+        }
+
+        return $this->resolveFromToken($code);
+    }
+
+    public function resolveFromToken(string $token): ?Registration
+    {
+        return Registration::where('qr_hash', $token)->first();
     }
 }

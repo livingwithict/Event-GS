@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Registration;
 use App\Services\CommunicationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,6 +17,7 @@ class SendBulkSMS implements ShouldQueue
         public array $registrationIds,
         public int $eventId,
         public string $message,
+        public ?string $emailType = null,
     ) {
         $this->onQueue('high');
     }
@@ -23,9 +25,9 @@ class SendBulkSMS implements ShouldQueue
     public function handle(CommunicationService $service): void
     {
         foreach ($this->registrationIds as $regId) {
-            $reg = \App\Models\Registration::find($regId);
+            $reg = Registration::find($regId);
             if ($reg && $reg->phone) {
-                $service->sendSms($reg, $this->message);
+                $service->sendSms($reg, $this->message, $this->emailType);
             }
         }
     }

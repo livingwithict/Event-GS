@@ -6,16 +6,22 @@ use App\DTOs\ScanResponseDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ScanRequest;
 use App\Http\Resources\ScanResponseResource;
-use App\Models\Registration;
+use App\Services\QRCodeService;
 
 class ScanController extends Controller
 {
+    public function __construct(private QRCodeService $qrService) {}
+
     public function store(ScanRequest $request)
     {
-        $reg = Registration::where('unique_code', $request->code)->first();
+        $reg = $this->qrService->resolve($request->code);
 
-        if (!$reg) {
+        if (! $reg) {
             return response()->json(['message' => 'Registration not found.'], 404);
+        }
+
+        if ($request->filled('event_id') && (int) $request->event_id !== $reg->event_id) {
+            return response()->json(['message' => 'This participant does not belong to the selected event.'], 403);
         }
 
         return response()->json([

@@ -1,13 +1,19 @@
 import { useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useEventContext } from '../hooks/useEventContext';
 import QrScanner from '../components/QrScanner';
 import GuestCard from '../components/GuestCard';
 import ActionButtons from '../components/ActionButtons';
 import SearchFallback from '../components/SearchFallback';
+import EventContextBar from '../components/EventContextBar';
 import api from '../utils/api';
 
 export default function Scanner() {
   const { user, logout } = useAuth();
+  const [searchParams] = useSearchParams();
+  const eventId = searchParams.get('event');
+  const { event, currentDay, totalDays, isMultiDay, eventDays, selectDay, loading } = useEventContext(eventId);
   const [guest, setGuest] = useState(null);
   const [error, setError] = useState('');
 
@@ -37,6 +43,17 @@ export default function Scanner() {
         <button onClick={logout} style={{ padding: '4px 12px' }}>Logout</button>
       </header>
 
+      {!loading && (
+        <EventContextBar
+          event={event}
+          currentDay={currentDay}
+          totalDays={totalDays}
+          isMultiDay={isMultiDay}
+          eventDays={eventDays}
+          onSelectDay={selectDay}
+        />
+      )}
+
       <QrScanner onScan={handleScan} />
 
       {error && (
@@ -48,7 +65,7 @@ export default function Scanner() {
       {guest && (
         <>
           <GuestCard guest={guest} />
-          <ActionButtons guest={guest} onUpdate={refreshGuest} />
+          <ActionButtons guest={guest} onUpdate={refreshGuest} day={currentDay} />
         </>
       )}
 

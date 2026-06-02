@@ -26,6 +26,12 @@ class ScanResponseResource extends JsonResource
             'entry_time' => $this->dto->entryTime,
             'lunch_used_at' => $this->dto->lunchUsedAt,
             'dinner_used_at' => $this->dto->dinnerUsedAt,
+            'category' => $this->dto->categoryName,
+            'category_color' => $this->dto->categoryColor,
+            'guest_number' => $this->dto->guestNumber,
+            'unique_code' => $this->dto->uniqueCode,
+            'event_id' => $this->dto->eventId,
+            'actions' => $this->dto->actions,
         ];
     }
 }

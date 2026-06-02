@@ -10,7 +10,7 @@ class Communication extends Model
     use HasFactory;
 
     protected $fillable = [
-        'registration_id', 'type', 'subject', 'content',
+        'registration_id', 'type', 'email_type', 'subject', 'content',
         'sent_at', 'status', 'provider_message_id', 'metadata',
     ];
 
@@ -42,7 +42,27 @@ class Communication extends Model
         return $query->where('status', 'failed');
     }
 
-    public function markSent(string $providerId = null): void
+    public function scopeEmailType($query, string $type)
+    {
+        return $query->where('email_type', $type);
+    }
+
+    public function scopeRegistrationConfirmation($query)
+    {
+        return $query->where('email_type', 'registration_confirmation');
+    }
+
+    public function scopeEventReminder($query)
+    {
+        return $query->where('email_type', 'event_reminder');
+    }
+
+    public function scopePostEventThankYou($query)
+    {
+        return $query->where('email_type', 'post_event_thank_you');
+    }
+
+    public function markSent(?string $providerId = null): void
     {
         $this->update([
             'status' => 'sent',
