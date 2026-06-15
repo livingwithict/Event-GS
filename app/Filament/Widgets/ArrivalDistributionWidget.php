@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 class ArrivalDistributionWidget extends ChartWidget
 {
+    protected static ?int $sort = 7;
+
     protected static bool $isLazy = false;
 
     public ?string $maxHeight = '300px';
@@ -44,7 +46,7 @@ class ArrivalDistributionWidget extends ChartWidget
                 [
                     'label' => 'Check-ins',
                     'data' => $data,
-                    'backgroundColor' => '#3b82f6',
+                    'backgroundColor' => '#4F46E5',
                     'borderRadius' => 4,
                 ],
             ],

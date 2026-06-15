@@ -14,10 +14,12 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class PaymentResource extends Resource
 {
@@ -32,28 +34,38 @@ class PaymentResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-credit-card';
 
-    protected static ?int $navigationSort = 4;
+    protected static string|UnitEnum|null $navigationGroup = 'Finance';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['transaction_id', 'registration.name'];
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                TextInput::make('transaction_id')->maxLength(30)->disabled(),
-                TextInput::make('amount_paisa')
-                    ->label('Amount (NPR)')
-                    ->formatStateUsing(fn ($state) => number_format($state / 100, 2))
-                    ->disabled(),
-                Select::make('payment_status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'initiated' => 'Initiated',
-                        'success' => 'Success',
-                        'failed' => 'Failed',
-                        'cancelled' => 'Cancelled',
-                        'expired' => 'Expired',
-                        'refunded' => 'Refunded',
-                    ])
-                    ->required(),
+                Section::make('Transaction Details')
+                    ->schema([
+                        TextInput::make('transaction_id')->maxLength(30)->disabled(),
+                        TextInput::make('amount_paisa')
+                            ->label('Amount (NPR)')
+                            ->formatStateUsing(fn ($state) => number_format($state / 100, 2))
+                            ->disabled(),
+                        Select::make('payment_status')
+                            ->options([
+                                'pending' => 'Pending',
+                                'initiated' => 'Initiated',
+                                'success' => 'Success',
+                                'failed' => 'Failed',
+                                'cancelled' => 'Cancelled',
+                                'expired' => 'Expired',
+                                'refunded' => 'Refunded',
+                            ])
+                            ->required(),
+                    ]),
             ]);
     }
 
@@ -84,6 +96,10 @@ class PaymentResource extends Resource
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
+            ->defaultPaginationPageOption(20)
+            ->paginationPageOptions([10, 20, 50])
+            ->emptyStateHeading('No payments yet')
+            ->emptyStateDescription('Payments appear here when registrations are processed.')
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')

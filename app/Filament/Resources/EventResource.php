@@ -38,6 +38,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Activitylog\Models\Activity;
+use UnitEnum;
 
 class EventResource extends Resource
 {
@@ -54,10 +55,21 @@ class EventResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static string|UnitEnum|null $navigationGroup = 'Events';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'venue'];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(2)
             ->components([
+                // --- LEFT COLUMN ---
                 Section::make('Event Details')
                     ->schema([
                         TextInput::make('name')
@@ -66,34 +78,27 @@ class EventResource extends Resource
                             ->live(onBlur: true)
                             ->afterStateUpdated(function (string $state, Set $set) {
                                 $set('slug', Str::slug($state));
-                            }),
+                            })
+                            ->hint(fn ($state) => ($state ? strlen($state) : 0).'/255'),
                         TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
+                            ->prefix('/events/')
                             ->unique(ignoreRecord: true),
                         RichEditor::make('description')
                             ->maxLength(65535)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->toolbarButtons([
+                                'bold', 'italic', 'underline',
+                                'h1', 'h2', 'h3',
+                                'bulletList', 'orderedList',
+                                'link', 'blockquote',
+                            ]),
                         TextInput::make('contact_info')
                             ->label('Contact Info / Main Organizer')
                             ->maxLength(255),
-                    ])->columns(2),
-
-                Section::make('Images')
-                    ->schema([
-                        FileUpload::make('logo_path')
-                            ->label('Logo')
-                            ->image()
-                            ->disk('public')
-                            ->directory('events/logos')
-                            ->maxSize(2048),
-                        FileUpload::make('banner_path')
-                            ->label('Banner')
-                            ->image()
-                            ->disk('public')
-                            ->directory('events/banners')
-                            ->maxSize(5120),
-                    ])->columns(2),
+                    ])->columns(2)
+                    ->columnSpan(1),
 
                 Section::make('Schedule')
                     ->schema([
@@ -112,7 +117,8 @@ class EventResource extends Resource
                             ->label('Registration Closes')
                             ->seconds(false)
                             ->after('registration_open_at'),
-                    ])->columns(2),
+                    ])->columns(2)
+                    ->columnSpan(1),
 
                 Section::make('Venue & Capacity')
                     ->schema([
@@ -125,7 +131,46 @@ class EventResource extends Resource
                         TextInput::make('max_capacity')
                             ->numeric()
                             ->minValue(1),
-                    ])->columns(3),
+                    ])->columns(3)
+                    ->columnSpan(1),
+
+                // --- RIGHT COLUMN ---
+                Section::make('Status')
+                    ->schema([
+                        Select::make('status')
+                            ->options([
+                                'draft' => 'Draft',
+                                'published' => 'Published',
+                                'closed' => 'Closed',
+                                'archived' => 'Archived',
+                            ])
+                            ->required()
+                            ->default('draft'),
+                    ])
+                    ->columnSpan(1),
+
+                Section::make('Images')
+                    ->schema([
+                        FileUpload::make('logo_path')
+                            ->label('Logo')
+                            ->image()
+                            ->imagePreview()
+                            ->disk('public')
+                            ->directory('events/logos')
+                            ->maxSize(2048)
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp']),
+                        FileUpload::make('banner_path')
+                            ->label('Banner')
+                            ->image()
+                            ->imagePreview()
+                            ->disk('public')
+                            ->directory('events/banners')
+                            ->maxSize(5120)
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp']),
+                    ])->columns(2)
+                    ->columnSpan(1)
+                    ->collapsible()
+                    ->collapsed(),
 
                 Section::make('Toggle Settings')
                     ->description('Enable or disable features for this event')
@@ -161,20 +206,10 @@ class EventResource extends Resource
                             ->label('Auto-Generate Day Actions')
                             ->default(true)
                             ->helperText('For multi-day events, automatically create day-specific scan actions.'),
-                    ])->columns(3),
-
-                Section::make('Status')
-                    ->schema([
-                        Select::make('status')
-                            ->options([
-                                'draft' => 'Draft',
-                                'published' => 'Published',
-                                'closed' => 'Closed',
-                                'archived' => 'Archived',
-                            ])
-                            ->required()
-                            ->default('draft'),
-                    ]),
+                    ])->columns(3)
+                    ->columnSpan(1)
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
 
@@ -221,6 +256,10 @@ class EventResource extends Resource
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('start_datetime', 'desc')
+            ->defaultPaginationPageOption(20)
+            ->paginationPageOptions([10, 20, 50])
+            ->emptyStateHeading('No events yet')
+            ->emptyStateDescription('Create your first event to get started.')
             ->filters([
                 Tables\Filters\SelectFilter::make('year')
                     ->label('Year')

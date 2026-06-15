@@ -4,6 +4,7 @@ namespace App\Filament\Resources\RegistrationResource\Pages;
 
 use App\Filament\Resources\RegistrationResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditRegistration extends EditRecord
@@ -16,5 +17,13 @@ class EditRegistration extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function getSavedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title('Registration updated')
+            ->body('The registration has been saved successfully.');
     }
 }

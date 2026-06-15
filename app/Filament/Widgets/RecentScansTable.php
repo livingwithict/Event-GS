@@ -9,7 +9,7 @@ use Filament\Widgets\TableWidget;
 
 class RecentScansTable extends TableWidget
 {
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 6;
 
     protected static ?string $heading = 'Recent Scans';
 

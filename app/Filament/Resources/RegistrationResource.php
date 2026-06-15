@@ -25,6 +25,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use UnitEnum;
 
 class RegistrationResource extends Resource
 {
@@ -39,65 +40,108 @@ class RegistrationResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
+    protected static string|UnitEnum|null $navigationGroup = 'Attendees';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'phone', 'guest_number', 'organization', 'event.name'];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(2)
             ->components([
-                Forms\Components\Select::make('event_id')
-                    ->relationship('event', 'name')
-                    ->required()
-                    ->searchable()
-                    ->live(),
-                Forms\Components\Select::make('category_id')
-                    ->relationship('category', 'name')
-                    ->label('Category')
-                    ->searchable()
-                    ->visible(fn (callable $get) => filled($get('event_id')))
-                    ->options(fn (callable $get) => ParticipantCategory::where('event_id', $get('event_id'))
-                        ->active()
-                        ->ordered()
-                        ->pluck('name', 'id')),
-                Forms\Components\TextInput::make('name')->required()->maxLength(255),
-                Forms\Components\TextInput::make('guest_number')
-                    ->label('Guest Number')
-                    ->maxLength(30)
-                    ->disabled()
-                    ->dehydrated(false)
-                    ->placeholder('Auto-generated on creation'),
-                Forms\Components\TextInput::make('email')->email()->maxLength(255),
-                Forms\Components\TextInput::make('phone')->tel()->maxLength(20),
-                Forms\Components\TextInput::make('organization')->maxLength(255),
-                Forms\Components\TextInput::make('designation')->maxLength(255),
-                Forms\Components\Textarea::make('address')->maxLength(65535),
-                Forms\Components\TextInput::make('website')->url()->maxLength(255),
-                Forms\Components\Select::make('gender')
-                    ->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])
-                    ->nullable(),
-                Forms\Components\Select::make('meal_preference')
-                    ->options(['veg' => 'Vegetarian', 'non-veg' => 'Non-Vegetarian', 'vegan' => 'Vegan', 'halal' => 'Halal'])
-                    ->nullable(),
-                Forms\Components\FileUpload::make('photo_path')
-                    ->label('Photo')
-                    ->image()
-                    ->directory('registrations/photos')
-                    ->maxSize(2048)
-                    ->nullable(),
-                Forms\Components\TextInput::make('pan_vat')->label('PAN/VAT')->maxLength(50)->nullable(),
-                Forms\Components\Textarea::make('special_assistance')->maxLength(500)->nullable(),
-                Forms\Components\Textarea::make('notes')->maxLength(1000)->nullable(),
-                Forms\Components\Select::make('registration_source')
-                    ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
-                    ->default('admin_manual')
-                    ->required(),
-                Forms\Components\Select::make('approval_status')
-                    ->options(['approved' => 'Approved', 'pending' => 'Pending Approval', 'rejected' => 'Rejected'])
-                    ->default('approved')
-                    ->visible(fn ($record) => $record?->category?->requires_approval ?? false)
-                    ->required(),
-                Forms\Components\Select::make('badge_status')
-                    ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
-                    ->default('not_printed')
-                    ->required(),
+                Section::make('Personal Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->required()
+                            ->maxLength(255)
+                            ->hint(fn ($state) => ($state ? strlen($state) : 0).'/255'),
+                        Forms\Components\TextInput::make('guest_number')
+                            ->label('Guest Number')
+                            ->maxLength(30)
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->placeholder('Auto-generated on creation'),
+                        Forms\Components\TextInput::make('email')
+                            ->email()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('phone')
+                            ->tel()
+                            ->maxLength(20),
+                        Forms\Components\TextInput::make('organization')
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('designation')
+                            ->maxLength(255),
+                        Forms\Components\Textarea::make('address')
+                            ->maxLength(65535)
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('website')
+                            ->url()
+                            ->maxLength(255),
+                        Forms\Components\Select::make('gender')
+                            ->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])
+                            ->nullable(),
+                        Forms\Components\Select::make('meal_preference')
+                            ->options(['veg' => 'Vegetarian', 'non-veg' => 'Non-Vegetarian', 'vegan' => 'Vegan', 'halal' => 'Halal'])
+                            ->nullable(),
+                        Forms\Components\TextInput::make('pan_vat')
+                            ->label('PAN/VAT')
+                            ->maxLength(50)
+                            ->nullable(),
+                        Forms\Components\Textarea::make('special_assistance')
+                            ->maxLength(500)
+                            ->hint(fn ($state) => ($state ? strlen($state) : 0).'/500')
+                            ->nullable(),
+                        Forms\Components\Textarea::make('notes')
+                            ->maxLength(1000)
+                            ->columnSpanFull()
+                            ->nullable(),
+                    ])->columns(2)
+                    ->columnSpan(1),
+
+                Section::make('Event & Status')
+                    ->schema([
+                        Forms\Components\Select::make('event_id')
+                            ->relationship('event', 'name')
+                            ->required()
+                            ->searchable()
+                            ->live(),
+                        Forms\Components\Select::make('category_id')
+                            ->relationship('category', 'name')
+                            ->label('Category')
+                            ->searchable()
+                            ->visible(fn (callable $get) => filled($get('event_id')))
+                            ->options(fn (callable $get) => ParticipantCategory::where('event_id', $get('event_id'))
+                                ->active()
+                                ->ordered()
+                                ->pluck('name', 'id')),
+                        Forms\Components\FileUpload::make('photo_path')
+                            ->label('Photo')
+                            ->image()
+                            ->imagePreview()
+                            ->directory('registrations/photos')
+                            ->maxSize(2048)
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->nullable(),
+                        Forms\Components\Select::make('registration_source')
+                            ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
+                            ->default('admin_manual')
+                            ->required(),
+                        Forms\Components\Select::make('approval_status')
+                            ->options(['approved' => 'Approved', 'pending' => 'Pending Approval', 'rejected' => 'Rejected'])
+                            ->default('approved')
+                            ->visible(fn ($record) => $record?->category?->requires_approval ?? false)
+                            ->required(),
+                        Forms\Components\Select::make('badge_status')
+                            ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
+                            ->default('not_printed')
+                            ->required(),
+                    ])
+                    ->columnSpan(1),
             ]);
     }
 
@@ -218,6 +262,10 @@ class RegistrationResource extends Resource
                     ),
                 Tables\Filters\TrashedFilter::make(),
             ])
+            ->defaultPaginationPageOption(20)
+            ->paginationPageOptions([10, 20, 50])
+            ->emptyStateHeading('No registrations yet')
+            ->emptyStateDescription('Add your first registration or import from CSV.')
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),

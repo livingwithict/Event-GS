@@ -1,0 +1,69 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+@theme {
+    --color-primary-50: #eef2ff;
+    --color-primary-100: #e0e7ff;
+    --color-primary-200: #c7d2fe;
+    --color-primary-300: #a5b4fc;
+    --color-primary-400: #818cf8;
+    --color-primary-500: #4F46E5;
+    --color-primary-600: #4338ca;
+    --color-primary-700: #3730a3;
+    --color-primary-800: #312e81;
+    --color-primary-900: #1e1b4b;
+    --color-primary-950: #0f172a;
+
+    --color-success-50: #ecfdf5;
+    --color-success-100: #d1fae5;
+    --color-success-200: #a7f3d0;
+    --color-success-300: #6ee7b7;
+    --color-success-400: #34d399;
+    --color-success-500: #10B981;
+    --color-success-600: #059669;
+    --color-success-700: #047857;
+    --color-success-800: #065f46;
+    --color-success-900: #064e3b;
+    --color-success-950: #022c22;
+
+    --radius-card: 0.75rem;
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.fi-sidebar {
+    @apply border-e border-gray-200 dark:border-gray-800;
+}
+
+.fi-sidebar-header {
+    @apply border-b border-gray-100 dark:border-gray-800 px-6 py-5;
+}
+
+.fi-section {
+    @apply rounded-[var(--radius-card)] bg-white dark:bg-gray-900 shadow-[var(--shadow-card)];
+}
+
+.fi-ta-table thead {
+    @apply sticky top-0 z-10;
+}
+
+.fi-form-actions {
+    @apply sticky bottom-0 z-10 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-4;
+}
+
+@media (max-width: 768px) {
+    .fi-bulk-actions {
+        @apply flex-wrap gap-2;
+    }
+
+    .fi-ta-ctn {
+        @apply -mx-4;
+    }
+}
+
+@media (max-width: 1024px) {
+    .fi-fo-component-ctn.fi-gap-6 {
+        @apply gap-4;
+    }
+}

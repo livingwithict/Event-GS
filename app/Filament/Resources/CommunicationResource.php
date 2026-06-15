@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use UnitEnum;
 
 class CommunicationResource extends Resource
 {
@@ -28,6 +29,15 @@ class CommunicationResource extends Resource
     protected static ?string $model = Communication::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Communications';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['registration.name', 'subject'];
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -80,6 +90,10 @@ class CommunicationResource extends Resource
                     ]),
                 Tables\Filters\SelectFilter::make('status')->options(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed']),
             ])
+            ->defaultPaginationPageOption(20)
+            ->paginationPageOptions([10, 20, 50])
+            ->emptyStateHeading('No communications yet')
+            ->emptyStateDescription('Communications are created when invites or reminders are sent.')
             ->recordActions([
                 ViewAction::make(),
                 Action::make('resend')

@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class LabelTemplateResource extends Resource
 {
@@ -21,58 +22,75 @@ class LabelTemplateResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?int $navigationSort = 5;
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
+
+    protected static ?int $navigationSort = 2;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['template_name'];
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(2)
             ->components([
-                Forms\Components\Select::make('event_id')
-                    ->relationship('event', 'name')
-                    ->required()
-                    ->searchable(),
-                Forms\Components\TextInput::make('template_name')
-                    ->required()
-                    ->maxLength(100),
-                Forms\Components\Grid::make(2)
+                Section::make('Template Details')
                     ->schema([
-                        Forms\Components\TextInput::make('width')
-                            ->label('Width (mm)')
+                        Forms\Components\Select::make('event_id')
+                            ->relationship('event', 'name')
+                            ->required()
+                            ->searchable(),
+                        Forms\Components\TextInput::make('template_name')
+                            ->required()
+                            ->maxLength(100),
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('width')
+                                    ->label('Width (mm)')
+                                    ->numeric()
+                                    ->default(100)
+                                    ->minValue(30)
+                                    ->maxValue(200)
+                                    ->required(),
+                                Forms\Components\TextInput::make('height')
+                                    ->label('Height (mm)')
+                                    ->numeric()
+                                    ->default(60)
+                                    ->minValue(20)
+                                    ->maxValue(100)
+                                    ->required(),
+                            ]),
+                        Forms\Components\TextInput::make('font_size_name')
+                            ->label('Name Font Size (px)')
                             ->numeric()
-                            ->default(100)
-                            ->minValue(30)
-                            ->maxValue(200)
+                            ->default(16)
+                            ->minValue(10)
+                            ->maxValue(28)
                             ->required(),
-                        Forms\Components\TextInput::make('height')
-                            ->label('Height (mm)')
-                            ->numeric()
-                            ->default(60)
-                            ->minValue(20)
-                            ->maxValue(100)
-                            ->required(),
-                    ]),
-                Forms\Components\TextInput::make('font_size_name')
-                    ->label('Name Font Size (px)')
-                    ->numeric()
-                    ->default(16)
-                    ->minValue(10)
-                    ->maxValue(28)
-                    ->required(),
-                Forms\Components\Fieldset::make('Show on Label')
+                    ])
+                    ->columnSpan(1),
+
+                Section::make('Label Display')
                     ->schema([
-                        Forms\Components\Toggle::make('show_qr')
-                            ->label('QR Code')
-                            ->default(true),
-                        Forms\Components\Toggle::make('show_designation')
-                            ->label('Designation')
-                            ->default(true),
-                        Forms\Components\Toggle::make('show_organization')
-                            ->label('Organization')
-                            ->default(true),
-                        Forms\Components\Toggle::make('show_category_color')
-                            ->label('Category Color Strip')
-                            ->default(true),
-                    ]),
+                        Forms\Components\Fieldset::make('Show on Label')
+                            ->schema([
+                                Forms\Components\Toggle::make('show_qr')
+                                    ->label('QR Code')
+                                    ->default(true),
+                                Forms\Components\Toggle::make('show_designation')
+                                    ->label('Designation')
+                                    ->default(true),
+                                Forms\Components\Toggle::make('show_organization')
+                                    ->label('Organization')
+                                    ->default(true),
+                                Forms\Components\Toggle::make('show_category_color')
+                                    ->label('Category Color Strip')
+                                    ->default(true),
+                            ]),
+                    ])
+                    ->columnSpan(1),
             ]);
     }
 
@@ -89,6 +107,10 @@ class LabelTemplateResource extends Resource
                 Tables\Columns\IconColumn::make('show_organization')->label('Org.')->boolean(),
                 Tables\Columns\IconColumn::make('show_category_color')->label('Color')->boolean(),
             ])
+            ->defaultPaginationPageOption(20)
+            ->paginationPageOptions([10, 20, 50])
+            ->emptyStateHeading('No label templates yet')
+            ->emptyStateDescription('Create label templates for badge printing.')
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')

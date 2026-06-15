@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class ImportBatchResource extends Resource
 {
@@ -24,7 +25,14 @@ class ImportBatchResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-up-tray';
 
-    protected static ?int $navigationSort = 6;
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['file_name'];
+    }
 
     public static function table(Table $table): Table
     {
@@ -47,6 +55,10 @@ class ImportBatchResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')->dateTime('M j, Y H:i')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
+            ->defaultPaginationPageOption(20)
+            ->paginationPageOptions([10, 20, 50])
+            ->emptyStateHeading('No imports yet')
+            ->emptyStateDescription('Import registrations from CSV files via the event actions.')
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')

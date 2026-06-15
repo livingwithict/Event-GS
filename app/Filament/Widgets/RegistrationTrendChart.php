@@ -7,7 +7,7 @@ use Filament\Widgets\ChartWidget;
 
 class RegistrationTrendChart extends ChartWidget
 {
-    protected static ?int $sort = 3;
+    protected static ?int $sort = 4;
 
     protected ?string $heading = 'Registration Trend (30 days)';
 
@@ -32,8 +32,8 @@ class RegistrationTrendChart extends ChartWidget
                 [
                     'label' => 'Registrations',
                     'data' => $days->map(fn ($day) => $counts->get($day, 0))->toArray(),
-                    'borderColor' => '#1a56db',
-                    'backgroundColor' => 'rgba(26, 86, 219, 0.1)',
+                    'borderColor' => '#4F46E5',
+                    'backgroundColor' => 'rgba(79, 70, 229, 0.1)',
                     'fill' => true,
                     'tension' => 0.3,
                 ],

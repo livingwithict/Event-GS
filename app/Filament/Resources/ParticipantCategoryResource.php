@@ -16,12 +16,14 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class ParticipantCategoryResource extends Resource
 {
@@ -31,44 +33,62 @@ class ParticipantCategoryResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-tag';
 
+    protected static string|UnitEnum|null $navigationGroup = 'Events';
+
     protected static ?int $navigationSort = 2;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'event.name'];
+    }
 
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(2)
             ->components([
-                Select::make('event_id')
-                    ->relationship('event', 'name')
-                    ->required()
-                    ->searchable(),
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(100),
-                Textarea::make('description')
-                    ->maxLength(65535)
-                    ->columnSpanFull(),
-                Toggle::make('is_paid')
-                    ->label('Paid Category')
-                    ->live()
-                    ->default(false),
-                TextInput::make('price')
-                    ->numeric()
-                    ->prefix('NPR')
-                    ->minValue(0)
-                    ->visible(fn (callable $get) => $get('is_paid')),
-                ColorPicker::make('badge_color')
-                    ->label('Badge Color'),
-                TextInput::make('sort_order')
-                    ->numeric()
-                    ->default(0)
-                    ->minValue(0),
-                Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
-                Toggle::make('requires_approval')
-                    ->label('Requires Approval')
-                    ->helperText('Registrations in this category need admin approval before confirmation')
-                    ->default(false),
+                Section::make('Category Details')
+                    ->schema([
+                        Select::make('event_id')
+                            ->relationship('event', 'name')
+                            ->required()
+                            ->searchable(),
+                        TextInput::make('name')
+                            ->required()
+                            ->maxLength(100)
+                            ->hint(fn ($state) => ($state ? strlen($state) : 0).'/100'),
+                        Textarea::make('description')
+                            ->maxLength(65535)
+                            ->columnSpanFull(),
+                        ColorPicker::make('badge_color')
+                            ->label('Badge Color'),
+                    ])
+                    ->columnSpan(1),
+
+                Section::make('Settings')
+                    ->schema([
+                        Toggle::make('is_paid')
+                            ->label('Paid Category')
+                            ->live()
+                            ->default(false),
+                        TextInput::make('price')
+                            ->numeric()
+                            ->prefix('NPR')
+                            ->minValue(0)
+                            ->visible(fn (callable $get) => $get('is_paid')),
+                        Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true),
+                        Toggle::make('requires_approval')
+                            ->label('Requires Approval')
+                            ->helperText('Registrations in this category need admin approval before confirmation')
+                            ->default(false),
+                        TextInput::make('sort_order')
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0),
+                    ])
+                    ->columnSpan(1),
             ]);
     }
 
@@ -105,6 +125,10 @@ class ParticipantCategoryResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('sort_order')
+            ->defaultPaginationPageOption(20)
+            ->paginationPageOptions([10, 20, 50])
+            ->emptyStateHeading('No categories yet')
+            ->emptyStateDescription('Create participant categories like VIP, General, Staff.')
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')
