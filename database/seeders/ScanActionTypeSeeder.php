@@ -13,6 +13,10 @@ class ScanActionTypeSeeder extends Seeder
         ['action_name' => 'Lunch', 'action_code' => 'LUNCH', 'column_mapping' => 'lunch_used_at', 'allow_multiple' => false, 'sort_order' => 1],
         ['action_name' => 'Dinner', 'action_code' => 'DINNER', 'column_mapping' => 'dinner_used_at', 'allow_multiple' => false, 'sort_order' => 2],
         ['action_name' => 'Card Delivery', 'action_code' => 'CARD_DELIVERY', 'column_mapping' => null, 'allow_multiple' => false, 'sort_order' => 3],
+        ['action_name' => 'Badge Collected', 'action_code' => 'BADGE_COLLECT', 'column_mapping' => null, 'allow_multiple' => false, 'sort_order' => 4],
+        ['action_name' => 'Kit Collection', 'action_code' => 'KIT_COLLECTION', 'column_mapping' => null, 'allow_multiple' => false, 'sort_order' => 5],
+        ['action_name' => 'Parking Pass', 'action_code' => 'PARKING_PASS', 'column_mapping' => null, 'allow_multiple' => false, 'sort_order' => 6],
+        ['action_name' => 'Certificate', 'action_code' => 'CERTIFICATE', 'column_mapping' => null, 'allow_multiple' => false, 'sort_order' => 7],
     ];
 
     public function run(): void

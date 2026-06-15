@@ -7,6 +7,7 @@ use App\Filament\Resources\RegistrationResource\Pages;
 use App\Models\LabelTemplate;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
+use App\Services\CommunicationService;
 use App\Services\LabelService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -20,6 +21,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -132,7 +134,7 @@ class RegistrationResource extends Resource
                             ->default('admin_manual')
                             ->required(),
                         Forms\Components\Select::make('approval_status')
-                            ->options(['approved' => 'Approved', 'pending' => 'Pending Approval', 'rejected' => 'Rejected'])
+                            ->options(['approved' => 'Approved', 'pending' => 'Pending Approval', 'waitlisted' => 'Waitlisted', 'rejected' => 'Rejected'])
                             ->default('approved')
                             ->visible(fn ($record) => $record?->category?->requires_approval ?? false)
                             ->required(),
@@ -181,6 +183,7 @@ class RegistrationResource extends Resource
                     ->colors([
                         'approved' => 'success',
                         'pending' => 'warning',
+                        'waitlisted' => 'info',
                         'rejected' => 'danger',
                     ])
                     ->sortable()
@@ -243,7 +246,7 @@ class RegistrationResource extends Resource
                     ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
                     ->label('Source'),
                 Tables\Filters\SelectFilter::make('approval_status')
-                    ->options(['approved' => 'Approved', 'pending' => 'Pending', 'rejected' => 'Rejected'])
+                    ->options(['approved' => 'Approved', 'pending' => 'Pending', 'waitlisted' => 'Waitlisted', 'rejected' => 'Rejected'])
                     ->label('Approval'),
                 Tables\Filters\SelectFilter::make('badge_status')
                     ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
@@ -269,6 +272,58 @@ class RegistrationResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('approve')
+                    ->label('Approve')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->visible(fn (Registration $record) => $record->approval_status === 'pending')
+                    ->action(function (Registration $record) {
+                        $record->update(['approval_status' => 'approved']);
+                        try {
+                            $commService = new CommunicationService;
+                            $commService->sendRegistrationConfirmation($record, $record->event);
+                        } catch (\Throwable $e) {
+                            logger()->error('Failed to send approval confirmation: '.$e->getMessage());
+                        }
+                        Notification::make()
+                            ->success()
+                            ->title('Registration approved')
+                            ->body("{$record->name} has been approved and notification sent.")
+                            ->send();
+                    }),
+                Action::make('reject')
+                    ->label('Reject')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('danger')
+                    ->visible(fn (Registration $record) => $record->approval_status === 'pending')
+                    ->requiresConfirmation()
+                    ->action(function (Registration $record) {
+                        $record->update(['approval_status' => 'rejected']);
+                        Notification::make()
+                            ->warning()
+                            ->title('Registration rejected')
+                            ->body("{$record->name} has been rejected.")
+                            ->send();
+                    }),
+                Action::make('promote_from_waitlist')
+                    ->label('Promote')
+                    ->icon('heroicon-o-arrow-up-circle')
+                    ->color('primary')
+                    ->visible(fn (Registration $record) => $record->approval_status === 'waitlisted')
+                    ->action(function (Registration $record) {
+                        $record->update(['approval_status' => 'approved']);
+                        try {
+                            $commService = new CommunicationService;
+                            $commService->sendRegistrationConfirmation($record, $record->event);
+                        } catch (\Throwable $e) {
+                            logger()->error('Failed to send waitlist promotion notification: '.$e->getMessage());
+                        }
+                        Notification::make()
+                            ->success()
+                            ->title('Promoted from waitlist')
+                            ->body("{$record->name} has been promoted and notification sent.")
+                            ->send();
+                    }),
                 Action::make('download_ticket')
                     ->label('Ticket')
                     ->icon('heroicon-o-ticket')

@@ -6,9 +6,11 @@ use App\Http\Requests\PublicRegistrationRequest;
 use App\Models\Event;
 use App\Models\ParticipantCategory;
 use App\Models\Payment;
+use App\Models\PromoCode;
 use App\Models\Registration;
 use App\Services\CommunicationService;
 use App\Services\Payment\ConnectIPSService;
+use Illuminate\Support\Str;
 
 class PublicRegistrationController extends Controller
 {
@@ -32,9 +34,14 @@ class PublicRegistrationController extends Controller
         }
 
         if ($event->isAtCapacity()) {
+            $waitlist = $event->settingEnabled('enable_waitlist');
+
             return view('register.closed', [
                 'event' => $event,
-                'reason' => 'This event has reached its maximum capacity.',
+                'reason' => $waitlist
+                    ? 'This event is at capacity. You may join the waitlist below.'
+                    : 'This event has reached its maximum capacity.',
+                'waitlist' => $waitlist,
             ]);
         }
 
@@ -48,9 +55,17 @@ class PublicRegistrationController extends Controller
     {
         $event = Event::where('slug', $slug)->firstOrFail();
 
-        if (! $event->settingEnabled('enable_self_registration') || ! $event->isRegistrationOpen() || $event->isAtCapacity()) {
+        if (! $event->settingEnabled('enable_self_registration') || ! $event->isRegistrationOpen()) {
             return redirect()->route('register.show', $slug)
                 ->with('error', 'Registration is no longer available.');
+        }
+
+        $atCapacity = $event->isAtCapacity();
+        $waitlistEnabled = $event->settingEnabled('enable_waitlist');
+
+        if ($atCapacity && ! $waitlistEnabled) {
+            return redirect()->route('register.show', $slug)
+                ->with('error', 'This event has reached its maximum capacity.');
         }
 
         $email = trim($request->email ?? '');
@@ -73,13 +88,46 @@ class PublicRegistrationController extends Controller
             }
         }
 
+        $promoCode = null;
+        $discountAmount = 0;
+        $promoCodeInput = trim($request->promo_code ?? '');
+
+        if (! empty($promoCodeInput)) {
+            $promoCode = PromoCode::where('code', $promoCodeInput)
+                ->where('event_id', $event->id)
+                ->first();
+
+            if (! $promoCode) {
+                return back()->withInput()->withErrors(['promo_code' => 'Invalid promo code.']);
+            }
+
+            if (! $promoCode->isValid()) {
+                return back()->withInput()->withErrors(['promo_code' => 'This promo code has expired or reached its usage limit.']);
+            }
+
+            if ($category && $category->is_paid && $category->price) {
+                $effectivePrice = $this->getEffectivePrice($category);
+                $discountAmount = $promoCode->calculateDiscount($effectivePrice);
+            }
+        }
+
+        $effectivePrice = $category?->is_paid ? $this->getEffectivePrice($category) : ($category?->price ?? 0);
+
         $requiresPayment = $category?->is_paid && $event->settingEnabled('enable_payment');
         $paymentStatus = $requiresPayment ? 'pending' : null;
-        $approvalStatus = ($category && $category->requires_approval) ? 'pending' : 'approved';
+
+        if ($category && $category->requires_approval) {
+            $approvalStatus = 'pending';
+        } elseif ($atCapacity && $waitlistEnabled) {
+            $approvalStatus = 'waitlisted';
+        } else {
+            $approvalStatus = 'approved';
+        }
 
         $reg = Registration::create([
             'event_id' => $event->id,
             'category_id' => $categoryId ?: null,
+            'promo_code_id' => $promoCode?->id,
             'registration_source' => 'self',
             'approval_status' => $approvalStatus,
             'name' => trim($request->name),
@@ -100,8 +148,35 @@ class PublicRegistrationController extends Controller
             'payment_status' => $paymentStatus,
         ]);
 
-        if ($requiresPayment && $category->price) {
-            return $this->initiatePayment($reg, $event, $category);
+        $companionCount = (int) ($request->companion_count ?? 0);
+        if ($companionCount > 0) {
+            $groupId = (string) Str::uuid();
+            $reg->update([
+                'group_id' => $groupId,
+                'companion_count' => $companionCount,
+            ]);
+
+            for ($i = 1; $i <= $companionCount; $i++) {
+                Registration::create([
+                    'event_id' => $event->id,
+                    'category_id' => $categoryId ?: null,
+                    'promo_code_id' => $promoCode?->id,
+                    'registration_source' => 'self',
+                    'approval_status' => $approvalStatus,
+                    'name' => trim($request->name).' (Companion '.$i.')',
+                    'group_id' => $groupId,
+                    'companion_count' => 0,
+                    'consented_at' => now(),
+                    'payment_status' => $paymentStatus,
+                ]);
+            }
+        }
+
+        if ($requiresPayment && $category->price && $approvalStatus !== 'waitlisted') {
+            $totalEffectivePrice = $effectivePrice * (1 + $companionCount);
+            $totalDiscount = $discountAmount * (1 + $companionCount);
+
+            return $this->initiatePayment($reg, $event, $category, $totalDiscount, $promoCode, $totalEffectivePrice);
         }
 
         if ($approvalStatus === 'approved') {
@@ -224,19 +299,54 @@ class PublicRegistrationController extends Controller
             return redirect()->route('register.show', $slug);
         }
 
-        return $this->initiatePayment($reg, $event, $category);
+        $discountAmount = 0;
+        $promoCode = $reg->promoCode;
+        if ($promoCode && $promoCode->isValid()) {
+            $effPrice = $this->getEffectivePrice($category);
+            $discountAmount = $promoCode->calculateDiscount($effPrice);
+        }
+
+        return $this->initiatePayment($reg, $event, $category, $discountAmount, $promoCode);
     }
 
-    private function initiatePayment(Registration $reg, Event $event, ParticipantCategory $category)
+    private function initiatePayment(Registration $reg, Event $event, ParticipantCategory $category, float $discountAmount = 0, ?PromoCode $promoCode = null, ?float $totalPrice = null)
     {
+        $originalAmount = $totalPrice ?? $this->getEffectivePrice($category);
+        $finalAmount = max(0, $originalAmount - $discountAmount);
+
+        $taxRate = (float) ($event->settings['tax_rate'] ?? 0);
+        $taxAmount = $taxRate > 0 ? round($finalAmount * $taxRate / 100, 2) : 0;
+        $totalWithTax = $finalAmount + $taxAmount;
+        $amountPaisa = (int) round($totalWithTax * 100);
+
+        $metadata = [
+            'original_price' => $originalAmount,
+            'discount_amount' => $discountAmount,
+            'subtotal' => $finalAmount,
+            'tax_rate' => $taxRate,
+            'tax_amount' => $taxAmount,
+            'total' => $totalWithTax,
+        ];
+
+        if ($promoCode) {
+            $metadata['promo_code'] = $promoCode->code;
+            $metadata['discount_type'] = $promoCode->discount_type;
+            $metadata['discount_value'] = $promoCode->discount_value;
+            $promoCode->incrementUsage();
+        }
+
         $payment = Payment::create([
             'registration_id' => $reg->id,
             'event_id' => $event->id,
             'category_id' => $category->id,
-            'amount_paisa' => (int) round($category->price * 100),
+            'amount_paisa' => $amountPaisa,
+            'subtotal' => $finalAmount,
+            'tax_amount' => $taxAmount,
             'currency' => $category->currency ?? 'NPR',
             'transaction_id' => Payment::generateTransactionId(),
             'payment_status' => 'pending',
+            'expires_at' => now()->addMinutes(30),
+            'gateway_response' => $metadata,
         ]);
 
         $ipsService = new ConnectIPSService;
@@ -277,5 +387,14 @@ class PublicRegistrationController extends Controller
         } catch (\Throwable $e) {
             logger()->error('Failed to send registration confirmation: '.$e->getMessage());
         }
+    }
+
+    private function getEffectivePrice(ParticipantCategory $category): float
+    {
+        if ($category->early_bird_price && $category->early_bird_until && now()->lt($category->early_bird_until)) {
+            return (float) $category->early_bird_price;
+        }
+
+        return (float) $category->price;
     }
 }

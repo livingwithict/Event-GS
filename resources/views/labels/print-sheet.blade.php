@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <style>
-        @page { size: A4; margin: 8mm; }
+        @page { size: A4; margin: {{ $template->margin_top ?? 8 }}mm {{ $template->margin_right ?? 8 }}mm {{ $template->margin_bottom ?? 8 }}mm {{ $template->margin_left ?? 8 }}mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
         .sheet { display: flex; flex-wrap: wrap; gap: 2mm; }

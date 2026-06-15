@@ -2,6 +2,8 @@
 
 namespace App\Imports;
 
+use App\Jobs\SendBulkEmail;
+use App\Jobs\SendBulkSMS;
 use App\Models\Event;
 use App\Models\ImportBatch;
 use App\Models\ImportError;
@@ -17,10 +19,13 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
 
     private int $imported = 0;
 
+    private array $importedRegistrationIds = [];
+
     public function __construct(
         private Event $event,
         private bool $skipDuplicates = true,
         private ?ImportBatch $batch = null,
+        private bool $sendNotifications = false,
     ) {}
 
     public function collection(Collection $rows): void
@@ -59,6 +64,20 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
+                $gender = trim($row['gender'] ?? '');
+                if (! empty($gender) && ! in_array($gender, ['male', 'female', 'other'])) {
+                    $this->recordError($rowNumber, $row, "Invalid gender '{$gender}'. Use male, female, or other.");
+
+                    continue;
+                }
+
+                $mealPreference = trim($row['meal_preference'] ?? '');
+                if (! empty($mealPreference) && ! in_array($mealPreference, ['veg', 'non-veg', 'vegan', 'halal'])) {
+                    $this->recordError($rowNumber, $row, "Invalid meal_preference '{$mealPreference}'. Use veg, non-veg, vegan, or halal.");
+
+                    continue;
+                }
+
                 if ($this->skipDuplicates) {
                     $dupeQuery = Registration::where('event_id', $this->event->id);
                     if (! empty($email)) {
@@ -74,7 +93,7 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     }
                 }
 
-                Registration::create([
+                $reg = Registration::create([
                     'event_id' => $this->event->id,
                     'category_id' => $this->resolveCategoryId(trim($row['category'] ?? '')),
                     'registration_source' => 'csv',
@@ -85,9 +104,15 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     'designation' => trim($row['designation'] ?? '') ?: null,
                     'address' => trim($row['address'] ?? '') ?: null,
                     'website' => trim($row['website'] ?? '') ?: null,
+                    'gender' => $gender ?: null,
+                    'pan_vat' => trim($row['pan_vat'] ?? '') ?: null,
+                    'meal_preference' => $mealPreference ?: null,
+                    'special_assistance' => trim($row['special_assistance'] ?? '') ?: null,
+                    'notes' => trim($row['notes'] ?? '') ?: null,
                 ]);
 
                 $this->imported++;
+                $this->importedRegistrationIds[] = $reg->id;
             }
 
             $this->batch?->markCompleted(
@@ -95,6 +120,8 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                 $this->imported,
                 count($this->errors)
             );
+
+            $this->dispatchNotifications();
         } catch (\Throwable $e) {
             $this->batch?->markFailed();
 
@@ -110,6 +137,52 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
     public function getImportedCount(): int
     {
         return $this->imported;
+    }
+
+    public function getImportedIds(): array
+    {
+        return $this->importedRegistrationIds;
+    }
+
+    private function dispatchNotifications(): void
+    {
+        if (! $this->sendNotifications || empty($this->importedRegistrationIds)) {
+            return;
+        }
+
+        $emailIds = [];
+        $smsIds = [];
+
+        foreach ($this->importedRegistrationIds as $regId) {
+            $reg = Registration::find($regId);
+            if (! $reg) {
+                continue;
+            }
+            if ($reg->email) {
+                $emailIds[] = $reg->id;
+            }
+            if ($reg->phone) {
+                $smsIds[] = $reg->id;
+            }
+        }
+
+        if (! empty($emailIds)) {
+            dispatch(new SendBulkEmail(
+                $emailIds,
+                $this->event->id,
+                "Registration Confirmed: {$this->event->name}",
+                'registration_confirmation'
+            ));
+        }
+
+        if (! empty($smsIds)) {
+            dispatch(new SendBulkSMS(
+                $smsIds,
+                $this->event->id,
+                "Hello, your registration for {$this->event->name} is confirmed. Check your email for details.",
+                'registration_confirmation'
+            ));
+        }
     }
 
     private function recordError(int $rowNumber, $row, string $message): void

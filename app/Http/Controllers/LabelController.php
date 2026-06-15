@@ -88,6 +88,18 @@ class LabelController extends Controller
                 ->firstOrFail();
         }
 
+        $categoryId = $request->input('category_id');
+        if ($categoryId) {
+            $categoryTemplate = $event->categories()
+                ->where('id', $categoryId)
+                ->whereNotNull('label_template_id')
+                ->value('label_template_id');
+
+            if ($categoryTemplate) {
+                return LabelTemplate::findOrFail($categoryTemplate);
+            }
+        }
+
         return LabelTemplate::where('event_id', $event->id)->first() ?? new LabelTemplate([
             'template_name' => 'Default',
             'width' => 100,

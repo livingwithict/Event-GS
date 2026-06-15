@@ -204,6 +204,17 @@ class EventResource extends Resource
                             ->label('Auto-Generate Day Actions')
                             ->default(true)
                             ->helperText('For multi-day events, automatically create day-specific scan actions.'),
+                        TextInput::make('settings.tax_rate')
+                            ->label('Tax Rate (%)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(50)
+                            ->default(0)
+                            ->helperText('Tax/VAT percentage applied to paid registrations.'),
+                        Toggle::make('settings.enable_waitlist')
+                            ->label('Enable Waitlist')
+                            ->default(false)
+                            ->helperText('When at capacity, allow registrations to join a waitlist instead of blocking.'),
                     ])->columns(3)
                     ->columnSpan(1)
                     ->collapsible()
@@ -293,6 +304,10 @@ class EventResource extends Resource
                             ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
                             ->maxSize(10240)
                             ->required(),
+                        Toggle::make('send_notifications')
+                            ->label('Send confirmation email/SMS to imported participants')
+                            ->helperText('If enabled, email and SMS confirmations will be sent to all successfully imported participants.')
+                            ->default(false),
                     ])
                     ->action(function (array $data, $record) {
                         $file = storage_path('app/public/'.$data['file']);
@@ -302,7 +317,7 @@ class EventResource extends Resource
                             'file_name' => basename($data['file']),
                             'status' => 'pending',
                         ]);
-                        $import = new RegistrationsImport($record, batch: $batch);
+                        $import = new RegistrationsImport($record, batch: $batch, sendNotifications: $data['send_notifications'] ?? false);
                         Excel::import($import, $file);
 
                         Notification::make()

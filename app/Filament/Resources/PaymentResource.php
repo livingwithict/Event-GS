@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\PaymentResource\Pages;
 use App\Models\Payment;
+use App\Services\CommunicationService;
 use App\Services\InvoiceService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -13,6 +14,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -115,6 +117,52 @@ class PaymentResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('verify_payment')
+                    ->label('Verify')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn (Payment $record) => in_array($record->payment_status, ['pending', 'initiated']))
+                    ->requiresConfirmation()
+                    ->action(function (Payment $record) {
+                        $record->markAsSuccess(
+                            'manual-'.now()->timestamp,
+                            ['verified_by' => auth()->id(), 'verified_at' => now()->toDateTimeString(), 'method' => 'manual']
+                        );
+
+                        try {
+                            if ($record->registration) {
+                                $commService = new CommunicationService;
+                                $commService->sendPaymentSuccess(
+                                    $record->registration,
+                                    $record->event,
+                                    $record
+                                );
+                            }
+                        } catch (\Throwable $e) {
+                            logger()->error('Payment verify notification failed: '.$e->getMessage());
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Payment verified')
+                            ->body('Payment has been marked as successful and confirmation sent.')
+                            ->send();
+                    }),
+                Action::make('mark_invalid')
+                    ->label('Mark Invalid')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn (Payment $record) => in_array($record->payment_status, ['pending', 'initiated']))
+                    ->requiresConfirmation()
+                    ->action(function (Payment $record) {
+                        $record->markAsFailed(['verified_by' => auth()->id(), 'verified_at' => now()->toDateTimeString(), 'method' => 'manual']);
+
+                        Notification::make()
+                            ->warning()
+                            ->title('Payment marked invalid')
+                            ->body('Payment has been marked as failed.')
+                            ->send();
+                    }),
                 Action::make('download_invoice')
                     ->label('Invoice')
                     ->icon('heroicon-o-document-text')

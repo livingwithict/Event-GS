@@ -27,6 +27,9 @@ class ListRegistrations extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('approval_status', 'approved')),
             'pending' => Tab::make('Pending')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('approval_status', 'pending')),
+            'waitlisted' => Tab::make('Waitlisted')
+                ->badge(fn () => $this->getResource()::getModel()::where('approval_status', 'waitlisted')->count())
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('approval_status', 'waitlisted')),
             'rejected' => Tab::make('Rejected')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('approval_status', 'rejected')),
         ];

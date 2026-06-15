@@ -23,6 +23,10 @@ class ScanActionController extends Controller
             return response()->json(['message' => 'This action type is disabled.'], 422);
         }
 
+        if (! $reg->canPerformAction($actionType->action_code)) {
+            return response()->json(['message' => "{$actionType->action_name} is not allowed for this guest's category."], 403);
+        }
+
         $scannedBy = $request->user()?->id;
 
         if (! $reg->recordAction($actionType, $scannedBy)) {

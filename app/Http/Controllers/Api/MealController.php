@@ -15,6 +15,11 @@ class MealController extends Controller
         $reg = Registration::findOrFail($request->registration_id);
         $mealType = $request->meal_type;
 
+        $actionCode = strtoupper($mealType);
+        if (! $reg->canPerformAction($actionCode)) {
+            return response()->json(['message' => ucfirst($mealType).' is not allowed for this guest\'s category.'], 403);
+        }
+
         if (! $reg->recordMeal($mealType)) {
             activity()
                 ->performedOn($reg)
@@ -26,7 +31,7 @@ class MealController extends Controller
             return response()->json(['message' => "{$label} already recorded for this guest."], 409);
         }
 
-        $this->writeScanLog($reg, strtoupper($mealType), $request->user()?->id);
+        $this->writeScanLog($reg, $actionCode, $request->user()?->id);
 
         event(new MealUsed($reg, $mealType));
 

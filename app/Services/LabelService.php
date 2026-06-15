@@ -11,11 +11,13 @@ class LabelService
 {
     public function generateLabelPdf(Collection $registrations, LabelTemplate $template): string
     {
+        $orientation = $template->orientation ?? 'portrait';
+
         $dompdf = new Dompdf((new Options)->set([
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => false,
             'defaultPaperSize' => 'a4',
-            'defaultPaperOrientation' => 'portrait',
+            'defaultPaperOrientation' => $orientation,
         ]));
 
         $html = $this->generateSheetHtml($registrations, $template);

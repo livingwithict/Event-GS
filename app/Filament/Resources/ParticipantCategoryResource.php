@@ -10,7 +10,9 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -76,6 +78,18 @@ class ParticipantCategoryResource extends Resource
                             ->prefix('NPR')
                             ->minValue(0)
                             ->visible(fn (callable $get) => $get('is_paid')),
+                        TextInput::make('early_bird_price')
+                            ->numeric()
+                            ->prefix('NPR')
+                            ->minValue(0)
+                            ->label('Early Bird Price')
+                            ->helperText('Discounted price before the deadline')
+                            ->visible(fn (callable $get) => $get('is_paid')),
+                        DateTimePicker::make('early_bird_until')
+                            ->label('Early Bird Deadline')
+                            ->seconds(false)
+                            ->helperText('After this date, the regular price applies')
+                            ->visible(fn (callable $get) => $get('is_paid')),
                         Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
@@ -87,6 +101,24 @@ class ParticipantCategoryResource extends Resource
                             ->numeric()
                             ->default(0)
                             ->minValue(0),
+                        Select::make('label_template_id')
+                            ->label('Label Template')
+                            ->relationship('labelTemplate', 'template_name')
+                            ->searchable()
+                            ->nullable()
+                            ->helperText('Template used when printing labels for this category'),
+                        CheckboxList::make('qr_access_permissions')
+                            ->label('QR Access Permissions')
+                            ->helperText('Limit which scan actions this category can use. Leave empty to allow all.')
+                            ->options([
+                                'CHECKIN' => 'Check-In',
+                                'LUNCH' => 'Lunch',
+                                'DINNER' => 'Dinner',
+                                'CARD_DELIVERY' => 'Card Delivery',
+                                'BADGE_COLLECT' => 'Badge Collection',
+                            ])
+                            ->columns(2)
+                            ->columnSpanFull(),
                     ])
                     ->columnSpan(1),
             ]);

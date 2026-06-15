@@ -14,6 +14,10 @@ class EntryController extends Controller
     {
         $reg = Registration::findOrFail($request->registration_id);
 
+        if (! $reg->canPerformAction('CHECKIN')) {
+            return response()->json(['message' => 'Check-in is not allowed for this guest\'s category.'], 403);
+        }
+
         if (! $reg->recordEntry()) {
             activity()
                 ->performedOn($reg)

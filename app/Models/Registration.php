@@ -14,12 +14,12 @@ class Registration extends Model
     use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'event_id', 'category_id', 'registration_source', 'unique_code', 'guest_number', 'qr_hash', 'name', 'email', 'phone',
+        'event_id', 'category_id', 'promo_code_id', 'registration_source', 'unique_code', 'guest_number', 'qr_hash', 'name', 'email', 'phone',
         'organization', 'designation', 'address', 'website',
         'photo_path', 'meal_preference', 'special_assistance', 'notes', 'pan_vat', 'gender', 'consented_at',
         'payment_status', 'paid_at',
         'entry_time', 'lunch_used_at', 'dinner_used_at',
-        'label_printed', 'label_printed_at', 'label_printed_by',
+        'label_printed', 'label_printed_at', 'label_printed_by', 'label_collected_at',
         'badge_status', 'approval_status',
         'group_id', 'companion_count',
     ];
@@ -34,6 +34,7 @@ class Registration extends Model
             'paid_at' => 'datetime',
             'label_printed' => 'boolean',
             'label_printed_at' => 'datetime',
+            'label_collected_at' => 'datetime',
             'badge_status' => 'string',
             'companion_count' => 'integer',
         ];
@@ -90,6 +91,11 @@ class Registration extends Model
         return $this->belongsTo(ParticipantCategory::class, 'category_id');
     }
 
+    public function promoCode()
+    {
+        return $this->belongsTo(PromoCode::class, 'promo_code_id');
+    }
+
     public function communications()
     {
         return $this->hasMany(Communication::class);
@@ -128,6 +134,23 @@ class Registration extends Model
             ->exists();
     }
 
+    public function canPerformAction(string $actionCode): bool
+    {
+        $category = $this->category;
+
+        if (! $category) {
+            return true;
+        }
+
+        $permissions = $category->qr_access_permissions;
+
+        if (empty($permissions)) {
+            return true;
+        }
+
+        return in_array($actionCode, $permissions);
+    }
+
     public function recordAction(ScanActionType $actionType, ?int $scannedBy = null): bool
     {
         if (! $actionType->allow_multiple && $this->hasAction($actionType)) {
@@ -140,6 +163,13 @@ class Registration extends Model
                 return false;
             }
             $this->update([$column => now()]);
+        }
+
+        if ($actionType->action_code === 'BADGE_COLLECT') {
+            $this->update([
+                'badge_status' => 'collected',
+                'label_collected_at' => now(),
+            ]);
         }
 
         ScanLog::create([

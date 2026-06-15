@@ -11,11 +11,16 @@ class ArrivalDistributionWidget extends ChartWidget
 
     protected static bool $isLazy = false;
 
-    public ?string $maxHeight = '300px';
+    public ?string $maxHeight = '320px';
 
     public function getHeading(): string
     {
-        return 'Arrival Time Distribution';
+        return 'Arrival Time Heatmap';
+    }
+
+    public function getDescription(): ?string
+    {
+        return 'Check-in distribution by hour (darker = more arrivals)';
     }
 
     public function getType(): string
@@ -33,12 +38,27 @@ class ArrivalDistributionWidget extends ChartWidget
             ->orderBy('hour')
             ->get();
 
+        $maxCount = $checkins->max('count') ?: 1;
+
         $labels = [];
         $data = [];
+        $colors = [];
+
         for ($h = 6; $h <= 22; $h++) {
             $labels[] = sprintf('%02d:00', $h);
             $hourData = $checkins->firstWhere('hour', $h);
-            $data[] = $hourData?->count ?? 0;
+            $count = $hourData?->count ?? 0;
+            $data[] = $count;
+
+            if ($count === 0) {
+                $colors[] = '#E5E7EB';
+            } else {
+                $intensity = min(1, $count / max($maxCount, 1));
+                $r = (int) (79 * (1 - $intensity) + 99 * $intensity);
+                $g = (int) (70 * (1 - $intensity) + 102 * $intensity);
+                $b = (int) (229 * (1 - $intensity) + 255 * $intensity);
+                $colors[] = sprintf('#%02X%02X%02X', $r, $g, $b);
+            }
         }
 
         return [
@@ -46,7 +66,9 @@ class ArrivalDistributionWidget extends ChartWidget
                 [
                     'label' => 'Check-ins',
                     'data' => $data,
-                    'backgroundColor' => '#4F46E5',
+                    'backgroundColor' => $colors,
+                    'borderColor' => '#4F46E5',
+                    'borderWidth' => 1,
                     'borderRadius' => 4,
                 ],
             ],

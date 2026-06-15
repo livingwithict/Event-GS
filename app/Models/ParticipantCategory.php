@@ -13,8 +13,8 @@ class ParticipantCategory extends Model
     use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'event_id', 'name', 'description',
-        'is_paid', 'price', 'currency',
+        'event_id', 'label_template_id', 'name', 'description',
+        'is_paid', 'price', 'early_bird_price', 'early_bird_until', 'currency',
         'badge_color', 'sort_order', 'is_active',
         'qr_access_permissions',
     ];
@@ -25,6 +25,8 @@ class ParticipantCategory extends Model
             'is_paid' => 'boolean',
             'is_active' => 'boolean',
             'price' => 'decimal:2',
+            'early_bird_price' => 'decimal:2',
+            'early_bird_until' => 'datetime',
             'sort_order' => 'integer',
             'qr_access_permissions' => 'array',
         ];
@@ -48,6 +50,11 @@ class ParticipantCategory extends Model
     public function registrations()
     {
         return $this->hasMany(Registration::class, 'category_id');
+    }
+
+    public function labelTemplate()
+    {
+        return $this->belongsTo(LabelTemplate::class, 'label_template_id');
     }
 
     public function scopeActive($query)

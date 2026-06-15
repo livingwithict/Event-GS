@@ -14,8 +14,8 @@ class Payment extends Model
 
     protected $fillable = [
         'registration_id', 'event_id', 'category_id',
-        'amount_paisa', 'currency', 'transaction_id',
-        'invoice_number', 'gateway_txn_id', 'payment_status', 'paid_at',
+        'amount_paisa', 'subtotal', 'tax_amount', 'currency', 'transaction_id',
+        'invoice_number', 'gateway_txn_id', 'payment_status', 'paid_at', 'expires_at',
         'gateway_response', 'verified_by', 'verified_at',
     ];
 
@@ -23,7 +23,10 @@ class Payment extends Model
     {
         return [
             'amount_paisa' => 'integer',
+            'subtotal' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
             'paid_at' => 'datetime',
+            'expires_at' => 'datetime',
             'verified_at' => 'datetime',
             'gateway_response' => 'array',
         ];

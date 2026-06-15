@@ -10,9 +10,11 @@ class LabelTemplate extends Model
     use HasFactory;
 
     protected $fillable = [
-        'event_id', 'template_name', 'width', 'height',
+        'event_id', 'template_name', 'width', 'height', 'orientation',
         'show_qr', 'show_designation', 'show_organization',
-        'show_category_color', 'font_size_name', 'config_json',
+        'show_category_color', 'font_size_name',
+        'margin_top', 'margin_right', 'margin_bottom', 'margin_left',
+        'config_json',
     ];
 
     protected function casts(): array

@@ -79,7 +79,12 @@
                                     </div>
                                     <div>
                                         @if($cat->is_paid && $cat->price)
-                                            <span class="cat-price">NPR {{ number_format($cat->price, 0) }}</span>
+                                            @if($cat->early_bird_price && $cat->early_bird_until && now()->lt($cat->early_bird_until))
+                                                <span class="cat-price">NPR {{ number_format($cat->early_bird_price, 0) }}</span>
+                                                <div class="hint">Early bird until {{ $cat->early_bird_until->format('M j') }}</div>
+                                            @else
+                                                <span class="cat-price">NPR {{ number_format($cat->price, 0) }}</span>
+                                            @endif
                                         @else
                                             <span class="cat-free">Free</span>
                                         @endif
@@ -88,6 +93,28 @@
                             @endforeach
                         </div>
                     @endif
+
+                    <div class="field">
+                        <label for="promo_code">Promo Code</label>
+                        <input type="text" id="promo_code" name="promo_code" value="{{ old('promo_code') }}" placeholder="Enter promo code for discount">
+                        <div class="hint">Optional — enter a promo code if you have one</div>
+                        @error('promo_code')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="field">
+                        <label for="companion_count">Additional Companions</label>
+                        <select id="companion_count" name="companion_count" style="width:100%">
+                            <option value="0" {{ old('companion_count') === '0' ? 'selected' : '' }}>None</option>
+                            <option value="1" {{ old('companion_count') === '1' ? 'selected' : '' }}>1 companion</option>
+                            <option value="2" {{ old('companion_count') === '2' ? 'selected' : '' }}>2 companions</option>
+                            <option value="3" {{ old('companion_count') === '3' ? 'selected' : '' }}>3 companions</option>
+                            <option value="4" {{ old('companion_count') === '4' ? 'selected' : '' }}>4 companions</option>
+                            <option value="5" {{ old('companion_count') === '5' ? 'selected' : '' }}>5 companions</option>
+                        </select>
+                        <div class="hint">Additional guests sharing your registration (up to 5)</div>
+                    </div>
 
                     <div class="field">
                         <label for="name">Full Name *</label>

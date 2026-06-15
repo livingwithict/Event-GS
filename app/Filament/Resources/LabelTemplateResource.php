@@ -65,6 +65,13 @@ class LabelTemplateResource extends Resource
                                     ->maxValue(100)
                                     ->required(),
                             ]),
+                        Forms\Components\Select::make('orientation')
+                            ->options([
+                                'portrait' => 'Portrait',
+                                'landscape' => 'Landscape',
+                            ])
+                            ->default('portrait')
+                            ->required(),
                         Forms\Components\TextInput::make('font_size_name')
                             ->label('Name Font Size (px)')
                             ->numeric()
@@ -91,6 +98,39 @@ class LabelTemplateResource extends Resource
                                 Forms\Components\Toggle::make('show_category_color')
                                     ->label('Category Color Strip')
                                     ->default(true),
+                            ]),
+                    ])
+                    ->columnSpan(1),
+
+                Section::make('Page Margins')
+                    ->description('Print margins in millimeters')
+                    ->schema([
+                        Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('margin_top')
+                                    ->label('Top (mm)')
+                                    ->numeric()
+                                    ->default(8)
+                                    ->minValue(0)
+                                    ->maxValue(30),
+                                Forms\Components\TextInput::make('margin_right')
+                                    ->label('Right (mm)')
+                                    ->numeric()
+                                    ->default(8)
+                                    ->minValue(0)
+                                    ->maxValue(30),
+                                Forms\Components\TextInput::make('margin_bottom')
+                                    ->label('Bottom (mm)')
+                                    ->numeric()
+                                    ->default(8)
+                                    ->minValue(0)
+                                    ->maxValue(30),
+                                Forms\Components\TextInput::make('margin_left')
+                                    ->label('Left (mm)')
+                                    ->numeric()
+                                    ->default(8)
+                                    ->minValue(0)
+                                    ->maxValue(30),
                             ]),
                     ])
                     ->columnSpan(1),
