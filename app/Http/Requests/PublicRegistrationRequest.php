@@ -26,6 +26,7 @@ class PublicRegistrationRequest extends FormRequest
             'notes' => 'nullable|string|max:1000',
             'meal_preference' => 'nullable|string|max:50',
             'special_assistance' => 'nullable|string|max:500',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'consent' => 'required|accepted',
         ];
     }

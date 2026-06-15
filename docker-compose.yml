@@ -6,21 +6,24 @@ services:
       - "8000:8000"
     environment:
       - DB_HOST=postgres
+      - REDIS_HOST=redis
     depends_on:
       - postgres
+      - redis
     volumes:
       - .:/var/www/html
 
   queue:
     build: .
-    command: php artisan queue:work --tries=3
+    command: php artisan horizon
     depends_on:
       - app
+      - redis
     volumes:
       - .:/var/www/html
 
   postgres:
-    image: postgres:15
+    image: postgres:18
     environment:
       POSTGRES_DB: event_management
       POSTGRES_USER: sail
@@ -29,6 +32,13 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
 
   nginx:
     image: nginx:alpine
@@ -42,3 +52,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

@@ -75,11 +75,13 @@ class PublicRegistrationController extends Controller
 
         $requiresPayment = $category?->is_paid && $event->settingEnabled('enable_payment');
         $paymentStatus = $requiresPayment ? 'pending' : null;
+        $approvalStatus = ($category && $category->requires_approval) ? 'pending' : 'approved';
 
         $reg = Registration::create([
             'event_id' => $event->id,
             'category_id' => $categoryId ?: null,
             'registration_source' => 'self',
+            'approval_status' => $approvalStatus,
             'name' => trim($request->name),
             'email' => $email ?: null,
             'phone' => $phone ?: null,
@@ -91,6 +93,9 @@ class PublicRegistrationController extends Controller
             'notes' => trim($request->notes ?? '') ?: null,
             'meal_preference' => trim($request->meal_preference ?? '') ?: null,
             'special_assistance' => trim($request->special_assistance ?? '') ?: null,
+            'photo_path' => $request->hasFile('photo')
+                ? $request->file('photo')->store('registrations/photos', 'public')
+                : null,
             'consented_at' => now(),
             'payment_status' => $paymentStatus,
         ]);
@@ -99,7 +104,9 @@ class PublicRegistrationController extends Controller
             return $this->initiatePayment($reg, $event, $category);
         }
 
-        $this->sendConfirmation($reg, $event);
+        if ($approvalStatus === 'approved') {
+            $this->sendConfirmation($reg, $event);
+        }
 
         return redirect()->route('register.success', ['slug' => $slug])
             ->with('guest_number', $reg->guest_number)

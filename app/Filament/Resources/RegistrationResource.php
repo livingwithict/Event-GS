@@ -76,12 +76,27 @@ class RegistrationResource extends Resource
                 Forms\Components\Select::make('meal_preference')
                     ->options(['veg' => 'Vegetarian', 'non-veg' => 'Non-Vegetarian', 'vegan' => 'Vegan', 'halal' => 'Halal'])
                     ->nullable(),
+                Forms\Components\FileUpload::make('photo_path')
+                    ->label('Photo')
+                    ->image()
+                    ->directory('registrations/photos')
+                    ->maxSize(2048)
+                    ->nullable(),
                 Forms\Components\TextInput::make('pan_vat')->label('PAN/VAT')->maxLength(50)->nullable(),
                 Forms\Components\Textarea::make('special_assistance')->maxLength(500)->nullable(),
                 Forms\Components\Textarea::make('notes')->maxLength(1000)->nullable(),
                 Forms\Components\Select::make('registration_source')
                     ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
                     ->default('admin_manual')
+                    ->required(),
+                Forms\Components\Select::make('approval_status')
+                    ->options(['approved' => 'Approved', 'pending' => 'Pending Approval', 'rejected' => 'Rejected'])
+                    ->default('approved')
+                    ->visible(fn ($record) => $record?->category?->requires_approval ?? false)
+                    ->required(),
+                Forms\Components\Select::make('badge_status')
+                    ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
+                    ->default('not_printed')
                     ->required(),
             ]);
     }
@@ -116,6 +131,16 @@ class RegistrationResource extends Resource
                         'admin_manual' => 'gray',
                     ])
                     ->sortable(),
+                Tables\Columns\TextColumn::make('approval_status')
+                    ->label('Approval')
+                    ->badge()
+                    ->colors([
+                        'approved' => 'success',
+                        'pending' => 'warning',
+                        'rejected' => 'danger',
+                    ])
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Payment')
                     ->badge()
@@ -143,6 +168,16 @@ class RegistrationResource extends Resource
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('badge_status')
+                    ->label('Badge')
+                    ->badge()
+                    ->colors([
+                        'not_printed' => 'gray',
+                        'printed' => 'warning',
+                        'collected' => 'success',
+                    ])
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('card_delivered')
                     ->label('Card')
                     ->boolean()
@@ -163,6 +198,12 @@ class RegistrationResource extends Resource
                 Tables\Filters\SelectFilter::make('registration_source')
                     ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
                     ->label('Source'),
+                Tables\Filters\SelectFilter::make('approval_status')
+                    ->options(['approved' => 'Approved', 'pending' => 'Pending', 'rejected' => 'Rejected'])
+                    ->label('Approval'),
+                Tables\Filters\SelectFilter::make('badge_status')
+                    ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
+                    ->label('Badge'),
                 Tables\Filters\TernaryFilter::make('label_printed')
                     ->label('Label Printed')
                     ->trueLabel('Printed')
@@ -199,6 +240,27 @@ class RegistrationResource extends Resource
                     DeleteBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                     RestoreBulkAction::make(),
+                    BulkAction::make('approve_registrations')
+                        ->label('Approve')
+                        ->icon('heroicon-o-check')
+                        ->color('success')
+                        ->action(function (Collection $records) {
+                            $records->each(fn ($r) => $r->update(['approval_status' => 'approved']));
+                        }),
+                    BulkAction::make('reject_registrations')
+                        ->label('Reject')
+                        ->icon('heroicon-o-x-mark')
+                        ->color('danger')
+                        ->action(function (Collection $records) {
+                            $records->each(fn ($r) => $r->update(['approval_status' => 'rejected']));
+                        }),
+                    BulkAction::make('mark_badge_collected')
+                        ->label('Badge Collected')
+                        ->icon('heroicon-o-check-badge')
+                        ->color('primary')
+                        ->action(function (Collection $records) {
+                            $records->each(fn ($r) => $r->update(['badge_status' => 'collected']));
+                        }),
                     BulkAction::make('export')
                         ->label('Export CSV')
                         ->icon('heroicon-o-arrow-down-tray')

@@ -59,6 +59,7 @@ class LabelService
                 'label_printed' => true,
                 'label_printed_at' => now(),
                 'label_printed_by' => $userId,
+                'badge_status' => 'printed',
             ]);
         }
     }

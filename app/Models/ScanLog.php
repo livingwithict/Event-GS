@@ -14,13 +14,14 @@ class ScanLog extends Model
     protected $fillable = [
         'event_id', 'participant_id', 'action_type_id',
         'scanned_by', 'scan_device', 'scan_location',
-        'remarks', 'scanned_at',
+        'remarks', 'scanned_at', 'scan_date',
     ];
 
     protected function casts(): array
     {
         return [
             'scanned_at' => 'datetime',
+            'scan_date' => 'date',
         ];
     }
 

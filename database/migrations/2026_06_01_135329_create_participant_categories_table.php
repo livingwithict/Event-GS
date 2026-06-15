@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('badge_color', 7)->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->json('qr_access_permissions')->nullable();
+            $table->jsonb('qr_access_permissions')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

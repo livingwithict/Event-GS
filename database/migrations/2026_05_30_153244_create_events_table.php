@@ -17,9 +17,9 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->date('event_date');
             $table->text('venue')->nullable();
-            $table->json('meal_types')->default('["lunch","dinner"]');
+            $table->jsonb('meal_types')->default('["lunch","dinner"]');
             $table->integer('max_capacity')->nullable();
-            $table->json('settings')->nullable();
+            $table->jsonb('settings')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();

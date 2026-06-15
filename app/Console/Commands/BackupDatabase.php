@@ -8,7 +8,7 @@ class BackupDatabase extends Command
 {
     protected $signature = 'db:backup {--retain=90 : Days to retain backups}';
 
-    protected $description = 'Create a PostgreSQL database backup';
+    protected $description = 'Create a database backup';
 
     public function handle(): int
     {
@@ -20,32 +20,44 @@ class BackupDatabase extends Command
             mkdir($path, 0755, true);
         }
 
-        $db = config('database.connections.pgsql');
+        $driver = config('database.default');
         $filepath = "{$path}/{$filename}";
 
-        $command = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -p %s -U %s %s | gzip > %s',
-            escapeshellarg($db['password'] ?? ''),
-            escapeshellarg($db['host'] ?? '127.0.0.1'),
-            escapeshellarg($db['port'] ?? '5432'),
-            escapeshellarg($db['username'] ?? ''),
-            escapeshellarg($db['database'] ?? ''),
-            escapeshellarg($filepath)
-        );
+        if ($driver === 'mysql') {
+            $db = config('database.connections.mysql');
+            $command = sprintf(
+                'mysqldump -h %s -P %s -u %s -p%s %s | gzip > %s',
+                escapeshellarg($db['host'] ?? '127.0.0.1'),
+                escapeshellarg($db['port'] ?? '3306'),
+                escapeshellarg($db['username'] ?? ''),
+                $db['password'] ?? '',
+                escapeshellarg($db['database'] ?? ''),
+                escapeshellarg($filepath)
+            );
+        } else {
+            $db = config('database.connections.pgsql');
+            $command = sprintf(
+                'PGPASSWORD=%s pg_dump -h %s -p %s -U %s %s | gzip > %s',
+                escapeshellarg($db['password'] ?? ''),
+                escapeshellarg($db['host'] ?? '127.0.0.1'),
+                escapeshellarg($db['port'] ?? '5432'),
+                escapeshellarg($db['username'] ?? ''),
+                escapeshellarg($db['database'] ?? ''),
+                escapeshellarg($filepath)
+            );
+        }
 
         $result = null;
         system($command, $result);
 
         if ($result === 0 && file_exists($filepath)) {
             $this->info("Backup created: {$filepath}");
-
-            // Clean old backups
             $this->cleanOldBackups($path, $retain);
 
             return self::SUCCESS;
         }
 
-        $this->error('Backup failed. Ensure pg_dump is installed and DB credentials are correct.');
+        $this->error('Backup failed. Ensure dump tool is installed and DB credentials are correct.');
 
         return self::FAILURE;
     }

@@ -20,6 +20,8 @@ class Registration extends Model
         'payment_status', 'paid_at',
         'entry_time', 'lunch_used_at', 'dinner_used_at',
         'label_printed', 'label_printed_at', 'label_printed_by',
+        'badge_status', 'approval_status',
+        'group_id', 'companion_count',
     ];
 
     protected function casts(): array
@@ -32,6 +34,8 @@ class Registration extends Model
             'paid_at' => 'datetime',
             'label_printed' => 'boolean',
             'label_printed_at' => 'datetime',
+            'badge_status' => 'string',
+            'companion_count' => 'integer',
         ];
     }
 
@@ -106,6 +110,17 @@ class Registration extends Model
         return $this->category?->is_paid && $this->event->settingEnabled('enable_payment');
     }
 
+    public function isCertificateEligible(int $minAttendanceHours = 2): bool
+    {
+        if (! $this->entry_time) {
+            return false;
+        }
+
+        $duration = $this->entry_time->diffInHours(now());
+
+        return $duration >= $minAttendanceHours;
+    }
+
     public function hasAction(ScanActionType $actionType): bool
     {
         return ScanLog::where('participant_id', $this->id)
@@ -133,6 +148,7 @@ class Registration extends Model
             'action_type_id' => $actionType->id,
             'scanned_by' => $scannedBy,
             'scanned_at' => now(),
+            'scan_date' => now()->toDateString(),
         ]);
 
         return true;

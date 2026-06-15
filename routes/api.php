@@ -13,7 +13,7 @@ use App\Http\Controllers\Api\ScanController;
 use App\Http\Controllers\ImportController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);

@@ -5,6 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\PaymentResource\Pages;
 use App\Models\Payment;
+use App\Services\InvoiceService;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -97,6 +99,18 @@ class PaymentResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('download_invoice')
+                    ->label('Invoice')
+                    ->icon('heroicon-o-document-text')
+                    ->visible(fn ($record) => $record->payment_status === 'success')
+                    ->action(function ($record) {
+                        $service = new InvoiceService;
+                        $pdf = $service->generateInvoicePdf($record);
+
+                        return response()->streamDownload(function () use ($pdf) {
+                            echo $pdf;
+                        }, "invoice-{$record->invoice_number}.pdf", ['Content-Type' => 'application/pdf']);
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

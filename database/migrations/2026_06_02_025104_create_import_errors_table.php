@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('import_batch_id')->constrained()->cascadeOnDelete();
             $table->unsignedInteger('row_number');
-            $table->json('raw_data')->nullable();
+            $table->jsonb('raw_data')->nullable();
             $table->string('error_message', 500);
             $table->timestamp('created_at')->nullable();
 

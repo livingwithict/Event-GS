@@ -16,6 +16,7 @@ class GuestSearchController extends Controller
         // Try full-text search first (PostgreSQL only)
         try {
             $results = Registration::whereRaw("search_vector @@ plainto_tsquery('english', ?)", [$query])
+                ->selectRaw("*, ts_headline('english', coalesce(name, ''), plainto_tsquery('english', ?), 'MaxFragments=1, MinWords=15, MaxWords=35') as highlighted_name", [$query])
                 ->orderByRaw("ts_rank(search_vector, plainto_tsquery('english', ?)) DESC", [$query])
                 ->limit(20)
                 ->get();

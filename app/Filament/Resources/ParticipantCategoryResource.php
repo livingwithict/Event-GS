@@ -65,6 +65,10 @@ class ParticipantCategoryResource extends Resource
                 Toggle::make('is_active')
                     ->label('Active')
                     ->default(true),
+                Toggle::make('requires_approval')
+                    ->label('Requires Approval')
+                    ->helperText('Registrations in this category need admin approval before confirmation')
+                    ->default(false),
             ]);
     }
 
@@ -92,6 +96,10 @@ class ParticipantCategoryResource extends Resource
                 IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
+                IconColumn::make('requires_approval')
+                    ->label('Approval')
+                    ->boolean()
+                    ->toggleable(),
                 TextColumn::make('sort_order')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

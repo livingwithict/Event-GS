@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
             $table->string('status', 50)->default('pending');
             $table->string('provider_message_id')->nullable();
-            $table->json('metadata')->nullable();
+            $table->jsonb('metadata')->nullable();
             $table->timestamps();
 
             $table->index('registration_id');

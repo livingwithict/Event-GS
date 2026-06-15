@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('show_organization')->default(true);
             $table->boolean('show_category_color')->default(true);
             $table->integer('font_size_name')->default(16);
-            $table->json('config_json')->nullable();
+            $table->jsonb('config_json')->nullable();
             $table->timestamps();
 
             $table->index('event_id');

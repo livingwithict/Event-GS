@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\IdempotentScan;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'idempotent' => IdempotentScan::class,
         ]);
+
+        $middleware->append(SecurityHeaders::class);
 
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('admin/*')
             ? $request->expectsJson()

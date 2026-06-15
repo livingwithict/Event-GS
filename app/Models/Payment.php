@@ -15,7 +15,7 @@ class Payment extends Model
     protected $fillable = [
         'registration_id', 'event_id', 'category_id',
         'amount_paisa', 'currency', 'transaction_id',
-        'gateway_txn_id', 'payment_status', 'paid_at',
+        'invoice_number', 'gateway_txn_id', 'payment_status', 'paid_at',
         'gateway_response', 'verified_by', 'verified_at',
     ];
 
@@ -81,6 +81,7 @@ class Payment extends Model
             'gateway_txn_id' => $gatewayTxnId,
             'gateway_response' => $gatewayResponse,
             'paid_at' => now(),
+            'invoice_number' => $this->invoice_number ?? self::generateInvoiceNumber(),
         ]);
 
         $this->registration->update([
@@ -100,6 +101,11 @@ class Payment extends Model
     public static function generateTransactionId(): string
     {
         return 'PAY-'.now()->format('YmdHis').'-'.strtoupper(Str::random(6));
+    }
+
+    public static function generateInvoiceNumber(): string
+    {
+        return 'INV-'.now()->format('Ym').'-'.strtoupper(Str::random(8));
     }
 
     public function getAmountRupees(): float

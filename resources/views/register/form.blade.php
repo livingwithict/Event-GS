@@ -62,7 +62,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('register.store', $event->slug) }}">
+                <form method="POST" action="{{ route('register.store', $event->slug) }}" enctype="multipart/form-data">
                     @csrf
 
                     @if($categories->count() > 0)
@@ -150,14 +150,21 @@
                             <input type="text" id="pan_vat" name="pan_vat" value="{{ old('pan_vat') }}">
                         </div>
                         <div class="field">
-                            <label for="special_assistance">Special Assistance</label>
-                            <input type="text" id="special_assistance" name="special_assistance" value="{{ old('special_assistance') }}" placeholder="e.g. wheelchair access">
+                            <label for="photo">Photo</label>
+                            <input type="file" id="photo" name="photo" accept="image/jpeg,image/png">
+                            <div class="hint">JPG or PNG, max 2MB</div>
                         </div>
                     </div>
 
-                    <div class="field">
-                        <label for="notes">Notes</label>
-                        <textarea id="notes" name="notes" rows="2">{{ old('notes') }}</textarea>
+                    <div class="row">
+                        <div class="field">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" name="notes" rows="2">{{ old('notes') }}</textarea>
+                        </div>
+                        <div class="field">
+                            <label for="special_assistance">Special Assistance</label>
+                            <input type="text" id="special_assistance" name="special_assistance" value="{{ old('special_assistance') }}" placeholder="e.g. wheelchair access">
+                        </div>
                     </div>
 
                     <div class="consent-row">

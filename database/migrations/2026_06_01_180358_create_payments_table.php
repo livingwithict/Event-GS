@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('gateway_txn_id', 100)->nullable();
             $table->string('payment_status', 20)->default('pending');
             $table->timestamp('paid_at')->nullable();
-            $table->json('gateway_response')->nullable();
+            $table->jsonb('gateway_response')->nullable();
             $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('verified_at')->nullable();
             $table->timestamps();
