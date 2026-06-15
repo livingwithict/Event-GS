@@ -28,7 +28,10 @@ class CommunicationController extends Controller
         if ($validated['type'] === 'email') {
             dispatch(new SendBulkEmail($regIds, $event->id, $validated['subject'], $emailType));
         } else {
-            dispatch(new SendBulkSMS($regIds, $event->id, $validated['message'], $emailType));
+            dispatch(new SendBulkSMS(
+                $regIds, $event->id, $validated['message'], $emailType,
+                $request->integer('batch_size', 0)
+            ));
         }
 
         return response()->json([

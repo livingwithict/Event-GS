@@ -18,17 +18,37 @@ class SendBulkSMS implements ShouldQueue
         public int $eventId,
         public string $message,
         public ?string $emailType = null,
+        public int $batchSize = 0,
     ) {
+        if ($this->batchSize <= 0) {
+            $this->batchSize = (int) config('services.sparrow.batch_size', 50);
+        }
         $this->onQueue('high');
     }
 
     public function handle(CommunicationService $service): void
     {
-        foreach ($this->registrationIds as $regId) {
+        $registrationIds = array_filter($this->registrationIds, function ($regId) {
             $reg = Registration::find($regId);
-            if ($reg && $reg->phone) {
+
+            return $reg && $reg->phone;
+        });
+
+        if (empty($registrationIds)) {
+            return;
+        }
+
+        if ($this->batchSize === 1) {
+            foreach ($registrationIds as $regId) {
+                $reg = Registration::find($regId);
                 $service->sendSms($reg, $this->message, $this->emailType);
             }
+
+            return;
+        }
+
+        foreach (array_chunk($registrationIds, $this->batchSize) as $chunk) {
+            $service->sendBatchSms($chunk, $this->message, $this->emailType);
         }
     }
 }

@@ -9,6 +9,9 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -45,7 +48,7 @@ class LabelTemplateResource extends Resource
                         Forms\Components\TextInput::make('template_name')
                             ->required()
                             ->maxLength(100),
-                        Forms\Components\Grid::make(2)
+                        Grid::make(2)
                             ->schema([
                                 Forms\Components\TextInput::make('width')
                                     ->label('Width (mm)')
@@ -74,7 +77,7 @@ class LabelTemplateResource extends Resource
 
                 Section::make('Label Display')
                     ->schema([
-                        Forms\Components\Fieldset::make('Show on Label')
+                        Fieldset::make('Show on Label')
                             ->schema([
                                 Forms\Components\Toggle::make('show_qr')
                                     ->label('QR Code')

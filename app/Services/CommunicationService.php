@@ -62,33 +62,151 @@ class CommunicationService
         ]);
 
         try {
-            $token = config('services.sparrow.token');
-            $from = config('services.sparrow.from');
-
-            if (empty($token)) {
+            if (! $this->shouldSendSms()) {
                 logger()->info("SMS to {$registration->phone}: {$message}");
                 $comm->markSent();
 
                 return $comm;
             }
 
-            $response = Http::asForm()->post('https://api.sparrowsms.com/v2/sms/', [
-                'token' => $token,
-                'from' => $from,
-                'to' => $registration->phone,
-                'text' => $message,
-            ]);
+            $response = $this->sendSmsRequest([$registration->phone], $message);
 
-            if ($response->successful()) {
-                $comm->markSent($response->json('response_id'));
+            if ($response['success']) {
+                $comm->markSent((string) ($response['data']['ntc'] ?? ''));
+            } elseif ($response['invalid_numbers']) {
+                $comm->markFailed(['invalid_number' => true, 'response' => $response['data']]);
             } else {
-                $comm->markFailed(['response' => $response->body(), 'status' => $response->status()]);
+                $comm->markFailed(['response' => $response['data'], 'status' => $response['status'] ?? null]);
             }
         } catch (\Throwable $e) {
             $comm->markFailed(['error' => $e->getMessage()]);
         }
 
         return $comm;
+    }
+
+    public function sendBatchSms(array $registrations, string $message, ?string $emailType = null): array
+    {
+        $comms = [];
+        $phones = [];
+
+        foreach ($registrations as $registration) {
+            if (is_int($registration)) {
+                $registration = Registration::find($registration);
+            }
+            if (! $registration || ! $registration->phone) {
+                continue;
+            }
+
+            $comms[] = Communication::create([
+                'registration_id' => $registration->id,
+                'type' => 'sms',
+                'email_type' => $emailType,
+                'content' => $message,
+                'status' => 'pending',
+            ]);
+
+            $phones[] = $registration->phone;
+        }
+
+        if (empty($phones)) {
+            return $comms;
+        }
+
+        try {
+            if (! $this->shouldSendSms()) {
+                foreach ($comms as $comm) {
+                    $reg = Registration::find($comm->registration_id);
+                    logger()->info("SMS to {$reg->phone}: {$message}");
+                    $comm->markSent();
+                }
+
+                return $comms;
+            }
+
+            $response = $this->sendSmsRequest($phones, $message);
+
+            if ($response['success']) {
+                foreach ($comms as $comm) {
+                    $comm->markSent();
+                }
+            } elseif ($response['invalid_numbers']) {
+                $invalidNumbers = $response['data']['invalid_number'] ?? [];
+                foreach ($comms as $comm) {
+                    $reg = Registration::find($comm->registration_id);
+                    if (in_array($reg->phone, $invalidNumbers)) {
+                        $comm->markFailed(['invalid_number' => true, 'response' => $response['data']]);
+                    } else {
+                        $comm->markSent();
+                    }
+                }
+            } else {
+                foreach ($comms as $comm) {
+                    $comm->markFailed(['response' => $response['data'], 'status' => $response['status'] ?? null]);
+                }
+            }
+        } catch (\Throwable $e) {
+            foreach ($comms as $comm) {
+                $comm->markFailed(['error' => $e->getMessage()]);
+            }
+        }
+
+        return $comms;
+    }
+
+    public function checkBalance(): array
+    {
+        $token = config('services.sparrow.token');
+        $baseUrl = config('services.sparrow.base_url');
+
+        if (empty($token)) {
+            return ['balance' => 'N/A', 'ntc_rate' => 'N/A', 'ncell_rate' => 'N/A', 'smartcell_rate' => 'N/A'];
+        }
+
+        $response = Http::withToken($token)
+            ->acceptJson()
+            ->get("{$baseUrl}/balance");
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        return ['error' => $response->json('message', 'Balance check failed')];
+    }
+
+    private function shouldSendSms(): bool
+    {
+        return config('services.sparrow.driver') === 'sparrow'
+            && ! empty(config('services.sparrow.token'));
+    }
+
+    private function sendSmsRequest(array $phoneNumbers, string $message): array
+    {
+        $token = config('services.sparrow.token');
+        $baseUrl = config('services.sparrow.base_url');
+        $mobile = implode(',', $phoneNumbers);
+
+        $response = Http::withToken($token)
+            ->acceptJson()
+            ->asJson()
+            ->post("{$baseUrl}/sms", [
+                'message' => $message,
+                'mobile' => $mobile,
+            ]);
+
+        $data = $response->json();
+        $success = $response->successful()
+            && isset($data['message'])
+            && str_contains($data['message'], 'Success');
+
+        $invalidNumbers = ! empty($data['invalid_number']);
+
+        return [
+            'success' => $success,
+            'invalid_numbers' => $invalidNumbers,
+            'data' => $data,
+            'status' => $response->status(),
+        ];
     }
 
     public function sendRegistrationConfirmation(Registration $registration, Event $event): void

@@ -92,8 +92,12 @@ Required values:
 | `DB_PASSWORD` | Your password | From Step 2 |
 | `MAILGUN_DOMAIN` | Your Mailgun domain | For email |
 | `MAILGUN_SECRET` | Your Mailgun API key | For email |
-| `SPARROW_SMS_TOKEN` | Your Sparrow token | For SMS |
-| `SPARROW_SMS_FROM` | Your sender ID | For SMS |
+| `SPARROW_SMS_TOKEN` | Your Sociair token | For SMS |
+| `SPARROW_SMS_BASE_URL` | `https://sms.sociair.com/api` | SMS API endpoint |
+| `SMS_BATCH_SIZE` | `50` | Recipients per API call |
+| `SMS_DRIVER` | `sparrow` | `log` for local, `sparrow` for production |
+
+> **Note:** The SMS sender ID / brand name is configured in the [Sociair SMS dashboard](https://sms.sociair.com), not via environment variables.
 | `CONNECTIPS_*` | Payment credentials | For payments |
 
 ## Step 5: Install Dependencies and Deploy

@@ -36,8 +36,10 @@ return [
     ],
 
     'sparrow' => [
+        'driver' => env('SMS_DRIVER', 'log'),
         'token' => env('SPARROW_SMS_TOKEN'),
-        'from' => env('SPARROW_SMS_FROM', 'ICTFoundation'),
+        'base_url' => env('SPARROW_SMS_BASE_URL', 'https://sms.sociair.com/api'),
+        'batch_size' => (int) env('SMS_BATCH_SIZE', 50),
     ],
 
 ];

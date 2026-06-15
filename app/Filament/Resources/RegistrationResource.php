@@ -21,6 +21,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -122,7 +123,6 @@ class RegistrationResource extends Resource
                         Forms\Components\FileUpload::make('photo_path')
                             ->label('Photo')
                             ->image()
-                            ->imagePreview()
                             ->directory('registrations/photos')
                             ->maxSize(2048)
                             ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
