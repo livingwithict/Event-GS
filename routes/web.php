@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\CheckinController;
+use App\Http\Controllers\EventSwitcherController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\OnsiteRegistrationController;
 use App\Http\Controllers\PublicRegistrationController;
+use App\Http\Controllers\ReportDownloadController;
 use App\Http\Controllers\TicketController;
 use App\Models\Event;
 use Illuminate\Support\Facades\Route;
@@ -41,3 +43,26 @@ Route::get('/event/{slug}/payment/failure', [PublicRegistrationController::class
 Route::post('/event/{slug}/payment/retry/{txnId}', [PublicRegistrationController::class, 'paymentRetry'])
     ->name('payment.retry')
     ->middleware('throttle:5,1');
+
+Route::post('/event-switcher/switch', [EventSwitcherController::class, 'switch'])
+    ->name('event-switcher.switch')
+    ->middleware('auth');
+Route::get('/event-switcher/events', [EventSwitcherController::class, 'getEvents'])
+    ->name('event-switcher.events')
+    ->middleware('auth');
+
+Route::get('/reports/{event}/pdf-summary', [ReportDownloadController::class, 'pdfSummary'])
+    ->name('reports.pdf-summary')
+    ->middleware('auth');
+Route::get('/reports/{event}/payments', [ReportDownloadController::class, 'payments'])
+    ->name('reports.payments')
+    ->middleware('auth');
+Route::get('/reports/{event}/scanner-activity', [ReportDownloadController::class, 'scannerActivity'])
+    ->name('reports.scanner-activity')
+    ->middleware('auth');
+Route::get('/reports/{event}/category-summary', [ReportDownloadController::class, 'categorySummary'])
+    ->name('reports.category-summary')
+    ->middleware('auth');
+Route::get('/reports/{event}/card-delivery', [ReportDownloadController::class, 'cardDelivery'])
+    ->name('reports.card-delivery')
+    ->middleware('auth');

@@ -62,7 +62,7 @@ class IntegrationTest extends TestCase
         $dinnerResponse->assertOk();
 
         // Step 7: Verify dashboard stats
-        $manager = User::factory()->create(['role' => 'event_manager']);
+        $manager = User::factory()->create(['role' => 'admin']);
         $dashboardResponse = $this->actingAs($manager)
             ->getJson("/api/event/{$event->id}/dashboard");
         $dashboardResponse->assertOk()

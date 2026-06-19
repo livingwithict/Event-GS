@@ -36,7 +36,7 @@ class RegistrationResource extends Resource
 
     protected static function getVisibleRoles(): array
     {
-        return ['super_admin', 'event_manager', 'registration_staff', 'finance'];
+        return ['super_admin', 'admin', 'manager', 'finance'];
     }
 
     protected static ?string $model = Registration::class;
@@ -235,6 +235,12 @@ class RegistrationResource extends Resource
                         ->exists())
                     ->toggleable(),
             ])
+            ->modifyQueryUsing(function ($query) {
+                $eventId = session('active_event_id');
+                if ($eventId) {
+                    $query->where('event_id', $eventId);
+                }
+            })
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')

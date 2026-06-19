@@ -26,14 +26,15 @@ class GuestSearchController extends Controller
                 $results = Registration::where('name', 'LIKE', "%{$query}%")
                     ->orWhere('email', 'LIKE', "%{$query}%")
                     ->orWhere('phone', 'LIKE', "%{$query}%")
+                    ->orWhere('guest_number', 'LIKE', "%{$query}%")
                     ->limit(20)
                     ->get();
             }
         } catch (\Throwable $e) {
-            // Fallback for SQLite (testing) or other DBs
             $results = Registration::where('name', 'LIKE', "%{$query}%")
                 ->orWhere('email', 'LIKE', "%{$query}%")
                 ->orWhere('phone', 'LIKE', "%{$query}%")
+                ->orWhere('guest_number', 'LIKE', "%{$query}%")
                 ->limit(20)
                 ->get();
         }

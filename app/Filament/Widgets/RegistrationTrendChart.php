@@ -20,9 +20,11 @@ class RegistrationTrendChart extends ChartWidget
 
     protected function getData(): array
     {
+        $eventId = session('active_event_id');
         $days = collect(range(29, 0))->map(fn ($i) => now()->subDays($i)->format('Y-m-d'));
 
         $counts = Registration::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->when($eventId, fn ($q) => $q->where('event_id', $eventId))
             ->where('created_at', '>=', now()->subDays(30))
             ->groupByRaw('DATE(created_at)')
             ->pluck('count', 'date');

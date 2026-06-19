@@ -12,9 +12,10 @@ class PaymentStatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
-        $successful = Payment::where('payment_status', 'success');
-        $pending = Payment::whereIn('payment_status', ['pending', 'initiated']);
-        $failed = Payment::whereIn('payment_status', ['failed', 'cancelled', 'expired']);
+        $eventId = session('active_event_id');
+        $successful = Payment::where('payment_status', 'success')->when($eventId, fn ($q) => $q->where('event_id', $eventId));
+        $pending = Payment::whereIn('payment_status', ['pending', 'initiated'])->when($eventId, fn ($q) => $q->where('event_id', $eventId));
+        $failed = Payment::whereIn('payment_status', ['failed', 'cancelled', 'expired'])->when($eventId, fn ($q) => $q->where('event_id', $eventId));
 
         $collectedAmount = $successful->sum('amount_paisa') / 100;
         $pendingAmount = $pending->sum('amount_paisa') / 100;

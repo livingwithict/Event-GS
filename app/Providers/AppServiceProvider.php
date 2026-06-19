@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Events\EntryRecorded;
 use App\Events\MealUsed;
+use App\Listeners\SetDefaultActiveEvent;
 use App\Listeners\UpdateRedisCache;
 use App\Models\Event;
 use App\Observers\EventObserver;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,5 +25,6 @@ class AppServiceProvider extends ServiceProvider
 
         EventFacade::listen(EntryRecorded::class, [UpdateRedisCache::class, 'handleEntry']);
         EventFacade::listen(MealUsed::class, [UpdateRedisCache::class, 'handleMeal']);
+        EventFacade::listen(Login::class, SetDefaultActiveEvent::class);
     }
 }

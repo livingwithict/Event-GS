@@ -49,6 +49,10 @@ class QRCodeService
             return Registration::where('unique_code', $code)->first();
         }
 
+        if (str_contains($code, '-G-')) {
+            return Registration::where('guest_number', $code)->first();
+        }
+
         return $this->resolveFromToken($code);
     }
 

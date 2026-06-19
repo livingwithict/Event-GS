@@ -58,7 +58,7 @@ class AuthTest extends TestCase
 
     public function test_manager_can_access_import_endpoint(): void
     {
-        $manager = User::factory()->create(['role' => 'event_manager']);
+        $manager = User::factory()->create(['role' => 'admin']);
         $event = Event::factory()->create();
 
         // Manager passes authorization but gets 422 validation (file required)

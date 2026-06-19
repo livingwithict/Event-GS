@@ -24,7 +24,7 @@ class HorizonServiceProvider extends ServiceProvider
         \Horizon::auth(function ($request) {
             $user = $request->user();
 
-            return $user && in_array($user->role, ['super_admin', 'event_manager']);
+            return $user && in_array($user->role, ['super_admin', 'admin']);
         });
     }
 }

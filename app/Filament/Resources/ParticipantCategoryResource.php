@@ -161,6 +161,12 @@ class ParticipantCategoryResource extends Resource
             ->paginationPageOptions([10, 20, 50])
             ->emptyStateHeading('No categories yet')
             ->emptyStateDescription('Create participant categories like VIP, General, Staff.')
+            ->modifyQueryUsing(function ($query) {
+                $eventId = session('active_event_id');
+                if ($eventId) {
+                    $query->where('event_id', $eventId);
+                }
+            })
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')

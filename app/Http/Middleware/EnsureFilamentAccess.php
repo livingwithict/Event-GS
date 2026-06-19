@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureFilamentAccess
 {
-    private const ALLOWED_ROLES = ['super_admin', 'event_manager', 'registration_staff', 'finance'];
+    private const ALLOWED_ROLES = ['super_admin', 'admin', 'manager', 'finance'];
 
     public function handle(Request $request, Closure $next): Response
     {

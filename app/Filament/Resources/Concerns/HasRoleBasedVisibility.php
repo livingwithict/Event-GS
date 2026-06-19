@@ -23,6 +23,6 @@ trait HasRoleBasedVisibility
 
     protected static function getVisibleRoles(): array
     {
-        return ['super_admin', 'event_manager'];
+        return ['super_admin', 'admin'];
     }
 }

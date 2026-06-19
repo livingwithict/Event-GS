@@ -30,9 +30,12 @@ class ArrivalDistributionWidget extends ChartWidget
 
     public function getData(): array
     {
+        $eventId = session('active_event_id');
+
         $checkins = DB::table('scan_logs')
             ->join('scan_action_types', 'scan_logs.action_type_id', '=', 'scan_action_types.id')
             ->where('scan_action_types.action_code', 'CHECKIN')
+            ->when($eventId, fn ($q) => $q->where('scan_logs.event_id', $eventId))
             ->selectRaw('EXTRACT(HOUR FROM scan_logs.scanned_at)::int as hour, COUNT(*) as count')
             ->groupBy('hour')
             ->orderBy('hour')

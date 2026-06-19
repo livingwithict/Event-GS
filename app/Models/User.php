@@ -43,9 +43,14 @@ class User extends Authenticatable
         return $this->role === 'super_admin';
     }
 
-    public function isEventManager(): bool
+    public function isAdmin(): bool
     {
-        return $this->role === 'event_manager';
+        return $this->role === 'admin';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
     }
 
     public function isScanner(): bool
@@ -58,6 +63,11 @@ class User extends Authenticatable
         return $this->role === 'viewer';
     }
 
+    public function isFinance(): bool
+    {
+        return $this->role === 'finance';
+    }
+
     public function scopeWithRole($query, string $role)
     {
         return $query->where('role', $role);
@@ -66,5 +76,12 @@ class User extends Authenticatable
     public function events()
     {
         return $this->hasMany(Event::class, 'created_by');
+    }
+
+    public function assignedEvents()
+    {
+        return $this->belongsToMany(Event::class, 'event_user')
+            ->withTimestamps()
+            ->withPivot('assigned_by');
     }
 }

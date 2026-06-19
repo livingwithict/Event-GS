@@ -123,6 +123,12 @@ class ScanActionTypeResource extends Resource
             ->paginationPageOptions([10, 20, 50])
             ->emptyStateHeading('No scan actions yet')
             ->emptyStateDescription('Define scan actions like Check-in, Lunch, Dinner for your events.')
+            ->modifyQueryUsing(function ($query) {
+                $eventId = session('active_event_id');
+                if ($eventId) {
+                    $query->where('event_id', $eventId);
+                }
+            })
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')

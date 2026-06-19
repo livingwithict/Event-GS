@@ -19,7 +19,10 @@ class RecentScansTable extends TableWidget
     {
         return $table
             ->query(
-                ScanLog::with(['participant', 'actionType', 'event', 'scanner'])->latest('scanned_at')->limit(10)
+                ScanLog::with(['participant', 'actionType', 'event', 'scanner'])
+                    ->when(session('active_event_id'), fn ($q) => $q->where('event_id', session('active_event_id')))
+                    ->latest('scanned_at')
+                    ->limit(10)
             )
             ->columns([
                 Tables\Columns\TextColumn::make('participant.name')

@@ -13,7 +13,7 @@ class OnsiteRegistrationController extends Controller
 {
     public function show(Event $event)
     {
-        if (! in_array(Auth::user()->role, ['super_admin', 'event_manager', 'registration_staff'])) {
+        if (! in_array(Auth::user()->role, ['super_admin', 'admin', 'manager'])) {
             abort(403);
         }
 
@@ -27,7 +27,7 @@ class OnsiteRegistrationController extends Controller
 
     public function store(Request $request, Event $event)
     {
-        if (! in_array(Auth::user()->role, ['super_admin', 'event_manager', 'registration_staff'])) {
+        if (! in_array(Auth::user()->role, ['super_admin', 'admin', 'manager'])) {
             abort(403);
         }
 

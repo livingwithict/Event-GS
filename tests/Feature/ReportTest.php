@@ -15,7 +15,7 @@ class ReportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->manager = User::factory()->create(['role' => 'event_manager']);
+        $this->manager = User::factory()->create(['role' => 'admin']);
     }
 
     public function test_event_dashboard_returns_stats(): void

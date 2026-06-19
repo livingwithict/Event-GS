@@ -2,12 +2,10 @@
 
 namespace App\Imports;
 
-use App\Jobs\SendBulkEmail;
-use App\Jobs\SendBulkSMS;
 use App\Models\Event;
 use App\Models\ImportBatch;
 use App\Models\ImportError;
-use App\Models\ParticipantCategory;
+use App\Models\ImportStaging;
 use App\Models\Registration;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -17,15 +15,12 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
 {
     private array $errors = [];
 
-    private int $imported = 0;
-
-    private array $importedRegistrationIds = [];
+    private int $staged = 0;
 
     public function __construct(
         private Event $event,
         private bool $skipDuplicates = true,
         private ?ImportBatch $batch = null,
-        private bool $sendNotifications = false,
     ) {}
 
     public function collection(Collection $rows): void
@@ -93,35 +88,30 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     }
                 }
 
-                $reg = Registration::create([
+                $rawData = $this->normalizeRow($row);
+
+                ImportStaging::create([
                     'event_id' => $this->event->id,
-                    'category_id' => $this->resolveCategoryId(trim($row['category'] ?? '')),
-                    'registration_source' => 'csv',
+                    'import_batch_id' => $this->batch?->id,
+                    'row_number' => $rowNumber,
+                    'raw_data' => $rawData,
                     'name' => $name,
                     'email' => $email ?: null,
                     'phone' => $phone ?: null,
                     'organization' => trim($row['organization'] ?? '') ?: null,
                     'designation' => trim($row['designation'] ?? '') ?: null,
-                    'address' => trim($row['address'] ?? '') ?: null,
-                    'website' => trim($row['website'] ?? '') ?: null,
-                    'gender' => $gender ?: null,
-                    'pan_vat' => trim($row['pan_vat'] ?? '') ?: null,
-                    'meal_preference' => $mealPreference ?: null,
-                    'special_assistance' => trim($row['special_assistance'] ?? '') ?: null,
-                    'notes' => trim($row['notes'] ?? '') ?: null,
+                    'category_name' => trim($row['category'] ?? '') ?: null,
+                    'status' => 'pending',
                 ]);
 
-                $this->imported++;
-                $this->importedRegistrationIds[] = $reg->id;
+                $this->staged++;
             }
 
             $this->batch?->markCompleted(
                 $rows->count(),
-                $this->imported,
+                $this->staged,
                 count($this->errors)
             );
-
-            $this->dispatchNotifications();
         } catch (\Throwable $e) {
             $this->batch?->markFailed();
 
@@ -134,55 +124,31 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
         return $this->errors;
     }
 
-    public function getImportedCount(): int
+    public function getStagedCount(): int
     {
-        return $this->imported;
+        return $this->staged;
     }
 
-    public function getImportedIds(): array
+    private function normalizeRow($row): array
     {
-        return $this->importedRegistrationIds;
-    }
-
-    private function dispatchNotifications(): void
-    {
-        if (! $this->sendNotifications || empty($this->importedRegistrationIds)) {
-            return;
+        if (is_array($row)) {
+            return $row;
         }
 
-        $emailIds = [];
-        $smsIds = [];
-
-        foreach ($this->importedRegistrationIds as $regId) {
-            $reg = Registration::find($regId);
-            if (! $reg) {
-                continue;
+        if ($row instanceof \ArrayAccess) {
+            $data = [];
+            foreach ($row as $key => $value) {
+                $data[$key] = $value;
             }
-            if ($reg->email) {
-                $emailIds[] = $reg->id;
-            }
-            if ($reg->phone) {
-                $smsIds[] = $reg->id;
-            }
+
+            return $data;
         }
 
-        if (! empty($emailIds)) {
-            dispatch(new SendBulkEmail(
-                $emailIds,
-                $this->event->id,
-                "Registration Confirmed: {$this->event->name}",
-                'registration_confirmation'
-            ));
+        if (method_exists($row, 'toArray')) {
+            return $row->toArray();
         }
 
-        if (! empty($smsIds)) {
-            dispatch(new SendBulkSMS(
-                $smsIds,
-                $this->event->id,
-                "Hello, your registration for {$this->event->name} is confirmed. Check your email for details.",
-                'registration_confirmation'
-            ));
-        }
+        return (array) $row;
     }
 
     private function recordError(int $rowNumber, $row, string $message): void
@@ -193,20 +159,9 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
             ImportError::create([
                 'import_batch_id' => $this->batch->id,
                 'row_number' => $rowNumber,
-                'raw_data' => $row->toArray(),
+                'raw_data' => $this->normalizeRow($row),
                 'error_message' => $message,
             ]);
         }
-    }
-
-    private function resolveCategoryId(string $categoryName): ?int
-    {
-        if (empty($categoryName)) {
-            return null;
-        }
-
-        return ParticipantCategory::where('event_id', $this->event->id)
-            ->where('name', 'like', $categoryName)
-            ->value('id');
     }
 }

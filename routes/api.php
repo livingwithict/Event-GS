@@ -19,8 +19,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Scanner endpoints (scanner, event_manager, super_admin, registration_staff)
-    Route::middleware(['role:scanner,event_manager,super_admin,registration_staff', 'throttle:60,1', 'idempotent'])->group(function () {
+    // Scanner endpoints (scanner, admin, super_admin, manager)
+    Route::middleware(['role:scanner,admin,super_admin,manager', 'throttle:60,1', 'idempotent'])->group(function () {
         Route::post('/scan', [ScanController::class, 'store']);
         Route::post('/entry', [EntryController::class, 'store']);
         Route::post('/meal', [MealController::class, 'store']);
@@ -30,8 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/event/{eventId}/info', [EventInfoController::class, 'show']);
     });
 
-    // Manager+ endpoints (event_manager, super_admin, registration_staff, finance)
-    Route::middleware('role:event_manager,super_admin,registration_staff,finance')->group(function () {
+    // Manager+ endpoints (admin, super_admin, manager, finance)
+    Route::middleware('role:admin,super_admin,manager,finance')->group(function () {
         Route::get('/event/{event}/dashboard', [EventDashboardController::class, 'show']);
         Route::get('/reports/attendance/{event}', [ReportController::class, 'attendance']);
         Route::get('/reports/noshow/{event}', [ReportController::class, 'noShow']);
@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Manager-only endpoints (import, send invites)
-    Route::middleware('role:event_manager,super_admin')->group(function () {
+    Route::middleware('role:admin,super_admin')->group(function () {
         Route::post('/event/{event}/import', [ImportController::class, 'import']);
         Route::post('/event/{event}/send-invites', [CommunicationController::class, 'sendInvites']);
     });

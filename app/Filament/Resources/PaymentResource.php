@@ -29,7 +29,7 @@ class PaymentResource extends Resource
 
     protected static function getVisibleRoles(): array
     {
-        return ['super_admin', 'event_manager', 'finance'];
+        return ['super_admin', 'admin', 'finance'];
     }
 
     protected static ?string $model = Payment::class;
@@ -97,6 +97,12 @@ class PaymentResource extends Resource
                 TextColumn::make('paid_at')->dateTime('M j, Y H:i')->sortable(),
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(function ($query) {
+                $eventId = session('active_event_id');
+                if ($eventId) {
+                    $query->where('event_id', $eventId);
+                }
+            })
             ->defaultSort('created_at', 'desc')
             ->defaultPaginationPageOption(20)
             ->paginationPageOptions([10, 20, 50])

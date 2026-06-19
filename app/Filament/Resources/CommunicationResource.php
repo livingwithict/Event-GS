@@ -23,7 +23,7 @@ class CommunicationResource extends Resource
 
     protected static function getVisibleRoles(): array
     {
-        return ['super_admin', 'event_manager', 'registration_staff'];
+        return ['super_admin', 'admin', 'manager'];
     }
 
     protected static ?string $model = Communication::class;

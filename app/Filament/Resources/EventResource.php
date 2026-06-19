@@ -4,9 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\EventResource\Pages;
-use App\Imports\RegistrationsImport;
 use App\Models\Event;
-use App\Models\ImportBatch;
 use App\Models\Registration;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -26,7 +24,6 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
@@ -36,7 +33,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
-use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Activitylog\Models\Activity;
 use UnitEnum;
 
@@ -46,7 +42,7 @@ class EventResource extends Resource
 
     protected static function getVisibleRoles(): array
     {
-        return ['super_admin', 'event_manager', 'registration_staff', 'finance'];
+        return ['super_admin', 'admin', 'manager', 'finance'];
     }
 
     protected static ?string $model = Event::class;
@@ -295,37 +291,6 @@ class EventResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                Action::make('import_registrations')
-                    ->label('Import CSV')
-                    ->icon('heroicon-o-arrow-up-tray')
-                    ->form([
-                        FileUpload::make('file')
-                            ->label('CSV/XLSX File')
-                            ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
-                            ->maxSize(10240)
-                            ->required(),
-                        Toggle::make('send_notifications')
-                            ->label('Send confirmation email/SMS to imported participants')
-                            ->helperText('If enabled, email and SMS confirmations will be sent to all successfully imported participants.')
-                            ->default(false),
-                    ])
-                    ->action(function (array $data, $record) {
-                        $file = storage_path('app/public/'.$data['file']);
-                        $batch = ImportBatch::create([
-                            'event_id' => $record->id,
-                            'imported_by' => auth()->id(),
-                            'file_name' => basename($data['file']),
-                            'status' => 'pending',
-                        ]);
-                        $import = new RegistrationsImport($record, batch: $batch, sendNotifications: $data['send_notifications'] ?? false);
-                        Excel::import($import, $file);
-
-                        Notification::make()
-                            ->title('Import Complete')
-                            ->body("Imported {$import->getImportedCount()} registrations. ".count($import->getErrors()).' errors.')
-                            ->success()
-                            ->send();
-                    }),
                 DeleteAction::make(),
 
                 ForceDeleteAction::make(),
@@ -391,27 +356,27 @@ class EventResource extends Resource
                 Action::make('download_pdf_summary')
                     ->label('PDF Summary')
                     ->icon('heroicon-o-document-text')
-                    ->url(fn ($record) => url('/api/reports/event-summary-pdf/'.$record->id))
+                    ->url(fn ($record) => route('reports.pdf-summary', $record))
                     ->openUrlInNewTab(),
                 Action::make('export_payments')
                     ->label('Payments')
                     ->icon('heroicon-o-banknotes')
-                    ->url(fn ($record) => url('/api/reports/payments/'.$record->id))
+                    ->url(fn ($record) => route('reports.payments', $record))
                     ->openUrlInNewTab(),
                 Action::make('export_scanner_activity')
                     ->label('Scanner Activity')
                     ->icon('heroicon-o-qr-code')
-                    ->url(fn ($record) => url('/api/reports/scanner-activity/'.$record->id))
+                    ->url(fn ($record) => route('reports.scanner-activity', $record))
                     ->openUrlInNewTab(),
                 Action::make('export_category_summary')
                     ->label('Category Summary')
                     ->icon('heroicon-o-chart-bar')
-                    ->url(fn ($record) => url('/api/reports/category-summary/'.$record->id))
+                    ->url(fn ($record) => route('reports.category-summary', $record))
                     ->openUrlInNewTab(),
                 Action::make('export_card_delivery')
                     ->label('Card Delivery')
                     ->icon('heroicon-o-credit-card')
-                    ->url(fn ($record) => url('/api/reports/card-delivery/'.$record->id))
+                    ->url(fn ($record) => route('reports.card-delivery', $record))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([

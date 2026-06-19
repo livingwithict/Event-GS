@@ -2,7 +2,7 @@
 
 use App\Imports\RegistrationsImport;
 use App\Models\Event;
-use App\Models\Registration;
+use App\Models\ImportStaging;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -11,7 +11,7 @@ class RegistrationImportTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_import_creates_registrations_from_valid_rows(): void
+    public function test_import_stages_valid_rows(): void
     {
         $event = Event::factory()->create();
         $rows = new Collection([
@@ -22,28 +22,26 @@ class RegistrationImportTest extends TestCase
         $import = new RegistrationsImport($event);
         $import->collection($rows);
 
-        $this->assertEquals(2, $import->getImportedCount());
+        $this->assertEquals(2, $import->getStagedCount());
         $this->assertEmpty($import->getErrors());
-        $this->assertEquals(2, Registration::where('event_id', $event->id)->count());
+        $this->assertEquals(2, ImportStaging::where('event_id', $event->id)->count());
+        $this->assertEquals('pending', ImportStaging::first()->status);
     }
 
     public function test_import_detects_duplicates_within_event(): void
     {
         $event = Event::factory()->create();
-        Registration::factory()->create([
-            'event_id' => $event->id,
-            'email' => 'duplicate@test.com',
-        ]);
+
+        $import = new RegistrationsImport($event, skipDuplicates: false);
 
         $rows = new Collection([
-            ['name' => 'Duplicate Person', 'email' => 'duplicate@test.com', 'phone' => '', 'organization' => '', 'designation' => '', 'address' => '', 'website' => ''],
+            ['name' => 'Person 1', 'email' => 'same@test.com', 'phone' => '', 'organization' => '', 'designation' => '', 'address' => '', 'website' => ''],
+            ['name' => 'Person 2', 'email' => 'same@test.com', 'phone' => '', 'organization' => '', 'designation' => '', 'address' => '', 'website' => ''],
         ]);
 
-        $import = new RegistrationsImport($event);
         $import->collection($rows);
 
-        $this->assertEquals(0, $import->getImportedCount());
-        $this->assertNotEmpty($import->getErrors());
+        $this->assertEquals(2, $import->getStagedCount());
     }
 
     public function test_import_validates_email_format(): void
@@ -56,7 +54,7 @@ class RegistrationImportTest extends TestCase
         $import = new RegistrationsImport($event);
         $import->collection($rows);
 
-        $this->assertEquals(0, $import->getImportedCount());
+        $this->assertEquals(0, $import->getStagedCount());
         $this->assertNotEmpty($import->getErrors());
     }
 
@@ -70,6 +68,6 @@ class RegistrationImportTest extends TestCase
         $import = new RegistrationsImport($event);
         $import->collection($rows);
 
-        $this->assertEquals(0, $import->getImportedCount());
+        $this->assertEquals(0, $import->getStagedCount());
     }
 }

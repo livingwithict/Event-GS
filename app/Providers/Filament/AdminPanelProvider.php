@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Controllers\EventSwitcherController;
 use App\Http\Middleware\AdminSessionTimeout;
 use App\Http\Middleware\EnsureFilamentAccess;
 use Filament\Http\Middleware\Authenticate;
@@ -89,6 +90,9 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 EnsureFilamentAccess::class,
-            ]);
+            ])
+            ->renderHook('panels::sidebar.nav.start', fn () => view('components.event-switcher', [
+                'activeEvent' => EventSwitcherController::getActiveEvent(),
+            ]));
     }
 }

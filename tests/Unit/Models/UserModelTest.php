@@ -17,12 +17,12 @@ class UserModelTest extends TestCase
     public function test_user_role_check_methods(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin']);
-        $manager = User::factory()->create(['role' => 'event_manager']);
+        $manager = User::factory()->create(['role' => 'admin']);
         $scanner = User::factory()->create(['role' => 'scanner']);
         $viewer = User::factory()->create(['role' => 'viewer']);
 
         $this->assertTrue($admin->isSuperAdmin());
-        $this->assertTrue($manager->isEventManager());
+        $this->assertTrue($manager->isAdmin());
         $this->assertTrue($scanner->isScanner());
         $this->assertTrue($viewer->isViewer());
     }

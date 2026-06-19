@@ -85,6 +85,13 @@ class Event extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'event_user')
+            ->withTimestamps()
+            ->withPivot('assigned_by');
+    }
+
     public function getStats(): array
     {
         return [

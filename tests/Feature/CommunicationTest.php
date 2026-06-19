@@ -20,7 +20,7 @@ class CommunicationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->manager = User::factory()->create(['role' => 'event_manager']);
+        $this->manager = User::factory()->create(['role' => 'admin']);
     }
 
     public function test_send_invites_dispatches_bulk_email_job(): void

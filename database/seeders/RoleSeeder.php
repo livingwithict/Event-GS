@@ -12,10 +12,11 @@ class RoleSeeder extends Seeder
     {
         $users = [
             ['email' => 'admin@ictfoundation.org.np', 'name' => 'Super Admin', 'role' => 'super_admin'],
-            ['email' => 'manager@ictfoundation.org.np', 'name' => 'Event Manager', 'role' => 'event_manager'],
+            ['email' => 'admin2@ictfoundation.org.np', 'name' => 'Admin', 'role' => 'admin'],
+            ['email' => 'manager@ictfoundation.org.np', 'name' => 'Event Manager', 'role' => 'manager'],
             ['email' => 'scanner@ictfoundation.org.np', 'name' => 'Scanner User', 'role' => 'scanner'],
             ['email' => 'viewer@ictfoundation.org.np', 'name' => 'Viewer', 'role' => 'viewer'],
-            ['email' => 'regstaff@ictfoundation.org.np', 'name' => 'Registration Staff', 'role' => 'registration_staff'],
+            ['email' => 'manager2@ictfoundation.org.np', 'name' => 'Manager 2', 'role' => 'manager'],
             ['email' => 'finance@ictfoundation.org.np', 'name' => 'Finance User', 'role' => 'finance'],
         ];
 

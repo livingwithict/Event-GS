@@ -19,7 +19,10 @@ class RecentRegistrationsTable extends TableWidget
     {
         return $table
             ->query(
-                Registration::with(['event', 'category'])->latest()->limit(10)
+                Registration::with(['event', 'category'])
+                    ->when(session('active_event_id'), fn ($q) => $q->where('event_id', session('active_event_id')))
+                    ->latest()
+                    ->limit(10)
             )
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->limit(25),
