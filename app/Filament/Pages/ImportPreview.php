@@ -76,7 +76,7 @@ class ImportPreview extends Page implements HasTable
                     ]);
 
                     $import = new RegistrationsImport($event, batch: $batch);
-                    Excel::import($import, storage_path('app/public/'.$data['file']));
+                    Excel::import($import, storage_path('app/private/'.$data['file']));
 
                     Notification::make()
                         ->title('Import Complete')

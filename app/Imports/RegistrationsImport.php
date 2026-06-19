@@ -53,11 +53,13 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                if (! empty($phone) && ! preg_match('/^(\+977|0)?9\d{9}$/', $phone)) {
-                    $this->recordError($rowNumber, $row, 'Invalid Nepali phone number.');
+                $normalizedPhone = $this->normalizePhone($phone);
+                if (! empty($phone) && ! $normalizedPhone) {
+                    $this->recordError($rowNumber, $row, 'Invalid phone number format.');
 
                     continue;
                 }
+                $phone = $normalizedPhone ?: '';
 
                 $gender = trim($row['gender'] ?? '');
                 if (! empty($gender) && ! in_array($gender, ['male', 'female', 'other'])) {
@@ -149,6 +151,30 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
         }
 
         return (array) $row;
+    }
+
+    private function normalizePhone(string $phone): ?string
+    {
+        $phone = trim($phone);
+
+        if ($phone === '' || $phone === '0') {
+            return null;
+        }
+
+        $stripped = preg_replace('/[^\d+]/', '', $phone);
+
+        // CSV parsers may strip the + from numbers like +9779800000001 → 9779800000001
+        // Detect 977-prefixed 13-digit numbers and re-add the +
+        if (str_starts_with($stripped, '977') && strlen($stripped) >= 13 && strlen($stripped) <= 14) {
+            $stripped = '+'.$stripped;
+        }
+
+        // Must have at least 10 digits
+        if (preg_match('/^\+?\d{10,15}$/', $stripped)) {
+            return $stripped;
+        }
+
+        return null;
     }
 
     private function recordError(int $rowNumber, $row, string $message): void
