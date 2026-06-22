@@ -184,7 +184,7 @@ class CommunicationService
     {
         $token = config('services.sparrow.token');
         $baseUrl = config('services.sparrow.base_url');
-        $mobile = implode(',', $phoneNumbers);
+        $mobile = implode(',', array_map([$this, 'normalizePhone'], $phoneNumbers));
 
         $response = Http::withToken($token)
             ->acceptJson()
@@ -207,6 +207,21 @@ class CommunicationService
             'data' => $data,
             'status' => $response->status(),
         ];
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/[^\d]/', '', $phone);
+
+        if (str_starts_with($digits, '977') && strlen($digits) === 13) {
+            return substr($digits, 3);
+        }
+
+        if (str_starts_with($digits, '0') && strlen($digits) === 11) {
+            return substr($digits, 1);
+        }
+
+        return $digits;
     }
 
     public function sendRegistrationConfirmation(Registration $registration, Event $event): void

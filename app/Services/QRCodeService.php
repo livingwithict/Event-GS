@@ -9,7 +9,7 @@ class QRCodeService
 {
     public function getPayload(Registration $registration): string
     {
-        return config('app.url').'/checkin/t/'.$registration->qr_hash;
+        return config('app.url').'/checkin/t/'.$registration->guest_number;
     }
 
     public function generateSvg(Registration $registration): string
@@ -36,13 +36,13 @@ class QRCodeService
         if (str_starts_with($code, 'http')) {
             $token = basename(parse_url($code, PHP_URL_PATH));
 
-            return $this->resolveFromToken($token);
+            return $this->resolve($token);
         }
 
         if (str_starts_with($code, '/') || str_contains($code, '/checkin/t/')) {
             $token = basename($code);
 
-            return $this->resolveFromToken($token);
+            return $this->resolve($token);
         }
 
         if (strlen($code) === 36 && str_contains($code, '-')) {

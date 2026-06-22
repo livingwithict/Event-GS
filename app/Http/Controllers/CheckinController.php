@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Registration;
 use App\Services\QRCodeService;
 
 class CheckinController extends Controller
 {
     public function show(string $token)
     {
-        $reg = Registration::where('qr_hash', $token)->first();
+        $qrService = new QRCodeService;
+        $reg = $qrService->resolve($token);
 
         if (! $reg) {
             return response()->view('checkin.invalid', [], 404);
@@ -17,7 +17,6 @@ class CheckinController extends Controller
 
         $reg->load(['event', 'category']);
 
-        $qrService = new QRCodeService;
         $qrSvg = $qrService->generateSvg($reg);
 
         return view('checkin.verify', [

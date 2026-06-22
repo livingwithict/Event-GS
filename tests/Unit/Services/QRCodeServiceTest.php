@@ -35,7 +35,7 @@ class QRCodeServiceTest extends TestCase
         $payload = $this->service->getPayload($reg);
 
         $this->assertStringContainsString('/checkin/t/', $payload);
-        $this->assertStringContainsString($reg->qr_hash, $payload);
+        $this->assertStringContainsString($reg->guest_number, $payload);
     }
 
     public function test_resolve_valid_uuid_returns_registration(): void
