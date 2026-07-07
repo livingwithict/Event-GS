@@ -15,7 +15,9 @@ class Payment extends Model
     protected $fillable = [
         'registration_id', 'event_id', 'category_id',
         'amount_paisa', 'subtotal', 'tax_amount', 'currency', 'transaction_id',
-        'invoice_number', 'gateway_txn_id', 'payment_status', 'paid_at', 'expires_at',
+        'invoice_number', 'gateway_txn_id', 'batch_id',
+        'debit_bank_code', 'charge_amount_paisa', 'credit_status',
+        'payment_status', 'paid_at', 'expires_at',
         'gateway_response', 'verified_by', 'verified_at',
     ];
 
@@ -23,6 +25,7 @@ class Payment extends Model
     {
         return [
             'amount_paisa' => 'integer',
+            'charge_amount_paisa' => 'integer',
             'subtotal' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'paid_at' => 'datetime',
@@ -77,6 +80,21 @@ class Payment extends Model
         return in_array($this->payment_status, ['failed', 'cancelled', 'expired']);
     }
 
+    public function isRefunded(): bool
+    {
+        return $this->payment_status === 'refunded';
+    }
+
+    public function markAsRefunded(?int $verifierId = null, ?array $gatewayResponse = []): void
+    {
+        $this->update([
+            'payment_status' => 'refunded',
+            'verified_by' => $verifierId,
+            'verified_at' => now(),
+            'gateway_response' => array_merge($this->gateway_response ?? [], $gatewayResponse ?: []),
+        ]);
+    }
+
     public function markAsSuccess(string $gatewayTxnId, array $gatewayResponse = []): void
     {
         $this->update([
@@ -93,6 +111,26 @@ class Payment extends Model
         ]);
     }
 
+    public function recordReconciliationDetails(array $detailResponse): void
+    {
+        $this->update(array_filter([
+            'batch_id' => isset($detailResponse['batchId']) ? (string) $detailResponse['batchId'] : null,
+            'debit_bank_code' => isset($detailResponse['debitBankCode']) ? (string) $detailResponse['debitBankCode'] : null,
+            'charge_amount_paisa' => isset($detailResponse['chargeAmt']) ? (int) $detailResponse['chargeAmt'] : null,
+            'credit_status' => isset($detailResponse['creditStatus']) ? (string) $detailResponse['creditStatus'] : null,
+            'gateway_txn_id' => isset($detailResponse['txnId']) ? (string) $detailResponse['txnId'] : $this->gateway_txn_id,
+        ], fn ($v) => $v !== null));
+    }
+
+    public function isMerchantCreditSuccess(): bool
+    {
+        if (! $this->credit_status) {
+            return true;
+        }
+
+        return in_array($this->credit_status, ['000', '999', 'DEFER'], true);
+    }
+
     public function markAsFailed(array $gatewayResponse = []): void
     {
         $this->update([
@@ -103,7 +141,10 @@ class Payment extends Model
 
     public static function generateTransactionId(): string
     {
-        return 'PAY-'.now()->format('YmdHis').'-'.strtoupper(Str::random(6));
+        $ts = strtoupper(base_convert((string) now()->timestamp, 10, 36));
+        $rand = strtoupper(Str::random(7));
+
+        return 'P'.$ts.substr($rand, 0, 7);
     }
 
     public static function generateInvoiceNumber(): string

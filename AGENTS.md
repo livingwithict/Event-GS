@@ -10,12 +10,34 @@
 ```bash
 pkill -9 -f "artisan serve|queue:work|vite"
 php artisan config:clear
-php -d display_errors=Off artisan serve --port=8000 &
-php artisan queue:work --tries=3 &
+
+# BOTH stderr AND stdout must be redirected to prevent "broken pipe" notices
+# that corrupt responses (especially Livewire JSON). Use dedicated log files:
+nohup php -d display_errors=Off artisan serve --port=8000 > /tmp/serve-stdout.log 2> /tmp/serve-stderr.log &
+php artisan queue:work --tries=3 > /tmp/queue.log 2>&1 &
 npm run dev &
 ```
 
+Then verify with:
+```bash
+php artisan dev:check    # port scan, response integrity, sessions, orphans
+```
+
 `composer dev` is broken — it tries to run `php artisan horizon` which is in `dont-discover`.
+
+### Known issue: "Notice: file_put_contents() ... Broken pipe" / login fails silently
+
+**Root cause:** PHP's built-in dev server writes request logs to `php://stdout`. When stdout is a closed pipe (detached terminal, expired shell session), the write fails with `errno=32 Broken pipe`. If `display_errors` is on or PHP emits the notice anyway, it gets prepended to every response:
+
+- HTML pages get an ugly `<br /><b>Notice</b>` banner at the top
+- Livewire JSON responses get corrupted → `SyntaxError: Unexpected token '<'` in the browser console → login form submits but never redirects
+- SVG icons render with escaped quotes because the JSON parser fails
+
+**Fix checklist:**
+1. Run `php artisan dev:check --ports=8000,8001,8002,5173` — any orphan PHP servers on unexpected ports? Kill them.
+2. Run `curl -s http://localhost:8000/admin/login | head -c 50` — the first 50 bytes MUST be `<!DOCTYPE`. If it starts with `<br`, the server is corrupt.
+3. Kill all PHP servers (`pkill -9 -f "artisan serve"`), then restart with `nohup` as shown above.
+4. Run `php artisan dev:check` again — response integrity should show "Clean HTML ✓".
 
 ## Database
 
@@ -52,7 +74,7 @@ After changing `@source`, run `npm run build` to rebuild CSS.
 
 ## Auth & roles
 
-Users have a simple `role` string column — **not** Spatie roles/permissions. Role hierarchy:
+Users have a simple `role` string column — **not** Spatie roles/permissions. Spatie `laravel-permission` tables exist in the DB (migrated) but are empty and unused. Do not add `HasRoles` to any model. Role hierarchy:
 
 | Role | Admin Panel | Notes |
 |------|:---:|-------|
@@ -69,6 +91,11 @@ Users have a simple `role` string column — **not** Spatie roles/permissions. R
 - Login: `admin@ictfoundation.org.np` / `password` (after seeding)
 - **Never use `$this->middleware()` in controllers** — Laravel 11 Controller base class doesn't have it. Apply middleware on routes instead.
 - User management: `UserResource` under Settings nav. SA creates admins/managers; Admin creates managers only.
+- **Auth logging:** Login successes and failures are logged to `storage/logs/auth-YYYY-MM-DD.log`. If a login fails silently (no error message), check this log first. Failed attempts include email, IP, and user agent. Use `php artisan auth:diagnose` to run a full 7-point diagnostic.
+- **Login silently loops / stuck on login page:** Three possible culprits:
+  1. **SPA mode**: `->spa()` is enabled with `/admin/login` and `/admin/logout` as `spaUrlExceptions`. If these exceptions are missing, Livewire intercepts the post-login redirect with a stale CSRF token → 419 errors → user stays on login page. Added in `AdminPanelProvider.php`.
+  2. **Broken pipe notices**: PHP dev server writing to closed stdout corrupts Livewire JSON responses. Run `php artisan dev:check` — response integrity must show "Clean HTML ✓". See Known Issue in "How to run".
+  3. **SESSION_DOMAIN mismatch**: `.env.local` sets `SESSION_DOMAIN=localhost`. Accessing via `http://127.0.0.1:8000` will NOT match this domain — cookies are never sent, sessions are never persisted. Always use `http://localhost:8000` in dev.
 
 ## Event system
 
@@ -79,10 +106,9 @@ Users have a simple `role` string column — **not** Spatie roles/permissions. R
 - Event-user assignments in `event_user` pivot table (`event_id`, `user_id`, `assigned_by`)
 
 ### Single event dashboard
-- `/admin/events` is now a `ViewRecord` showing the selected event's details (not a table list)
-- All 7 dashboard widgets scope to `session('active_event_id')`
+- `/admin/events` is a `ListRecords` table — select an event to view/edit/export.
+- All 7 dashboard widgets scope to `session('active_event_id')`, set via the sidebar event-switcher.
 - Key resources (Registrations, Payments, Categories, ScanActions) auto-filter by active event via `->modifyQueryUsing()`
-- `ListEvents` page extends `ViewRecord`, loads event from session, enforces manager access
 
 ### Event settings
 - Toggle settings stored in `events.settings` JSONB column
@@ -130,6 +156,19 @@ These are `auth`-protected web routes, not `auth:sanctum` API routes. The contro
 - Waitlist: `settings.enable_waitlist` on event, sets `approval_status = 'waitlisted'`
 - Companion booking: `companion_count` field on registration form
 
+## ConnectIPS payment integration
+
+Full docs: `docs/connectips-integration.md`. Architecture summary:
+
+- `app/Services/Payment/ConnectIPSService.php` — token signing (SHA256 + RSA), initiate (auto-submit form), validateTxn, getTxnDetail, result interpretation
+- `app/Services/Payment/PaymentRedirector.php` — shared service for both public + onsite paid flows (price → tax → discount → create Payment → auto-submit HTML)
+- `config/connectips.php` — all env-driven gateway config including mTLS cert path + SSL verify
+- UAT: `https://uat.connectips.com:7443`, Production: `https://login.connectips.com`
+- mTLS required for API calls — client cert extracted from NCHL's `.pfx` into `storage/app/keys/CREDITOR.pem` + `.crt`
+- `connectips:test-flow --live` hits real NCHL; `connectips:test-flow` (mocked) tests the full pipeline
+- Reconciliation fields persisted: `gateway_txn_id`, `batch_id`, `debit_bank_code`, `charge_amount_paisa`, `credit_status`
+- `creditStatus` 000/999/DEFER = merchant-side success per NCHL spec
+
 ## SMS (Sociair/Sparrow)
 
 Config: `config/services.php` → `services.sparrow`. Env vars: `SMS_DRIVER`, `SPARROW_SMS_TOKEN`, `SPARROW_SMS_BASE_URL`, `SMS_BATCH_SIZE`. Driver `log` = dev (logs to console), `sparrow` = production API. Sender ID configured in Sociair dashboard, not env vars.
@@ -141,6 +180,15 @@ composer test                          # config:clear + test
 php artisan test tests/Feature/ScanTest  # single file
 ./vendor/bin/pint --test               # lint only
 ```
+
+## Diagnostic commands
+
+| Command | What it does |
+|---|---|
+| `php artisan dev:check [--kill] [--ports=8000,8001,8002,5173]` | Scans dev ports for PHP processes, finds orphans, checks response integrity (no PHP notices corrupting HTML/JSON), verifies sessions, lists log files. `--kill` terminates found orphans. |
+| `php artisan deploy:check` | Pre-deploy checklist: config/route/event/view cache, DB connectivity, pending migrations, APP_KEY, APP_DEBUG, required env vars (incl. ConnectIPS), PHP extensions, memory limit, git status. |
+| `php artisan auth:diagnose [email] [password] [--attempt]` | Full auth diagnostic: user exists? password hash match? hash algorithm? role in allowed list? rate limit status? session/auth driver config? Live HTTP login test that captures both `Login` and `Failed` events. |
+| `php artisan connectips:test-flow [--live]` | End-to-end ConnectIPS test: creates event + paid category → registers attendee → generates auto-submit form → calls validatetxn (mocked or live) → gettxndetail → records reconciliation. Cleans up test data. |
 
 ## Navigation groups
 

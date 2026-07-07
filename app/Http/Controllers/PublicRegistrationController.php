@@ -10,6 +10,7 @@ use App\Models\PromoCode;
 use App\Models\Registration;
 use App\Services\CommunicationService;
 use App\Services\Payment\ConnectIPSService;
+use App\Services\Payment\PaymentRedirector;
 use Illuminate\Support\Str;
 
 class PublicRegistrationController extends Controller
@@ -176,7 +177,7 @@ class PublicRegistrationController extends Controller
             $totalEffectivePrice = $effectivePrice * (1 + $companionCount);
             $totalDiscount = $discountAmount * (1 + $companionCount);
 
-            return $this->initiatePayment($reg, $event, $category, $totalDiscount, $promoCode, $totalEffectivePrice);
+            return $this->initiatePaymentRedirect($reg, $event, $category, $totalDiscount, $promoCode, $totalEffectivePrice);
         }
 
         if ($approvalStatus === 'approved') {
@@ -227,28 +228,68 @@ class PublicRegistrationController extends Controller
 
         try {
             $ipsService = new ConnectIPSService;
-            $result = $ipsService->validatePayment($payment);
+            $validateResult = $ipsService->validatePayment($payment);
+            $interpreted = $ipsService->interpretValidationResult($payment, $validateResult);
 
-            if (($result['status'] ?? '') === 'SUCCESS') {
-                $payment->markAsSuccess(
-                    $result['gateway_txn_id'] ?? $txnId,
-                    $result
-                );
+            switch ($interpreted['outcome']) {
+                case 'success':
+                    $detailResult = [];
+                    try {
+                        $detailResult = $ipsService->getTransactionDetail($payment);
+                    } catch (\Throwable $e) {
+                        logger()->warning('ConnectIPS getTransactionDetail failed after successful validate: '.$e->getMessage());
+                    }
 
-                $this->sendConfirmation($payment->registration, $event, $payment);
+                    $gatewayTxnId = $interpreted['gateway_txn_id'] ?? $txnId;
+                    $payment->markAsSuccess($gatewayTxnId, $validateResult);
 
-                return redirect()->route('register.success', ['slug' => $slug])
-                    ->with('guest_number', $payment->registration->guest_number)
-                    ->with('qr_hash', $payment->registration->qr_hash);
+                    if (! empty($detailResult)) {
+                        $payment->recordReconciliationDetails($detailResult);
+                    }
+
+                    if (! $payment->isMerchantCreditSuccess()) {
+                        $payment->update([
+                            'payment_status' => 'failed',
+                            'gateway_response' => array_merge($validateResult, [
+                                'reconciliation' => $detailResult,
+                                'note' => 'creditStatus not in 000/999/DEFER',
+                            ]),
+                        ]);
+
+                        return view('register.payment-failed', [
+                            'event' => $event,
+                            'payment' => $payment,
+                            'reason' => 'Merchant credit status is not confirmed by gateway.',
+                        ]);
+                    }
+
+                    $this->sendConfirmation($payment->registration, $event, $payment);
+
+                    return redirect()->route('register.success', ['slug' => $slug])
+                        ->with('guest_number', $payment->registration->guest_number)
+                        ->with('qr_hash', $payment->registration->qr_hash);
+
+                case 'pending':
+                    logger()->info('ConnectIPS: payment incomplete, leaving initiated', [
+                        'payment_id' => $payment->id,
+                        'txn_id' => $txnId,
+                    ]);
+
+                    return view('register.payment-pending', [
+                        'event' => $event,
+                        'payment' => $payment,
+                    ]);
+
+                case 'failed':
+                default:
+                    $payment->markAsFailed($validateResult);
+
+                    return view('register.payment-failed', [
+                        'event' => $event,
+                        'payment' => $payment,
+                        'reason' => $interpreted['status_desc'] ?? 'Payment verification failed.',
+                    ]);
             }
-
-            $payment->markAsFailed($result);
-
-            return view('register.payment-failed', [
-                'event' => $event,
-                'payment' => $payment,
-                'reason' => $result['statusDesc'] ?? 'Payment verification failed.',
-            ]);
         } catch (\Throwable $e) {
             logger()->error('Payment validation failed: '.$e->getMessage());
 
@@ -309,48 +350,10 @@ class PublicRegistrationController extends Controller
         return $this->initiatePayment($reg, $event, $category, $discountAmount, $promoCode);
     }
 
-    private function initiatePayment(Registration $reg, Event $event, ParticipantCategory $category, float $discountAmount = 0, ?PromoCode $promoCode = null, ?float $totalPrice = null)
+    private function initiatePaymentRedirect(Registration $reg, Event $event, ParticipantCategory $category, float $discountAmount = 0, ?PromoCode $promoCode = null, ?float $totalPrice = null)
     {
-        $originalAmount = $totalPrice ?? $this->getEffectivePrice($category);
-        $finalAmount = max(0, $originalAmount - $discountAmount);
-
-        $taxRate = (float) ($event->settings['tax_rate'] ?? 0);
-        $taxAmount = $taxRate > 0 ? round($finalAmount * $taxRate / 100, 2) : 0;
-        $totalWithTax = $finalAmount + $taxAmount;
-        $amountPaisa = (int) round($totalWithTax * 100);
-
-        $metadata = [
-            'original_price' => $originalAmount,
-            'discount_amount' => $discountAmount,
-            'subtotal' => $finalAmount,
-            'tax_rate' => $taxRate,
-            'tax_amount' => $taxAmount,
-            'total' => $totalWithTax,
-        ];
-
-        if ($promoCode) {
-            $metadata['promo_code'] = $promoCode->code;
-            $metadata['discount_type'] = $promoCode->discount_type;
-            $metadata['discount_value'] = $promoCode->discount_value;
-            $promoCode->incrementUsage();
-        }
-
-        $payment = Payment::create([
-            'registration_id' => $reg->id,
-            'event_id' => $event->id,
-            'category_id' => $category->id,
-            'amount_paisa' => $amountPaisa,
-            'subtotal' => $finalAmount,
-            'tax_amount' => $taxAmount,
-            'currency' => $category->currency ?? 'NPR',
-            'transaction_id' => Payment::generateTransactionId(),
-            'payment_status' => 'pending',
-            'expires_at' => now()->addMinutes(30),
-            'gateway_response' => $metadata,
-        ]);
-
-        $ipsService = new ConnectIPSService;
-        $html = $ipsService->initiatePayment($payment);
+        $redirector = app(PaymentRedirector::class);
+        $html = $redirector->initiate($reg, $event, $category, $discountAmount, $promoCode, $totalPrice);
 
         return response($html);
     }

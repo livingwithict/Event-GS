@@ -7,6 +7,7 @@ use App\Filament\Resources\PaymentResource\Pages;
 use App\Models\Payment;
 use App\Services\CommunicationService;
 use App\Services\InvoiceService;
+use App\Services\Payment\ConnectIPSService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -123,6 +124,56 @@ class PaymentResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('revalidate')
+                    ->label('Re-validate')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->visible(fn (Payment $record) => in_array($record->payment_status, ['pending', 'initiated', 'failed', 'expired', 'cancelled']))
+                    ->action(function (Payment $record) {
+                        $service = app(ConnectIPSService::class);
+                        try {
+                            $validate = $service->validatePayment($record);
+                            $interpreted = $service->interpretValidationResult($record, $validate);
+
+                            if ($interpreted['outcome'] === 'success') {
+                                $detail = $service->getTransactionDetail($record);
+                                $record->markAsSuccess(
+                                    $interpreted['gateway_txn_id'] ?? $record->transaction_id,
+                                    $validate
+                                );
+                                $record->recordReconciliationDetails($detail);
+
+                                Notification::make()
+                                    ->success()
+                                    ->title('Payment validated')
+                                    ->body('Gateway confirmed success. Reconciliation details saved.')
+                                    ->send();
+                            } elseif ($interpreted['outcome'] === 'pending') {
+                                Notification::make()
+                                    ->info()
+                                    ->title('Transaction still pending')
+                                    ->body('Customer has not completed the payment yet.')
+                                    ->send();
+                            } else {
+                                $record->update([
+                                    'payment_status' => 'failed',
+                                    'gateway_response' => $validate,
+                                ]);
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Payment failed')
+                                    ->body($interpreted['status_desc'])
+                                    ->send();
+                            }
+                        } catch (\Throwable $e) {
+                            logger()->error('Re-validate failed: '.$e->getMessage());
+                            Notification::make()
+                                ->danger()
+                                ->title('Re-validate error')
+                                ->body($e->getMessage())
+                                ->send();
+                        }
+                    }),
                 Action::make('verify_payment')
                     ->label('Verify')
                     ->icon('heroicon-o-check-badge')
@@ -167,6 +218,20 @@ class PaymentResource extends Resource
                             ->warning()
                             ->title('Payment marked invalid')
                             ->body('Payment has been marked as failed.')
+                            ->send();
+                    }),
+                Action::make('mark_refunded')
+                    ->label('Refund')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->visible(fn (Payment $record) => $record->payment_status === 'success')
+                    ->requiresConfirmation()
+                    ->action(function (Payment $record) {
+                        $record->markAsRefunded(auth()->id(), ['method' => 'manual', 'refunded_at' => now()->toDateTimeString()]);
+                        Notification::make()
+                            ->success()
+                            ->title('Payment refunded')
+                            ->body('Status set to refunded. Process refund in NCHL merchant portal separately.')
                             ->send();
                     }),
                 Action::make('download_invoice')

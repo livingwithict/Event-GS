@@ -111,6 +111,20 @@
                         </div>
                     </div>
 
+                    @if($event->settingEnabled('enable_payment'))
+                        <div class="field">
+                            <label for="payment_method">Payment Method</label>
+                            <select id="payment_method" name="payment_method">
+                                <option value="none" {{ old('payment_method', 'none') === 'none' ? 'selected' : '' }}>No payment (complimentary / free)</option>
+                                <option value="gateway" {{ old('payment_method') === 'gateway' ? 'selected' : '' }}>Pay now via ConnectIPS (online)</option>
+                                <option value="cash" {{ old('payment_method') === 'cash' ? 'selected' : '' }}>Pay later (cash / bank transfer)</option>
+                            </select>
+                            <div class="field-error" id="payment-method-hint" style="display:none">Selecting a paid category is required to use the gateway option.</div>
+                        </div>
+                    @else
+                        <input type="hidden" name="payment_method" value="none">
+                    @endif
+
                     <div class="toggle-row">
                         <input type="checkbox" id="send_notifications" name="send_notifications" value="1" {{ old('send_notifications') ? 'checked' : '' }}>
                         <label for="send_notifications">Send confirmation email/SMS</label>
