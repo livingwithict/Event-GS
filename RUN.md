@@ -2,7 +2,7 @@
 
 Laravel 13 + Filament v5 event management app. Below is everything you need to launch the three dev servers on **Windows + Herd** (PHP + nginx only — no DB bundled).
 
-> For macOS/Linux/WSL, see the bash snippet at the bottom. For full architecture, model relationships, and API surface, see [`CLAUDE.md`](CLAUDE.md). For the gotcha list, see [`AGENTS.md`](AGENTS.md).
+> For macOS/Linux/WSL, see the bash snippet at the bottom. For the gotcha list, see [`AGENTS.md`](AGENTS.md).
 
 ---
 

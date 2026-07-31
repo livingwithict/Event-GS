@@ -1,15 +1,15 @@
 # AGENTS.md
 
-> **Project context:** Laravel 13 + Filament v5 event management app for ICT Foundation Nepal. Full overview in `CLAUDE.md` (tech stack, setup, model relationships, API surface). This file is the **gotcha list** — only what's hard to infer from filenames.
+> **Project context:** Laravel 13 + Filament v5 event management app for ICT Foundation Nepal. Dev-run guide: `RUN.md`. This file is the **gotcha list** — only what's hard to infer from filenames.
 
 ## Environment
 
-- **`.env` must exist** in the project root. There is no `.env` by default — `.env.example` (pgsql config) and `.env.local` (pgsql config + Sparrow token) are templates. On Windows + Herd, if no `.env` is present Laravel falls back to its built-in `sqlite` defaults (`database/database.sqlite`), which **silently breaks** anything pgsql-specific (see Database below). Copy `.env.local` → `.env` and set `DB_PASSWORD`.
-- `.env.local` is **not** auto-loaded by Laravel or Herd. It's a checked-in template only. Ignore any docs that say it overrides `.env` — that convention is not implemented.
+- **`.env` must exist** in the project root. There is no `.env` by default — `.env.example` (pgsql, no secrets) and `.env.local.bak` (pgsql + Sparrow token; renamed from `.env.local` in `cf59fc8`) are templates. On Windows + Herd, if no `.env` is present Laravel falls back to its built-in `sqlite` defaults (`database/database.sqlite`), which **silently breaks** anything pgsql-specific (see Database below). Copy `.env.example` (or `.env.local.bak`) → `.env` and set `DB_PASSWORD`.
+- Templates are **not** auto-loaded by Laravel or Herd. Ignore any docs that say `.env.local` overrides `.env` — that convention is not implemented (RUN.md's `Copy-Item .env.local .env` is stale too).
 - **`config:clear` is mandatory** after any `.env` change, DB switch, or `php artisan` config edit. Cached config survives env edits silently.
 - `README.md` is empty. Don't waste time reading it.
-- `composer dev` is broken — it tries to run `php artisan horizon` which is in `dont-discover` (`composer.json:81-83`). Use the manual block below.
-- `composer-setup.php` at project root is a leftover Composer installer — not part of the app, safe to delete.
+- `composer dev` is broken — it tries to run `php artisan horizon` which is in `dont-discover` (`composer.json:81-83`). Use the manual launch block in `RUN.md`.
+- `composer-setup.php` / `composer.phar` at project root are leftover Composer installers — not part of the app, safe to delete.
 
 ## Windows + Herd dev setup (non-obvious)
 
@@ -22,7 +22,14 @@
 
 ## How to run (dev)
 
-The block below assumes bash (macOS / Linux / WSL / Git Bash on Windows). Native Windows cmd / PowerShell needs the same commands without the leading `pkill` cleanup.
+Full step-by-step (env prep, launch, stop, troubleshooting): **`RUN.md`**. The essentials:
+
+- **Server:** `php -d display_errors=Off artisan serve --port=8000` — `display_errors=Off` + redirected log files are MANDATORY (see "Broken pipe" below).
+- **Queue:** `php artisan queue:work --tries=3` (database driver).
+- **Assets:** `npm run dev` (Vite dev server, host `127.0.0.1:5173`).
+- **Sanity:** `php artisan dev:check` — must report "Clean HTML ✓".
+
+macOS / Linux / WSL (Git Bash on Windows):
 
 ```bash
 # Optional: kill orphans from previous runs
@@ -40,30 +47,7 @@ npm run dev &
 php artisan dev:check
 ```
 
-**Windows PowerShell equivalent** (Herd is PHP+nginx only — no `pkill`, no `nohup`. Use `Start-Process` with separate stdout/stderr files):
-
-```powershell
-$env:Path = "C:\Users\User\.config\herd\bin;" + $env:Path
-$proj = "C:\Users\User\Documents\GitHub\event-management"
-$log  = "$env:USERPROFILE\dev-logs"; New-Item -ItemType Directory -Path $log -Force | Out-Null
-
-php artisan config:clear
-
-# Serve. `-d display_errors=Off` + redirected logs prevents the broken-pipe trap.
-Start-Process -FilePath php -ArgumentList "-d","display_errors=Off","artisan","serve","--port=8000" `
-  -WorkingDirectory $proj -RedirectStandardOutput "$log\serve-stdout.log" -RedirectStandardError "$log\serve-stderr.log" -WindowStyle Hidden
-
-# Queue worker — separate stdout AND stderr files (same file fails).
-Start-Process -FilePath php -ArgumentList "artisan","queue:work","--tries=3" `
-  -WorkingDirectory $proj -RedirectStandardOutput "$log\queue-stdout.log" -RedirectStandardError "$log\queue-stderr.log" -WindowStyle Hidden
-
-# Vite — npm is a .cmd shim, must be invoked via cmd.exe.
-Start-Process -FilePath cmd.exe -ArgumentList "/c","npm","run","dev" `
-  -WorkingDirectory $proj -RedirectStandardOutput "$log\vite-stdout.log" -RedirectStandardError "$log\vite-stderr.log" -WindowStyle Hidden
-
-Start-Sleep 5
-php artisan dev:check
-```
+Windows PowerShell (no `pkill`/`nohup` — use `Start-Process`): prepend `C:\Users\User\.config\herd\bin;` to `$env:Path`, then start each process with `-WorkingDirectory $proj` and **separate** stdout/stderr log files. `npm` must be launched via `cmd.exe /c "npm run dev"` (it's a `.cmd` shim). Copy-paste block: `RUN.md`.
 
 ### Known issue: "Notice: file_put_contents() ... Broken pipe" → login silently fails
 
@@ -98,7 +82,7 @@ php artisan dev:check
 - View-only resources: empty form schema `return $schema->components([])`, not infolist
 - CRUD toasts: override `getCreatedNotification()` / `getSavedNotification()` on the resource
 - Empty tables: `->emptyStateHeading()` / `->emptyStateDescription()` (Filament v5 has no default empty state)
-- Don't use Filament's `FileUpload` on a Page — it spawns infinite file chooser dialogs. Use a native `<input type="file">` (see CSV import below).
+- Filament's `FileUpload` works only inside an action form (see CSV import below) — a bare `FileUpload` as a page-body component spawns infinite file chooser dialogs.
 
 ## Tailwind v4
 
@@ -135,7 +119,7 @@ Theme lives in `resources/css/filament/admin/theme.css`. **No `tailwind.config.j
 
 Three likely culprits, in order:
 
-1. **SESSION_DOMAIN mismatch** — `.env` (copied from `.env.local`) sets `SESSION_DOMAIN=localhost`. Accessing via `http://127.0.0.1:8000` won't match → cookies never sent, sessions never persisted. Always use `http://localhost:8000` in dev.
+1. **SESSION_DOMAIN mismatch** — `.env` sets `SESSION_DOMAIN=localhost`. Accessing via `http://127.0.0.1:8000` won't match → cookies never sent, sessions never persisted. Always use `http://localhost:8000` in dev.
 2. **SPA mode missing exceptions** — `->spa()` is enabled in `AdminPanelProvider` with `/admin/login` and `/admin/logout` as `spaUrlExceptions`. If these exceptions are removed, Livewire intercepts the post-login redirect with a stale CSRF token → 419 errors → user stays on login page.
 3. **Broken pipe notices** — see "How to run" above. Run `php artisan dev:check`.
 
@@ -145,17 +129,17 @@ Diagnostic: `php artisan auth:diagnose [email] [password] [--attempt]` runs a 7-
 
 - **Event switcher** — Alpine dropdown injected into sidebar via `renderHook('panels::sidebar.nav.start', ...)` in `AdminPanelProvider`. Persists `session('active_event_id')` via `POST /event-switcher/switch`. `SetDefaultActiveEvent` listener sets first event on login.
 - **Single-event dashboard** — `/admin/events` is a `ListRecords` table. Key resources (Registrations, Payments, Categories, ScanActions) auto-filter by active event via `->modifyQueryUsing()`. Don't forget this when adding new scoped resources.
-- **`events.settings`** is JSONB accessed via `$event->settingEnabled('key')` (defaults to `true` if not set). The `Event` model has an accessor that merges defaults — **do not** add `'settings' => 'array'` cast alongside it. They conflict.
+- **`events.settings`** is JSONB with an `'array'` cast on `Event`, read via `$event->settingEnabled('key')` (defaults to `true` if not set). Do **not** add a `getSettingsAttribute()` accessor for it — an accessor and a cast on the same attribute conflict (the cast is already present in `Event::casts()`).
 - `storage/app/keys/` is the documented drop folder for ConnectIPS `.pfx`/`.pem` files (already gitignored via `storage/app/.gitignore`).
 
 ## CSV import (two-phase)
 
-`/admin/import-preview` → `ImportPreview` page → native file upload → `POST /import-upload` → `RegistrationsImport` stages rows in `import_staging` (status: `pending`) → per-row "Register" / "Skip" / bulk "Register Selected".
+`/admin` → **Import Guests** page (`ImportPreview`) → header action "Upload CSV / XLSX" (Filament `FileUpload` in an action form — works) → `RegistrationsImport` stages rows in `import_staging` (status: `pending`) → per-row "Register" / "Skip" / bulk "Register Selected". API equivalent: `POST /api/event/{event}/import`.
 
 Gotchas:
-- `+9779800000001` in CSV is converted to integer by the parser (drops the `+`). The import detects and re-prepends it.
-- Use `$file->hashName()` not `$file->store()` to preserve the file extension for the Maatwebsite Excel reader.
-- Column lookup is case-insensitive via the `col()` helper.
+- `+9779800000001` in CSV is converted to integer by the parser (drops the `+`). The import detects 977-prefixed 13–14 digit numbers and re-prepends it (`normalizePhone()` in `RegistrationsImport`).
+- Rows are validated per-row (name required; email/phone at least one; gender/meal_preference enum checks). Invalid rows → `import_errors` with the row number, never staged.
+- Don't place a bare Filament `FileUpload` as a page-body component — it spawns infinite file chooser dialogs. Keep it inside an action form, as `ImportPreview` does.
 
 ## Report downloads
 
@@ -189,7 +173,7 @@ Full docs: `docs/connectips-integration.md`. Service code: `app/Services/Payment
 - UAT: `https://uat.connectips.com:7443` — Production: `https://login.connectips.com` (no port)
 - mTLS required for API calls. Private key in `storage/app/keys/CREDITOR.{pem,pfx}` (gitignored).
 - **Key must be a proper 2048-bit RSA.** A 2047-bit or other malformed key will be accepted by `openssl_pkey_get_private` but `openssl_sign` fails with `bignum routines::no inverse` (OpenSSL 3.x is strict). If `connectips:test-flow` errors with this, regenerate: `php -r "openssl_pkey_export(openssl_pkey_new(['private_key_bits'=>2048,'private_key_type'=>OPENSSL_KEYTYPE_RSA]), \$pem); file_put_contents('storage/app/keys/CREDITOR.pem', \$pem);"` (with `OPENSSL_CONF` and `HOME` set, see Testing).
-- 12 `CONNECTIPS_*` env vars (see `.env.example` or `.env.local`).
+- 12 `CONNECTIPS_*` env vars (see `.env.example` or `.env.local.bak`).
 - Reconciliation fields persisted on `payments`: `gateway_txn_id`, `batch_id`, `debit_bank_code`, `charge_amount_paisa`, `credit_status`. `creditStatus` `000`/`999`/`DEFER` = merchant-side success.
 - End-to-end test: `php artisan connectips:test-flow` (mocked) / `--live` (real NCHL UAT). Self-cleans.
 - There is no refund API. Mark refunded in Filament; process the money in NCHL's merchant portal.
@@ -232,12 +216,14 @@ Test layout: `tests/Feature/*Test.php` and `tests/Unit/{Models,Services}/*Test.p
 - Queue/Cache: database driver (no Redis — shared hosting friendly)
 - Commit format: `feat:`, `fix:`, `docs:`, `chore:`
 - The `scanner-app/` directory has been **removed** — physical scanner devices return GuestID directly. Scan API still works (`POST /api/scan` accepts QR hash, UUID, or guest number via `QRCodeService::resolve()`)
-- Don't commit `storage/app/keys/*`, `.env`, or `.env.local`
+- Don't commit `storage/app/keys/*`, `.env`, or `.env.local.bak`
 
 ## Docs worth referencing
 
-- `CLAUDE.md` — project overview, full architecture, API routes
+- `developer-guide.md` — full onboarding doc: architecture, data model, project flows, API surface
+- `RUN.md` — step-by-step Windows+Herd dev run guide (env, launch, troubleshooting)
 - `docs/connectips-integration.md` — full NCHL spec, field lengths, error reference
-- `docs/feature-roadmap.md` — phase tracker, what's done vs. future
+- `docs/feature-roadmap.md` — phase tracker; Phases 1–15 done. Several unchecked Phase 16 items ARE built: promo codes, waitlist, approval-based reg, companion booking, onsite desk, early-bird pricing, payment expiry, badge collected, invoices.
 - `docs/architectural-design.md`, `docs/system-design.md` — design rationale
 - `DEPLOY.md` — production deploy steps
+- `opencode.json` — registers a Figma MCP (fill in `FIGMA_API_KEY` before use)
