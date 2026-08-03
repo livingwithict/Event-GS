@@ -11,16 +11,25 @@ use App\Exports\MealUsageExport;
 use App\Exports\NoShowExport;
 use App\Exports\PaymentExport;
 use App\Exports\ScannerActivityExport;
+use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Models\ScanActionType;
 use App\Models\ScanLog;
+use App\Support\CsvWriter;
 use Maatwebsite\Excel\Facades\Excel;
 use Spatie\Activitylog\Models\Activity;
 
 class ReportController extends Controller
 {
+    use AuthorizesEventAccess;
+
+    private function authorizeReport(Event $event): void
+    {
+        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+    }
+
     private function getFormat(): string
     {
         return request('format', 'csv') === 'xlsx'
@@ -35,6 +44,7 @@ class ReportController extends Controller
 
     public function attendance(Event $event)
     {
+        $this->authorizeReport($event);
         $day = request('day');
         $ext = $this->getExtension();
 
@@ -43,6 +53,7 @@ class ReportController extends Controller
 
     public function noShow(Event $event)
     {
+        $this->authorizeReport($event);
         $ext = $this->getExtension();
 
         return Excel::download(new NoShowExport($event), "noshow-{$event->slug}.{$ext}", $this->getFormat());
@@ -50,6 +61,7 @@ class ReportController extends Controller
 
     public function duplicateScans(Event $event)
     {
+        $this->authorizeReport($event);
         $duplicates = Activity::where('subject_type', Registration::class)
             ->where('description', 'like', 'Duplicate%')
             ->whereHasMorph('subject', Registration::class, function ($query) use ($event) {
@@ -57,16 +69,16 @@ class ReportController extends Controller
             })
             ->get();
 
-        $csv = "Time,Guest Name,Action,Meal Type\n";
+        $rows = [['Time', 'Guest Name', 'Action', 'Meal Type']];
         foreach ($duplicates as $log) {
-            $csv .= sprintf(
-                "%s,%s,%s,%s\n",
+            $rows[] = [
                 $log->created_at->toDateTimeString(),
                 $log->subject->name ?? 'Unknown',
                 $log->properties['action'] ?? '',
-                $log->properties['meal_type'] ?? ''
-            );
+                $log->properties['meal_type'] ?? '',
+            ];
         }
+        $csv = CsvWriter::write($rows);
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
@@ -76,6 +88,7 @@ class ReportController extends Controller
 
     public function communications(Event $event)
     {
+        $this->authorizeReport($event);
         $ext = $this->getExtension();
 
         return Excel::download(
@@ -87,6 +100,7 @@ class ReportController extends Controller
 
     public function mealUsage(Event $event)
     {
+        $this->authorizeReport($event);
         $day = request('day');
         $ext = $this->getExtension();
 
@@ -97,6 +111,7 @@ class ReportController extends Controller
 
     public function eventSummary(Event $event)
     {
+        $this->authorizeReport($event);
         $stats = $event->getStats();
         $total = $stats['total_registrations'];
         $noShows = $total - $stats['total_entries'];
@@ -108,22 +123,27 @@ class ReportController extends Controller
             })
             ->count();
 
-        $csv = "Event Summary\n\n";
-        $csv .= "Event Name,{$event->name}\n";
-        $csv .= 'Date,'.($event->start_datetime?->format('Y-m-d') ?? $event->event_date?->format('Y-m-d') ?? '')."\n";
-        $csv .= "Venue,{$event->venue}\n\n";
-        $csv .= "Statistics\n";
-        $csv .= "Metric,Count,Percentage\n";
-        $csv .= "Total Registrations,{$total},\n";
-        $csv .= "Total Entries,{$stats['total_entries']},".($total > 0 ? round(($stats['total_entries'] / $total) * 100, 1) : 0)."%\n";
-        $csv .= "No-Shows,{$noShows},".($total > 0 ? round(($noShows / $total) * 100, 1) : 0)."%\n";
-        $csv .= "Lunch Used,{$stats['lunch_used']},".($total > 0 ? round(($stats['lunch_used'] / $total) * 100, 1) : 0)."%\n";
-        $csv .= "Dinner Used,{$stats['dinner_used']},".($total > 0 ? round(($stats['dinner_used'] / $total) * 100, 1) : 0)."%\n";
-        $csv .= "Duplicate Scan Attempts,{$duplicates},\n";
+        $rows = [
+            ['Event Summary'],
+            [],
+            ['Event Name', $event->name],
+            ['Date', $event->start_datetime?->format('Y-m-d') ?? $event->event_date?->format('Y-m-d') ?? ''],
+            ['Venue', $event->venue],
+            [],
+            ['Statistics'],
+            ['Metric', 'Count', 'Percentage'],
+            ['Total Registrations', $total, ''],
+            ['Total Entries', $stats['total_entries'], ($total > 0 ? round(($stats['total_entries'] / $total) * 100, 1) : 0).'%'],
+            ['No-Shows', $noShows, ($total > 0 ? round(($noShows / $total) * 100, 1) : 0).'%'],
+            ['Lunch Used', $stats['lunch_used'], ($total > 0 ? round(($stats['lunch_used'] / $total) * 100, 1) : 0).'%'],
+            ['Dinner Used', $stats['dinner_used'], ($total > 0 ? round(($stats['dinner_used'] / $total) * 100, 1) : 0).'%'],
+            ['Duplicate Scan Attempts', $duplicates, ''],
+        ];
 
         if ($event->isMultiDay()) {
-            $csv .= "\nDaily Breakdown\n";
-            $csv .= 'Day,Date';
+            $rows[] = [];
+            $rows[] = ['Daily Breakdown'];
+            $header = ['Day', 'Date'];
 
             $day1Actions = ScanActionType::where('event_id', $event->id)
                 ->where('action_code', 'LIKE', 'DAY1_%')
@@ -134,13 +154,13 @@ class ReportController extends Controller
             $suffixes = $day1Actions->map(fn ($a) => str_replace('DAY1_', '', $a->action_code));
 
             foreach ($suffixes as $suffix) {
-                $csv .= ",{$suffix}";
+                $header[] = $suffix;
             }
-            $csv .= "\n";
+            $rows[] = $header;
 
             foreach ($event->getEventDays() as $index => $dayDate) {
                 $dayNum = $index + 1;
-                $csv .= "Day {$dayNum},".$dayDate->format('Y-m-d');
+                $row = ["Day {$dayNum}", $dayDate->format('Y-m-d')];
 
                 foreach ($suffixes as $suffix) {
                     $code = "DAY{$dayNum}_{$suffix}";
@@ -160,11 +180,13 @@ class ReportController extends Controller
                             ->count('participant_id');
                     }
 
-                    $csv .= ",{$count}";
+                    $row[] = $count;
                 }
-                $csv .= "\n";
+                $rows[] = $row;
             }
         }
+
+        $csv = CsvWriter::write($rows);
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
@@ -174,6 +196,7 @@ class ReportController extends Controller
 
     public function eventSummaryPdf(Event $event)
     {
+        $this->authorizeReport($event);
         $export = new EventSummaryPdfExport;
         $pdf = $export->generate($event);
 
@@ -185,6 +208,7 @@ class ReportController extends Controller
 
     public function payments(Event $event)
     {
+        $this->authorizeReport($event);
         $ext = $this->getExtension();
 
         return Excel::download(
@@ -196,6 +220,7 @@ class ReportController extends Controller
 
     public function scannerActivity(Event $event)
     {
+        $this->authorizeReport($event);
         $day = request('day');
         $ext = $this->getExtension();
 
@@ -208,6 +233,7 @@ class ReportController extends Controller
 
     public function categorySummary(Event $event)
     {
+        $this->authorizeReport($event);
         $ext = $this->getExtension();
 
         return Excel::download(
@@ -219,6 +245,7 @@ class ReportController extends Controller
 
     public function cardDelivery(Event $event)
     {
+        $this->authorizeReport($event);
         $ext = $this->getExtension();
 
         return Excel::download(

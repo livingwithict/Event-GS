@@ -20,6 +20,7 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -79,8 +80,13 @@ class EventResource extends Resource
                         TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
-                            ->prefix('/events/')
+                            ->prefix('/event/')
                             ->unique(ignoreRecord: true),
+                        Placeholder::make('public_registration_url')
+                            ->label('Public Registration URL')
+                            ->content(fn (?Event $record): string => $record
+                                ? route('register.show', ['slug' => $record->slug])
+                                : 'Available after saving the event.'),
                         RichEditor::make('description')
                             ->maxLength(65535)
                             ->columnSpanFull()
@@ -223,6 +229,14 @@ class EventResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('registration_url')
+                    ->label('Registration URL')
+                    ->state(fn (Event $record): string => route('register.show', ['slug' => $record->slug]))
+                    ->copyable()
+                    ->copyMessage('Registration URL copied')
+                    ->limit(42)
+                    ->tooltip(fn (Event $record): string => route('register.show', ['slug' => $record->slug]))
+                    ->toggleable(),
                 TextColumn::make('start_datetime')
                     ->dateTime('M j, Y H:i')
                     ->sortable()
@@ -377,6 +391,11 @@ class EventResource extends Resource
                     ->label('Card Delivery')
                     ->icon('heroicon-o-credit-card')
                     ->url(fn ($record) => route('reports.card-delivery', $record))
+                    ->openUrlInNewTab(),
+                Action::make('public_registration')
+                    ->label('Registration Page')
+                    ->icon('heroicon-o-link')
+                    ->url(fn (Event $record): string => route('register.show', ['slug' => $record->slug]))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([

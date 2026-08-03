@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\ScanActionType;
@@ -9,8 +10,11 @@ use App\Models\ScanLog;
 
 class EventDashboardController extends Controller
 {
+    use AuthorizesEventAccess;
+
     public function show(Event $event)
     {
+        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
         $day = request('day');
         $stats = $event->getStats();
         $total = $stats['total_registrations'];

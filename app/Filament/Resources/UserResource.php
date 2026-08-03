@@ -60,12 +60,13 @@ class UserResource extends Resource
                             ->hint(fn (string $context) => $context === 'edit' ? 'Leave blank to keep current password' : null),
                         Forms\Components\Select::make('role')
                             ->options(fn () => static::getRoleOptions())
+                            ->disabled(fn (?User $record) => $record?->id === Auth::id())
                             ->required()
                             ->default('manager'),
                     ]),
                 Section::make('Event Assignments')
                     ->description('Select the events this user can access.')
-                    ->visible(fn ($record) => $record?->role === 'manager' || ! $record)
+                    ->visible(fn (?User $record) => $record === null || in_array($record->role, ['manager', 'scanner', 'finance'], true))
                     ->schema([
                         Forms\Components\CheckboxList::make('assignedEvents')
                             ->label('Assigned Events')
@@ -109,6 +110,24 @@ class UserResource extends Resource
                 DeleteAction::make()
                     ->visible(fn (User $record) => $record->id !== Auth::id()),
             ]);
+    }
+
+    public static function canEdit($record): bool
+    {
+        $user = Auth::user();
+
+        return $user !== null
+            && ($user->isSuperAdmin() || ($user->isAdmin() && $record->role !== 'super_admin'));
+    }
+
+    public static function canDelete($record): bool
+    {
+        $user = Auth::user();
+
+        return $user !== null
+            && $record->id !== $user->id
+            && $record->role !== 'super_admin'
+            && ($user->isSuperAdmin() || ($user->isAdmin() && $record->role !== 'admin'));
     }
 
     public static function getRoleOptions(): array

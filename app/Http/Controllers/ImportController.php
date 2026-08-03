@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Requests\ImportRegistrationsRequest;
 use App\Imports\RegistrationsImport;
 use App\Models\Event;
@@ -10,8 +11,11 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ImportController extends Controller
 {
+    use AuthorizesEventAccess;
+
     public function import(ImportRegistrationsRequest $request, Event $event)
     {
+        $this->authorizeEventAccess($event, ['admin', 'super_admin']);
         $file = $request->file('file');
 
         $batch = ImportBatch::create([

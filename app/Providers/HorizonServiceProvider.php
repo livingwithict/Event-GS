@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Laravel\Horizon\Horizon;
 
 class HorizonServiceProvider extends ServiceProvider
 {
@@ -21,7 +22,7 @@ class HorizonServiceProvider extends ServiceProvider
             return;
         }
 
-        \Horizon::auth(function ($request) {
+        Horizon::auth(function ($request) {
             $user = $request->user();
 
             return $user && in_array($user->role, ['super_admin', 'admin']);

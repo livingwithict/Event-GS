@@ -5,6 +5,7 @@ use App\Http\Controllers\EventSwitcherController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\OnsiteRegistrationController;
 use App\Http\Controllers\PublicRegistrationController;
+use App\Http\Controllers\RegistrationQrController;
 use App\Http\Controllers\ReportDownloadController;
 use App\Http\Controllers\TicketController;
 use App\Models\Event;
@@ -22,9 +23,12 @@ Route::get('/checkin/t/{token}', [CheckinController::class, 'show'])->name('chec
 
 Route::get('/ticket/{token}', [TicketController::class, 'show'])->name('ticket.show');
 Route::get('/ticket/{token}/download', [TicketController::class, 'download'])->name('ticket.download');
+Route::get('/ticket/{token}/qr-print', [RegistrationQrController::class, 'download'])->name('ticket.qr-print');
 
-Route::get('/labels/{registration}/print', [LabelController::class, 'printSingle'])->name('labels.print-single');
-Route::post('/labels/print', [LabelController::class, 'printBulk'])->name('labels.print');
+Route::middleware('auth')->group(function () {
+    Route::get('/labels/{registration}/print', [LabelController::class, 'printSingle'])->name('labels.print-single');
+    Route::post('/labels/print', [LabelController::class, 'printBulk'])->name('labels.print');
+});
 
 Route::get('/admin/onsite-register/{event}', [OnsiteRegistrationController::class, 'show'])
     ->name('onsite.register')

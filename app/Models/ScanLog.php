@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -35,22 +36,22 @@ class ScanLog extends Model
             ->setDescriptionForEvent(fn (string $eventName) => "Scan log was {$eventName}");
     }
 
-    public function event()
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
-    public function participant()
+    public function participant(): BelongsTo
     {
         return $this->belongsTo(Registration::class, 'participant_id');
     }
 
-    public function actionType()
+    public function actionType(): BelongsTo
     {
         return $this->belongsTo(ScanActionType::class, 'action_type_id');
     }
 
-    public function scanner()
+    public function scanner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'scanned_by');
     }

@@ -9,14 +9,22 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class MealUsageExport implements FromCollection, WithHeadings, WithMapping
 {
-    public function __construct(private Event $event) {}
+    public function __construct(private Event $event, private ?int $day = null) {}
 
     public function collection()
     {
-        return $this->event->registrations()
+        $query = $this->event->registrations()
             ->whereNotNull('entry_time')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if ($this->day && $this->event->isMultiDay()) {
+            $date = $this->event->getDayDate($this->day);
+            if ($date) {
+                $query->whereBetween('entry_time', [$date->copy()->startOfDay(), $date->copy()->endOfDay()]);
+            }
+        }
+
+        return $query->get();
     }
 
     public function headings(): array

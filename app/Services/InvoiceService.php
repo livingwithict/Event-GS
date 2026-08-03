@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Payment;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
@@ -14,7 +15,7 @@ class InvoiceService
 
         $dompdf = new Dompdf((new Options)->set([
             'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => true,
+            'isRemoteEnabled' => false,
             'defaultPaperSize' => 'a4',
             'defaultPaperOrientation' => 'portrait',
         ]));

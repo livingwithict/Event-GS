@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Models\Event;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
 use App\Services\CommunicationService;
 use App\Services\Payment\PaymentRedirector;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class OnsiteRegistrationController extends Controller
 {
+    use AuthorizesEventAccess;
+
     public function show(Event $event)
     {
-        if (! in_array(Auth::user()->role, ['super_admin', 'admin', 'manager'])) {
-            abort(403);
-        }
+        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
 
         $event->load(['categories' => fn ($q) => $q->active()->ordered()]);
 
@@ -28,9 +28,7 @@ class OnsiteRegistrationController extends Controller
 
     public function store(Request $request, Event $event)
     {
-        if (! in_array(Auth::user()->role, ['super_admin', 'admin', 'manager'])) {
-            abort(403);
-        }
+        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',

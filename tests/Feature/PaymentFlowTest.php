@@ -152,7 +152,8 @@ class PaymentFlowTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->get("/event/{$event->slug}/payment/success?TXNID=TXNTEST01");
+        $response = $this->withSession(['payment_registration_id' => $reg->id])
+            ->get("/event/{$event->slug}/payment/success?TXNID=TXNTEST01");
         $response->assertRedirect(route('register.success', ['slug' => $event->slug]));
 
         $payment->refresh();
@@ -185,7 +186,8 @@ class PaymentFlowTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->get("/event/{$event->slug}/payment/success?TXNID=TXINCOMP1");
+        $response = $this->withSession(['payment_registration_id' => $reg->id])
+            ->get("/event/{$event->slug}/payment/success?TXNID=TXINCOMP1");
 
         $response->assertOk();
         $response->assertViewIs('register.payment-pending');
@@ -215,7 +217,8 @@ class PaymentFlowTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->get("/event/{$event->slug}/payment/success?TXNID=TXFAIL01");
+        $response = $this->withSession(['payment_registration_id' => $reg->id])
+            ->get("/event/{$event->slug}/payment/success?TXNID=TXFAIL01");
 
         $response->assertOk();
         $response->assertViewIs('register.payment-failed');
@@ -246,10 +249,11 @@ class PaymentFlowTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->get("/event/{$event->slug}/payment/success?TXNID=TXMM01");
+        $response = $this->withSession(['payment_registration_id' => $reg->id])
+            ->get("/event/{$event->slug}/payment/success?TXNID=TXMM01");
 
         $payment->refresh();
-        $this->assertEquals('success', $payment->payment_status);
+        $this->assertEquals('failed', $payment->payment_status);
     }
 
     public function test_payment_expire_command_clears_stuck_initiated_payments(): void

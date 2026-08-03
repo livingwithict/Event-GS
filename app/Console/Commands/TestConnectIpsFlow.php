@@ -62,7 +62,7 @@ class TestConnectIpsFlow extends Command
         $this->table(
             ['Field', 'Length', 'Max', 'Status', 'Value'],
             collect($fields)->map(function ($v, $k) {
-                $max = ['MERCHANTID'=>20,'APPID'=>15,'APPNAME'=>30,'TXNID'=>20,'TXNDATE'=>10,'TXNCRNCY'=>3,'TXNAMT'=>20,'REFERENCEID'=>20,'REMARKS'=>50,'PARTICULARS'=>100,'TOKEN'=>512][$k] ?? 0;
+                $max = ['MERCHANTID' => 20, 'APPID' => 15, 'APPNAME' => 30, 'TXNID' => 20, 'TXNDATE' => 10, 'TXNCRNCY' => 3, 'TXNAMT' => 20, 'REFERENCEID' => 20, 'REMARKS' => 50, 'PARTICULARS' => 100, 'TOKEN' => 512][$k] ?? 0;
                 $display = $k === 'TOKEN' ? substr($v, 0, 30).'...' : $v;
                 $status = strlen($v) <= $max ? '<fg=green>OK</>' : "<fg=red>OVER {$max}</>";
 
@@ -108,7 +108,7 @@ class TestConnectIpsFlow extends Command
         $result = $service->validatePayment($payment);
         $interpreted = $service->interpretValidationResult($payment, $result);
 
-        $this->line("    Raw: ".json_encode($result, JSON_UNESCAPED_SLASHES));
+        $this->line('    Raw: '.json_encode($result, JSON_UNESCAPED_SLASHES));
         $this->line("    Interpreted: <fg=cyan>{$interpreted['outcome']}</>");
 
         $payment->markAsSuccess($interpreted['gateway_txn_id'] ?? $payment->transaction_id, $result);

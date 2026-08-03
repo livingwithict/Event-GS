@@ -36,13 +36,13 @@ class TicketService
         $event = $registration->event;
 
         $qrService = app(QRCodeService::class);
-        $qrCodePng = base64_encode($qrService->generatePng($registration));
+        $qrSvg = $qrService->generateSvg($registration, 500);
 
         return [
             'event' => $event,
             'registration' => $registration,
             'category' => $registration->category,
-            'qrCodePng' => $qrCodePng,
+            'qrSvg' => $qrSvg,
             'ticketUrl' => config('app.url').'/ticket/'.$registration->qr_hash,
         ];
     }

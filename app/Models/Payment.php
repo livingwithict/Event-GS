@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -45,22 +47,22 @@ class Payment extends Model
             ->setDescriptionForEvent(fn (string $eventName) => "Payment {$this->transaction_id} was {$eventName}");
     }
 
-    public function registration()
+    public function registration(): BelongsTo
     {
         return $this->belongsTo(Registration::class);
     }
 
-    public function event()
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(ParticipantCategory::class);
     }
 
-    public function verifier()
+    public function verifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
     }
@@ -111,6 +113,29 @@ class Payment extends Model
         ]);
     }
 
+    public function recordPromoCodeUsageOnce(): void
+    {
+        DB::transaction(function (): void {
+            $payment = self::query()->lockForUpdate()->with('registration.promoCode')->findOrFail($this->id);
+            $promoCode = $payment->registration?->promoCode;
+            $metadata = $payment->gateway_response ?? [];
+
+            if (! $promoCode || ($metadata['promo_usage_counted'] ?? false)) {
+                return;
+            }
+
+            $promoCode = PromoCode::query()->lockForUpdate()->find($promoCode->id);
+            if (! $promoCode || ($promoCode->max_uses && $promoCode->used_count >= $promoCode->max_uses)) {
+                return;
+            }
+
+            $promoCode->increment('used_count');
+            $payment->update([
+                'gateway_response' => array_merge($metadata, ['promo_usage_counted' => true]),
+            ]);
+        });
+    }
+
     public function recordReconciliationDetails(array $detailResponse): void
     {
         $this->update(array_filter([
@@ -124,10 +149,6 @@ class Payment extends Model
 
     public function isMerchantCreditSuccess(): bool
     {
-        if (! $this->credit_status) {
-            return true;
-        }
-
         return in_array($this->credit_status, ['000', '999', 'DEFER'], true);
     }
 
@@ -136,6 +157,11 @@ class Payment extends Model
         $this->update([
             'payment_status' => 'failed',
             'gateway_response' => $gatewayResponse,
+        ]);
+
+        $this->registration()->update([
+            'payment_status' => 'failed',
+            'paid_at' => null,
         ]);
     }
 

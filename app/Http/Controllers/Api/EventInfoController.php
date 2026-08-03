@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 
 class EventInfoController extends Controller
 {
+    use AuthorizesEventAccess;
+
     public function show($eventId)
     {
         $event = Event::findOrFail($eventId);
+        $this->authorizeEventAccess($event, ['scanner', 'manager', 'admin', 'super_admin']);
 
         $eventDays = $event->getEventDays()->map(fn ($date, $index) => [
             'day_number' => $index + 1,

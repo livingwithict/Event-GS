@@ -12,7 +12,9 @@
         .icon { font-size: 48px; margin-bottom: 16px; }
         h1 { font-size: 22px; margin-bottom: 8px; color: #166534; }
         .guest-number { font-family: monospace; font-size: 24px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 12px; border-radius: 8px; margin: 16px 0; letter-spacing: 1px; }
-        .event-info { color: #6b7280; font-size: 14px; margin-bottom: 8px; }
+         .event-info { color: #6b7280; font-size: 14px; margin-bottom: 8px; }
+         .qr { margin: 20px auto 8px; width: 220px; }
+         .qr svg { width: 100%; height: auto; }
         .message { color: #374151; font-size: 14px; margin-top: 16px; line-height: 1.5; }
         .btn { display: inline-block; margin-top: 20px; padding: 12px 28px; background: #1a56db; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; }
         .btn:hover { background: #1e40af; }
@@ -29,6 +31,11 @@
                 {{ $event->start_datetime?->format('M j, Y H:i') ?? '' }}<br>
                 {{ $event->venue }}
             </div>
+            @if($qrSvg)
+            <div class="qr">{!! $qrSvg !!}</div>
+            <div class="message">{{ $registration?->name }}<br><strong>{{ $guestNumber }}</strong></div>
+            <a href="{{ route('ticket.qr-print', $qrHash) }}" class="btn">Download Printable QR (6 × 8)</a>
+            @endif
             @if($qrHash)
             <a href="{{ route('ticket.download', $qrHash) }}" class="btn">Download Your Ticket</a>
             @endif

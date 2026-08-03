@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -81,32 +84,32 @@ class Registration extends Model
         return $guestNumber;
     }
 
-    public function event()
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(ParticipantCategory::class, 'category_id');
     }
 
-    public function promoCode()
+    public function promoCode(): BelongsTo
     {
         return $this->belongsTo(PromoCode::class, 'promo_code_id');
     }
 
-    public function communications()
+    public function communications(): HasMany
     {
         return $this->hasMany(Communication::class);
     }
 
-    public function scanLogs()
+    public function scanLogs(): HasMany
     {
         return $this->hasMany(ScanLog::class, 'participant_id');
     }
 
-    public function payment()
+    public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
     }

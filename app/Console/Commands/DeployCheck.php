@@ -90,7 +90,7 @@ class DeployCheck extends Command
 
         // 7. APP_KEY check
         $this->line('[7] APP_KEY');
-        if (empty(env('APP_KEY')) || env('APP_KEY') === '') {
+        if (empty(config('app.key'))) {
             $this->error('    APP_KEY is missing! Run: php artisan key:generate');
             $allPassed = false;
         } else {
@@ -119,13 +119,20 @@ class DeployCheck extends Command
         // 10. Required env vars present
         $this->line('[10] Required environment variables');
         $required = [
-            'APP_NAME', 'APP_URL', 'DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE',
-            'DB_USERNAME', 'MAIL_MAILER', 'MAIL_FROM_ADDRESS',
+            'app.name' => 'APP_NAME',
+            'app.url' => 'APP_URL',
+            'database.default' => 'DB_CONNECTION',
+            'database.connections.'.config('database.default').'.host' => 'DB_HOST',
+            'database.connections.'.config('database.default').'.port' => 'DB_PORT',
+            'database.connections.'.config('database.default').'.database' => 'DB_DATABASE',
+            'database.connections.'.config('database.default').'.username' => 'DB_USERNAME',
+            'mail.default' => 'MAIL_MAILER',
+            'mail.from.address' => 'MAIL_FROM_ADDRESS',
         ];
         $missing = [];
-        foreach ($required as $var) {
-            if (empty(env($var))) {
-                $missing[] = $var;
+        foreach ($required as $configKey => $envName) {
+            if (empty(config($configKey))) {
+                $missing[] = $envName;
             }
         }
         if (! empty($missing)) {
@@ -136,12 +143,17 @@ class DeployCheck extends Command
 
         // 11. ConnectIPS vars
         $this->line('[11] ConnectIPS configuration');
-        $cipsVars = ['CONNECTIPS_BASE_URL', 'CONNECTIPS_MERCHANT_ID', 'CONNECTIPS_APP_ID',
-            'CONNECTIPS_APP_PASSWORD', 'CONNECTIPS_PRIVATE_KEY_PATH'];
+        $cipsVars = [
+            'connectips.base_url' => 'CONNECTIPS_BASE_URL',
+            'connectips.merchant_id' => 'CONNECTIPS_MERCHANT_ID',
+            'connectips.app_id' => 'CONNECTIPS_APP_ID',
+            'connectips.app_password' => 'CONNECTIPS_APP_PASSWORD',
+            'connectips.private_key_path' => 'CONNECTIPS_PRIVATE_KEY_PATH',
+        ];
         $cipsMissing = [];
-        foreach ($cipsVars as $var) {
-            if (empty(env($var))) {
-                $cipsMissing[] = $var;
+        foreach ($cipsVars as $configKey => $envName) {
+            if (empty(config($configKey))) {
+                $cipsMissing[] = $envName;
             }
         }
         if (! empty($cipsMissing)) {
@@ -151,7 +163,7 @@ class DeployCheck extends Command
         }
 
         // Verify key file exists
-        $keyPath = env('CONNECTIPS_PRIVATE_KEY_PATH');
+        $keyPath = config('connectips.private_key_path');
         if (! empty($keyPath)) {
             if (file_exists($keyPath)) {
                 $perms = decoct(fileperms($keyPath) & 0777);

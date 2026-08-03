@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Feature;
+
 use App\Imports\RegistrationsImport;
 use App\Models\Event;
 use App\Models\ImportStaging;

@@ -13,20 +13,34 @@ class IdempotentScan
     {
         $requestId = $request->header('X-Request-Id');
 
-        if ($requestId) {
-            $lockKey = "idempotent:{$requestId}";
+        if (! $requestId || ! preg_match('/^[A-Za-z0-9._:-]{1,100}$/', $requestId)) {
+            return $next($request);
+        }
 
-            if (Cache::has($lockKey)) {
-                return response()->json(Cache::get($lockKey), 200);
+        $userId = $request->user()?->getAuthIdentifier() ?? 'guest';
+        $lockKey = 'idempotent:'.hash('sha256', implode('|', [
+            $userId,
+            $request->route()?->getName() ?? $request->path(),
+            $requestId,
+            hash('sha256', $request->getContent()),
+        ]));
+
+        return Cache::lock($lockKey.':lock', 10)->block(5, function () use ($request, $next, $lockKey) {
+            if ($cached = Cache::get($lockKey)) {
+                return response($cached['content'], $cached['status'], $cached['headers']);
             }
-        }
 
-        $response = $next($request);
+            $response = $next($request);
 
-        if ($requestId && $response->getStatusCode() === 200) {
-            Cache::put("idempotent:{$requestId}", json_decode($response->getContent(), true), 5);
-        }
+            if ($response->isSuccessful()) {
+                Cache::put($lockKey, [
+                    'content' => $response->getContent(),
+                    'status' => $response->getStatusCode(),
+                    'headers' => $response->headers->all(),
+                ], now()->addMinutes(5));
+            }
 
-        return $response;
+            return $response;
+        });
     }
 }

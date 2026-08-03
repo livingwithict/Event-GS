@@ -12,7 +12,7 @@ class TicketController extends Controller
         $registration = Registration::where('qr_hash', $token)->first();
 
         if (! $registration) {
-            return view('checkin.invalid');
+            return response()->view('checkin.invalid', [], 404);
         }
 
         $ticketService = new TicketService;

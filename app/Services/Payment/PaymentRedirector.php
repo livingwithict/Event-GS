@@ -41,7 +41,6 @@ class PaymentRedirector
             $metadata['promo_code'] = $promoCode->code;
             $metadata['discount_type'] = $promoCode->discount_type;
             $metadata['discount_value'] = $promoCode->discount_value;
-            $promoCode->incrementUsage();
         }
 
         $payment = Payment::create([

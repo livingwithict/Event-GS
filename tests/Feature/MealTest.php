@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Feature;
+
 use App\Models\Registration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +22,7 @@ class MealTest extends TestCase
     public function test_record_lunch_first_time(): void
     {
         $reg = Registration::factory()->create(['lunch_used_at' => null]);
+        $this->scanner->assignedEvents()->attach($reg->event_id);
 
         $response = $this->actingAs($this->scanner)
             ->postJson('/api/meal', ['registration_id' => $reg->id, 'meal_type' => 'lunch']);
@@ -31,6 +34,7 @@ class MealTest extends TestCase
     public function test_record_lunch_duplicate_returns_conflict(): void
     {
         $reg = Registration::factory()->create(['lunch_used_at' => now()]);
+        $this->scanner->assignedEvents()->attach($reg->event_id);
 
         $response = $this->actingAs($this->scanner)
             ->postJson('/api/meal', ['registration_id' => $reg->id, 'meal_type' => 'lunch']);
@@ -42,6 +46,7 @@ class MealTest extends TestCase
     public function test_invalid_meal_type_returns_422(): void
     {
         $reg = Registration::factory()->create();
+        $this->scanner->assignedEvents()->attach($reg->event_id);
 
         $response = $this->actingAs($this->scanner)
             ->postJson('/api/meal', ['registration_id' => $reg->id, 'meal_type' => 'breakfast']);

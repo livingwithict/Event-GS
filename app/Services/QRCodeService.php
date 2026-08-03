@@ -12,17 +12,17 @@ class QRCodeService
         return config('app.url').'/checkin/t/'.$registration->guest_number;
     }
 
-    public function generateSvg(Registration $registration): string
+    public function generateSvg(Registration $registration, int $size = 300): string
     {
-        return QrCode::size(300)
+        return QrCode::size($size)
             ->margin(2)
             ->generate($this->getPayload($registration));
     }
 
-    public function generatePng(Registration $registration): string
+    public function generatePng(Registration $registration, int $size = 300): string
     {
         return QrCode::format('png')
-            ->size(300)
+            ->size($size)
             ->margin(2)
             ->generate($this->getPayload($registration));
     }

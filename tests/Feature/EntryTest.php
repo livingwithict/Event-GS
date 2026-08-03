@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Feature;
+
 use App\Models\Registration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +22,7 @@ class EntryTest extends TestCase
     public function test_record_entry_for_first_time(): void
     {
         $reg = Registration::factory()->create(['entry_time' => null]);
+        $this->scanner->assignedEvents()->attach($reg->event_id);
 
         $response = $this->actingAs($this->scanner)
             ->postJson('/api/entry', ['registration_id' => $reg->id]);
@@ -31,6 +34,7 @@ class EntryTest extends TestCase
     public function test_record_entry_duplicate_returns_conflict(): void
     {
         $reg = Registration::factory()->create(['entry_time' => now()]);
+        $this->scanner->assignedEvents()->attach($reg->event_id);
 
         $response = $this->actingAs($this->scanner)
             ->postJson('/api/entry', ['registration_id' => $reg->id]);

@@ -54,6 +54,8 @@ class EventSwitcherController extends Controller
         return [
             'id' => $event->id,
             'name' => $event->name,
+            'slug' => $event->slug,
+            'registration_url' => route('register.show', ['slug' => $event->slug]),
             'venue' => $event->venue,
             'date' => $event->start_datetime?->format('M j, Y'),
             'status' => $event->status,

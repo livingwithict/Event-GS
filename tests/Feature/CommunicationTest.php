@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Feature;
+
 use App\Jobs\SendBulkEmail;
 use App\Jobs\SendBulkSMS;
 use App\Models\Event;
@@ -27,7 +29,9 @@ class CommunicationTest extends TestCase
     {
         Queue::fake();
         $event = Event::factory()->create();
-        $regs = Registration::factory()->count(3)->create(['event_id' => $event->id, 'email' => fake()->safeEmail()]);
+        $regs = Registration::factory()->count(3)->sequence(
+            fn ($sequence) => ['event_id' => $event->id, 'email' => "invite{$sequence->index}@example.com"]
+        )->create();
 
         $response = $this->actingAs($this->manager)
             ->postJson("/api/event/{$event->id}/send-invites", [
@@ -45,7 +49,9 @@ class CommunicationTest extends TestCase
     {
         Queue::fake();
         $event = Event::factory()->create();
-        $regs = Registration::factory()->count(3)->create(['event_id' => $event->id, 'phone' => '9800000001']);
+        $regs = Registration::factory()->count(3)->sequence(
+            fn ($sequence) => ['event_id' => $event->id, 'phone' => '980000000'.($sequence->index + 1)]
+        )->create();
 
         $response = $this->actingAs($this->manager)
             ->postJson("/api/event/{$event->id}/send-invites", [
@@ -113,10 +119,9 @@ class CommunicationTest extends TestCase
         Config::set('services.sparrow.driver', 'log');
 
         $event = Event::factory()->create();
-        $regs = Registration::factory()->count(3)->create([
-            'event_id' => $event->id,
-            'phone' => '9800000001',
-        ]);
+        $regs = Registration::factory()->count(3)->sequence(
+            fn ($sequence) => ['event_id' => $event->id, 'phone' => '980000000'.($sequence->index + 1)]
+        )->create();
 
         $service = app(CommunicationService::class);
         $comms = $service->sendBatchSms($regs->pluck('id')->toArray(), 'Batch SMS', 'event_reminder');
@@ -133,10 +138,9 @@ class CommunicationTest extends TestCase
         Config::set('services.sparrow.driver', 'log');
 
         $event = Event::factory()->create();
-        $regs = Registration::factory()->count(3)->create([
-            'event_id' => $event->id,
-            'phone' => '9800000001',
-        ]);
+        $regs = Registration::factory()->count(3)->sequence(
+            fn ($sequence) => ['event_id' => $event->id, 'phone' => '980000000'.($sequence->index + 1)]
+        )->create();
 
         $job = new SendBulkSMS(
             $regs->pluck('id')->toArray(),
@@ -157,10 +161,9 @@ class CommunicationTest extends TestCase
         Config::set('services.sparrow.batch_size', 2);
 
         $event = Event::factory()->create();
-        $regs = Registration::factory()->count(5)->create([
-            'event_id' => $event->id,
-            'phone' => '9800000001',
-        ]);
+        $regs = Registration::factory()->count(5)->sequence(
+            fn ($sequence) => ['event_id' => $event->id, 'phone' => '980000000'.($sequence->index + 1)]
+        )->create();
 
         $job = new SendBulkSMS(
             $regs->pluck('id')->toArray(),

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -73,15 +75,26 @@ class User extends Authenticatable
         return $query->where('role', $role);
     }
 
-    public function events()
+    public function events(): HasMany
     {
         return $this->hasMany(Event::class, 'created_by');
     }
 
-    public function assignedEvents()
+    public function assignedEvents(): BelongsToMany
     {
         return $this->belongsToMany(Event::class, 'event_user')
             ->withTimestamps()
             ->withPivot('assigned_by');
+    }
+
+    public function canAccessEvent(Event|int $event): bool
+    {
+        if (in_array($this->role, ['super_admin', 'admin'], true)) {
+            return true;
+        }
+
+        $eventId = $event instanceof Event ? $event->getKey() : $event;
+
+        return $this->assignedEvents()->whereKey($eventId)->exists();
     }
 }

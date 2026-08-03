@@ -116,9 +116,9 @@ class ConnectIPSService
         $status = strtoupper((string) ($response['status'] ?? ''));
         $statusDesc = (string) ($response['statusDesc'] ?? '');
         $responseAmt = isset($response['txnAmt']) ? (int) $response['txnAmt'] : null;
-        $amountMismatch = $responseAmt !== null && $responseAmt !== (int) $payment->amount_paisa;
+        $amountMismatch = $responseAmt === null || $responseAmt !== (int) $payment->amount_paisa;
 
-        if ($statusMismatch = $amountMismatch) {
+        if ($amountMismatch) {
             Log::warning('ConnectIPS: amount mismatch on validateTxn', [
                 'payment_id' => $payment->id,
                 'expected' => $payment->amount_paisa,
@@ -127,8 +127,16 @@ class ConnectIPSService
         }
 
         return match (true) {
-            $status === 'SUCCESS' => [
+            $status === 'SUCCESS' && ! $amountMismatch => [
                 'outcome' => 'success',
+                'raw_status' => $status,
+                'status_desc' => $statusDesc,
+                'amount_mismatch' => $amountMismatch,
+                'gateway_txn_id' => $response['txnId'] ?? $payment->transaction_id,
+            ],
+
+            $status === 'SUCCESS' => [
+                'outcome' => 'failed',
                 'raw_status' => $status,
                 'status_desc' => $statusDesc,
                 'amount_mismatch' => $amountMismatch,
@@ -223,6 +231,10 @@ class ConnectIPSService
         $hasCert = $clientCert && file_exists($clientCert);
         $hasKey = $privateKey && file_exists($privateKey);
 
+        if (app()->environment('production') && (! $hasCert || ! $hasKey)) {
+            throw new \RuntimeException('ConnectIPS client certificate and private key are required in production.');
+        }
+
         if ($hasCert && $hasKey) {
             $request = $request->withOptions([
                 'cert' => $clientCert,
@@ -231,6 +243,10 @@ class ConnectIPSService
         }
 
         if (! config('connectips.verify_ssl', true)) {
+            if (app()->environment('production')) {
+                throw new \RuntimeException('ConnectIPS TLS verification cannot be disabled in production.');
+            }
+
             $request = $request->withOptions(['verify' => false]);
         }
 

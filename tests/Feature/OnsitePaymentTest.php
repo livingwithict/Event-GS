@@ -53,6 +53,7 @@ class OnsitePaymentTest extends TestCase
                 'tax_rate' => 0,
             ]),
         ]);
+        $manager->assignedEvents()->attach($event->id);
         $category = ParticipantCategory::factory()->create([
             'event_id' => $event->id,
             'is_paid' => true,
@@ -87,6 +88,7 @@ class OnsitePaymentTest extends TestCase
         $event = Event::factory()->create([
             'settings' => ['enable_payment' => true, 'tax_rate' => 0],
         ]);
+        $manager->assignedEvents()->attach($event->id);
         $category = ParticipantCategory::factory()->create([
             'event_id' => $event->id,
             'is_paid' => true,
@@ -116,6 +118,7 @@ class OnsitePaymentTest extends TestCase
         $event = Event::factory()->create([
             'settings' => ['enable_payment' => true, 'tax_rate' => 0],
         ]);
+        $manager->assignedEvents()->attach($event->id);
         $category = ParticipantCategory::factory()->create([
             'event_id' => $event->id,
             'is_paid' => true,

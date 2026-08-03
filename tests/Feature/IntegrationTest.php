@@ -23,6 +23,7 @@ class IntegrationTest extends TestCase
     public function test_full_scan_entry_meal_flow(): void
     {
         $event = Event::factory()->create(['meal_types' => ['lunch', 'dinner']]);
+        $this->scanner->assignedEvents()->attach($event->id);
         $reg = Registration::factory()->create([
             'event_id' => $event->id,
             'entry_time' => null,
@@ -82,10 +83,12 @@ class IntegrationTest extends TestCase
 
     public function test_guest_search_finds_by_name(): void
     {
-        Registration::factory()->create(['name' => 'Unique Test Name']);
+        $event = Event::factory()->create();
+        $this->scanner->assignedEvents()->attach($event->id);
+        Registration::factory()->create(['event_id' => $event->id, 'name' => 'Unique Test Name']);
 
         $response = $this->actingAs($this->scanner)
-            ->getJson('/api/guest/search?q=Unique Test');
+            ->getJson("/api/guest/search?q=Unique Test&event_id={$event->id}");
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data'));

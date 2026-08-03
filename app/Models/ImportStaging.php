@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ImportStaging extends Model
 {
@@ -21,17 +22,17 @@ class ImportStaging extends Model
         ];
     }
 
-    public function event()
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
-    public function importBatch()
+    public function importBatch(): BelongsTo
     {
         return $this->belongsTo(ImportBatch::class);
     }
 
-    public function registration()
+    public function registration(): BelongsTo
     {
         return $this->belongsTo(Registration::class);
     }

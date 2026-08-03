@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Feature;
+
 use App\Models\Event;
 use App\Models\Registration;
 use App\Models\User;

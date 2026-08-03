@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendBulkEmail;
 use App\Jobs\SendBulkSMS;
@@ -11,8 +12,11 @@ use Illuminate\Http\Request;
 
 class CommunicationController extends Controller
 {
+    use AuthorizesEventAccess;
+
     public function sendInvites(Request $request, Event $event): JsonResponse
     {
+        $this->authorizeEventAccess($event, ['admin', 'super_admin']);
         $validated = $request->validate([
             'type' => 'required|in:email,sms',
             'email_type' => 'nullable|string|in:registration_confirmation,payment_success,payment_failed,event_reminder,post_event_thank_you,invitation,urgent_update',
@@ -23,6 +27,7 @@ class CommunicationController extends Controller
         ]);
 
         $regIds = $validated['registration_ids'] ?? $event->registrations()->pluck('registrations.id')->toArray();
+        $regIds = $event->registrations()->whereKey($regIds)->pluck('id')->toArray();
         $emailType = $validated['email_type'] ?? 'invitation';
 
         if ($validated['type'] === 'email') {

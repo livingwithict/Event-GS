@@ -1,8 +1,17 @@
 # Environment
 .env
-.env.backup
-.env.production
-.env.staging
+.env.*
+!.env.example
+
+# Local databases and runtime state
+/*.sqlite
+/database/*.sqlite
+/database/*.sqlite-*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
 
 # Dependencies
 /vendor
@@ -19,12 +28,27 @@ scanner-app/dist
 # Storage (runtime generated)
 /storage/*.key
 /storage/pail
+/storage/phpstan
+/storage/playwright-report
 /storage/app/backups/*
+/storage/app/keys/*
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
+pnpm-debug.log*
+
+# Coverage and test artifacts
+/coverage
+/.phpunit.cache
+/test-results
+
+# Static-analysis caches
+/.phpstan
+
+# Composer local authentication
+/auth.json
 
 # OS files
 .DS_Store
@@ -42,12 +66,10 @@ _ide_helper.php
 
 # PHP / PHPUnit
 .phpunit.result.cache
-/.phpunit.cache
 
 # Laravel
 Homestead.json
 Homestead.yaml
-/auth.json
 
 # Docker (local overrides)
 docker-compose.override.yml

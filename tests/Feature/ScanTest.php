@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Feature;
+
 use App\Models\Registration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +22,7 @@ class ScanTest extends TestCase
     public function test_scan_valid_qr_returns_guest_data(): void
     {
         $reg = Registration::factory()->create();
+        $this->scanner->assignedEvents()->attach($reg->event_id);
 
         $response = $this->actingAs($this->scanner)
             ->postJson('/api/scan', ['code' => $reg->unique_code]);

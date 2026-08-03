@@ -11,7 +11,10 @@ use App\Models\Registration;
 use App\Services\CommunicationService;
 use App\Services\Payment\ConnectIPSService;
 use App\Services\Payment\PaymentRedirector;
+use App\Services\QRCodeService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PublicRegistrationController extends Controller
 {
@@ -117,49 +120,53 @@ class PublicRegistrationController extends Controller
         $requiresPayment = $category?->is_paid && $event->settingEnabled('enable_payment');
         $paymentStatus = $requiresPayment ? 'pending' : null;
 
-        if ($category && $category->requires_approval) {
-            $approvalStatus = 'pending';
-        } elseif ($atCapacity && $waitlistEnabled) {
-            $approvalStatus = 'waitlisted';
-        } else {
-            $approvalStatus = 'approved';
-        }
-
-        $reg = Registration::create([
-            'event_id' => $event->id,
-            'category_id' => $categoryId ?: null,
-            'promo_code_id' => $promoCode?->id,
-            'registration_source' => 'self',
-            'approval_status' => $approvalStatus,
-            'name' => trim($request->name),
-            'email' => $email ?: null,
-            'phone' => $phone ?: null,
-            'designation' => trim($request->designation ?? '') ?: null,
-            'organization' => trim($request->organization ?? '') ?: null,
-            'address' => trim($request->address ?? '') ?: null,
-            'gender' => $request->gender,
-            'pan_vat' => trim($request->pan_vat ?? '') ?: null,
-            'notes' => trim($request->notes ?? '') ?: null,
-            'meal_preference' => trim($request->meal_preference ?? '') ?: null,
-            'special_assistance' => trim($request->special_assistance ?? '') ?: null,
-            'photo_path' => $request->hasFile('photo')
-                ? $request->file('photo')->store('registrations/photos', 'public')
-                : null,
-            'consented_at' => now(),
-            'payment_status' => $paymentStatus,
-        ]);
-
         $companionCount = (int) ($request->companion_count ?? 0);
-        if ($companionCount > 0) {
-            $groupId = (string) Str::uuid();
-            $reg->update([
+        $reg = DB::transaction(function () use ($event, $category, $categoryId, $promoCode, $paymentStatus, $companionCount, $request, $email, $phone, $waitlistEnabled) {
+            $lockedEvent = Event::whereKey($event->id)->lockForUpdate()->firstOrFail();
+            $requestedSeats = 1 + $companionCount;
+            $currentRegistrations = $lockedEvent->registrations()->count();
+            $atCapacity = $lockedEvent->max_capacity && ($currentRegistrations + $requestedSeats > $lockedEvent->max_capacity);
+
+            if ($atCapacity && ! $waitlistEnabled) {
+                throw ValidationException::withMessages([
+                    'email' => 'This event has reached its capacity.',
+                ]);
+            }
+
+            $approvalStatus = $category?->requires_approval
+                ? 'pending'
+                : ($atCapacity ? 'waitlisted' : 'approved');
+            $groupId = $companionCount > 0 ? (string) Str::uuid() : null;
+
+            $reg = Registration::create([
+                'event_id' => $lockedEvent->id,
+                'category_id' => $categoryId ?: null,
+                'promo_code_id' => $promoCode?->id,
+                'registration_source' => 'self',
+                'approval_status' => $approvalStatus,
+                'name' => trim($request->name),
+                'email' => $email ?: null,
+                'phone' => $phone ?: null,
+                'designation' => trim($request->designation ?? '') ?: null,
+                'organization' => trim($request->organization ?? '') ?: null,
+                'address' => trim($request->address ?? '') ?: null,
+                'gender' => $request->gender,
+                'pan_vat' => trim($request->pan_vat ?? '') ?: null,
+                'notes' => trim($request->notes ?? '') ?: null,
+                'meal_preference' => trim($request->meal_preference ?? '') ?: null,
+                'special_assistance' => trim($request->special_assistance ?? '') ?: null,
+                'photo_path' => $request->hasFile('photo')
+                    ? $request->file('photo')->store('registrations/photos', 'local')
+                    : null,
+                'consented_at' => now(),
+                'payment_status' => $paymentStatus,
                 'group_id' => $groupId,
                 'companion_count' => $companionCount,
             ]);
 
             for ($i = 1; $i <= $companionCount; $i++) {
                 Registration::create([
-                    'event_id' => $event->id,
+                    'event_id' => $lockedEvent->id,
                     'category_id' => $categoryId ?: null,
                     'promo_code_id' => $promoCode?->id,
                     'registration_source' => 'self',
@@ -171,7 +178,11 @@ class PublicRegistrationController extends Controller
                     'payment_status' => $paymentStatus,
                 ]);
             }
-        }
+
+            return $reg;
+        });
+
+        $approvalStatus = $reg->approval_status;
 
         if ($requiresPayment && $category->price && $approvalStatus !== 'waitlisted') {
             $totalEffectivePrice = $effectivePrice * (1 + $companionCount);
@@ -198,10 +209,16 @@ class PublicRegistrationController extends Controller
             return redirect()->route('register.show', $slug);
         }
 
+        $registration = Registration::where('event_id', $event->id)
+            ->where('guest_number', $guestNumber)
+            ->first();
+
         return view('register.success', [
             'event' => $event,
+            'registration' => $registration,
             'guestNumber' => $guestNumber,
             'qrHash' => session('qr_hash'),
+            'qrSvg' => $registration ? app(QRCodeService::class)->generateSvg($registration) : null,
         ]);
     }
 
@@ -220,10 +237,22 @@ class PublicRegistrationController extends Controller
             return redirect()->route('register.show', $slug);
         }
 
+        if ((int) session('payment_registration_id') !== (int) $payment->registration_id) {
+            abort(403, 'Invalid payment session.');
+        }
+
         if ($payment->isSuccessful()) {
             return redirect()->route('register.success', ['slug' => $slug])
                 ->with('guest_number', $payment->registration->guest_number)
                 ->with('qr_hash', $payment->registration->qr_hash);
+        }
+
+        if (! $payment->isPending()) {
+            return view('register.payment-failed', [
+                'event' => $event,
+                'payment' => $payment,
+                'reason' => 'This payment is no longer available for validation.',
+            ]);
         }
 
         try {
@@ -248,13 +277,10 @@ class PublicRegistrationController extends Controller
                     }
 
                     if (! $payment->isMerchantCreditSuccess()) {
-                        $payment->update([
-                            'payment_status' => 'failed',
-                            'gateway_response' => array_merge($validateResult, [
-                                'reconciliation' => $detailResult,
-                                'note' => 'creditStatus not in 000/999/DEFER',
-                            ]),
-                        ]);
+                        $payment->markAsFailed(array_merge($validateResult, [
+                            'reconciliation' => $detailResult,
+                            'note' => 'creditStatus not in 000/999/DEFER',
+                        ]));
 
                         return view('register.payment-failed', [
                             'event' => $event,
@@ -263,6 +289,7 @@ class PublicRegistrationController extends Controller
                         ]);
                     }
 
+                    $payment->recordPromoCodeUsageOnce();
                     $this->sendConfirmation($payment->registration, $event, $payment);
 
                     return redirect()->route('register.success', ['slug' => $slug])
@@ -315,7 +342,13 @@ class PublicRegistrationController extends Controller
             return redirect()->route('register.show', $slug);
         }
 
-        $payment->update(['payment_status' => 'cancelled']);
+        if ((int) session('payment_registration_id') !== (int) $payment->registration_id) {
+            abort(403, 'Invalid payment session.');
+        }
+
+        if ($payment->isPending()) {
+            $payment->markAsFailed(['status' => 'cancelled_by_gateway']);
+        }
 
         return view('register.payment-failed', [
             'event' => $event,
@@ -333,6 +366,14 @@ class PublicRegistrationController extends Controller
             abort(403);
         }
 
+        if ((int) session('payment_registration_id') !== (int) $oldPayment->registration_id) {
+            abort(403, 'Invalid payment session.');
+        }
+
+        if (! $oldPayment->isPending() && ! $oldPayment->isFailed()) {
+            abort(403, 'This payment cannot be retried.');
+        }
+
         $reg = $oldPayment->registration;
         $category = $reg->category;
 
@@ -347,11 +388,16 @@ class PublicRegistrationController extends Controller
             $discountAmount = $promoCode->calculateDiscount($effPrice);
         }
 
-        return $this->initiatePayment($reg, $event, $category, $discountAmount, $promoCode);
+        return $this->initiatePaymentRedirect($reg, $event, $category, $discountAmount, $promoCode);
     }
 
     private function initiatePaymentRedirect(Registration $reg, Event $event, ParticipantCategory $category, float $discountAmount = 0, ?PromoCode $promoCode = null, ?float $totalPrice = null)
     {
+        session([
+            'payment_registration_id' => $reg->id,
+            'payment_event_id' => $event->id,
+        ]);
+
         $redirector = app(PaymentRedirector::class);
         $html = $redirector->initiate($reg, $event, $category, $discountAmount, $promoCode, $totalPrice);
 

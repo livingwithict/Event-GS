@@ -9,6 +9,7 @@ use App\Models\ParticipantCategory;
 use App\Models\Registration;
 use App\Services\CommunicationService;
 use App\Services\LabelService;
+use App\Services\QRCodeService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -276,7 +277,12 @@ class RegistrationResource extends Resource
             ->emptyStateHeading('No registrations yet')
             ->emptyStateDescription('Add your first registration or import from CSV.')
             ->recordActions([
-                ViewAction::make(),
+                ViewAction::make()
+                    ->modalHeading('Registration QR Pass')
+                    ->modalContent(fn (Registration $record) => view('filament.registration-qr-preview', [
+                        'registration' => $record->load(['event', 'category']),
+                        'qrSvg' => app(QRCodeService::class)->generateSvg($record),
+                    ])),
                 EditAction::make(),
                 Action::make('approve')
                     ->label('Approve')
@@ -334,6 +340,11 @@ class RegistrationResource extends Resource
                     ->label('Ticket')
                     ->icon('heroicon-o-ticket')
                     ->url(fn ($record) => route('ticket.download', $record->qr_hash))
+                    ->openUrlInNewTab(),
+                Action::make('download_qr')
+                    ->label('Download QR')
+                    ->icon('heroicon-o-qr-code')
+                    ->url(fn (Registration $record): string => route('ticket.qr-print', $record->qr_hash))
                     ->openUrlInNewTab(),
                 Action::make('print_label')
                     ->label('Print Label')
