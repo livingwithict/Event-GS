@@ -76,6 +76,7 @@ docker-compose.override.yml
 
 # Claude Code
 .claude/
+/graphify-out
 
 # Playwright MCP
 .playwright-mcp/

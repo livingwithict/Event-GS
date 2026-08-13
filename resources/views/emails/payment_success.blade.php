@@ -19,11 +19,14 @@
 <body>
     <div class="container">
         <div class="header">
+            @if($logo = $event->logoUrl())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px;margin-bottom:10px;">
+            @endif
             <h1>Payment Confirmed</h1>
             <p>{{ $event->name }}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->name }},</p>
+            <p>Dear {{ $registration->displayName() }},</p>
             <p>Your payment for <strong>{{ $event->name }}</strong> has been successfully processed.</p>
 
             <div class="success-badge">

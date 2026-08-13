@@ -97,10 +97,15 @@ class ImportPreview extends Page implements HasTable
             )
             ->columns([
                 TextColumn::make('row_number')->label('#')->sortable(),
-                TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('name')
+                    ->formatStateUsing(fn ($record) => trim(($record->salutation ? $record->salutation.' ' : '').$record->name))
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('email')->searchable(),
                 TextColumn::make('phone')->searchable(),
+                TextColumn::make('designation')->searchable()->limit(20)->toggleable(),
                 TextColumn::make('organization')->searchable()->limit(20),
+                TextColumn::make('address')->searchable()->limit(25)->toggleable(),
                 TextColumn::make('category_name')->label('Category')->badge()->color('gray'),
                 TextColumn::make('status')
                     ->badge()
@@ -182,6 +187,7 @@ class ImportPreview extends Page implements HasTable
             'category_id' => $categoryId,
             'registration_source' => 'csv',
             'approval_status' => 'approved',
+            'salutation' => trim($raw['salutation'] ?? '') ?: null,
             'name' => trim($raw['name'] ?? ''),
             'email' => trim($raw['email'] ?? '') ?: null,
             'phone' => trim($raw['phone'] ?? '') ?: null,

@@ -18,7 +18,7 @@
             <p>{{ $event->name }}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->name }},</p>
+            <p>Dear {{ $registration->displayName() }},</p>
             <p>Thank you for attending <strong>{{ $event->name }}</strong>!</p>
 
             <div class="thank-you">

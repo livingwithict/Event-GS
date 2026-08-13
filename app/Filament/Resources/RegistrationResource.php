@@ -60,6 +60,12 @@ class RegistrationResource extends Resource
             ->components([
                 Section::make('Personal Information')
                     ->schema([
+                        Forms\Components\Select::make('salutation')
+                            ->label('Title')
+                            ->options(array_combine(Registration::SALUTATIONS, Registration::SALUTATIONS))
+                            ->searchable()
+                            ->native(false)
+                            ->placeholder('None'),
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255)
@@ -75,7 +81,8 @@ class RegistrationResource extends Resource
                             ->maxLength(255),
                         Forms\Components\TextInput::make('phone')
                             ->tel()
-                            ->maxLength(20),
+                            ->maxLength(50)
+                            ->helperText('Mobile, landline or extension — any format.'),
                         Forms\Components\TextInput::make('organization')
                             ->maxLength(255),
                         Forms\Components\TextInput::make('designation')
@@ -152,7 +159,10 @@ class RegistrationResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('name')
+                    ->formatStateUsing(fn (Registration $record) => $record->displayName())
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('guest_number')
                     ->label('Guest #')
                     ->searchable()
@@ -167,7 +177,12 @@ class RegistrationResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('email')->searchable(),
                 Tables\Columns\TextColumn::make('phone')->searchable(),
+                Tables\Columns\TextColumn::make('designation')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('organization')->searchable(),
+                Tables\Columns\TextColumn::make('address')
+                    ->searchable()
+                    ->limit(30)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('event.name')->sortable(),
                 Tables\Columns\TextColumn::make('registration_source')
                     ->label('Source')
@@ -336,6 +351,11 @@ class RegistrationResource extends Resource
                             ->body("{$record->name} has been promoted and notification sent.")
                             ->send();
                     }),
+                Action::make('see_status')
+                    ->label('See Status')
+                    ->icon('heroicon-o-shield-check')
+                    ->url(fn (Registration $record): string => route('checkin.verify', $record->guest_number))
+                    ->openUrlInNewTab(),
                 Action::make('download_ticket')
                     ->label('Ticket')
                     ->icon('heroicon-o-ticket')
@@ -346,10 +366,15 @@ class RegistrationResource extends Resource
                     ->icon('heroicon-o-qr-code')
                     ->url(fn (Registration $record): string => route('ticket.qr-print', $record->qr_hash))
                     ->openUrlInNewTab(),
+                Action::make('preview_label')
+                    ->label('Preview Label')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn ($record) => route('labels.print-single', ['registration' => $record->id, 'preview' => 1]))
+                    ->openUrlInNewTab(),
                 Action::make('print_label')
                     ->label('Print Label')
-                    ->icon('heroicon-o-tag')
-                    ->url(fn ($record) => route('labels.print-single', $record->id))
+                    ->icon('heroicon-o-printer')
+                    ->url(fn ($record) => route('labels.print-now', ['registrations' => $record->id]))
                     ->openUrlInNewTab(),
                 DeleteAction::make(),
                 ForceDeleteAction::make(),
@@ -385,10 +410,11 @@ class RegistrationResource extends Resource
                         ->label('Export CSV')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records) {
-                            $csv = "Name,Guest #,Category,Email,Phone,Organization,Designation,Entry Time,Lunch Used,Dinner Used\n";
+                            $csv = "Title,Name,Guest #,Category,Email,Phone,Organization,Designation,Address,Entry Time,Lunch Used,Dinner Used\n";
                             foreach ($records as $registration) {
                                 $csv .= sprintf(
-                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    str_replace('"', '""', $registration->salutation ?? ''),
                                     str_replace('"', '""', $registration->name ?? ''),
                                     str_replace('"', '""', $registration->guest_number ?? ''),
                                     str_replace('"', '""', $registration->category?->name ?? ''),
@@ -396,6 +422,7 @@ class RegistrationResource extends Resource
                                     str_replace('"', '""', $registration->phone ?? ''),
                                     str_replace('"', '""', $registration->organization ?? ''),
                                     str_replace('"', '""', $registration->designation ?? ''),
+                                    str_replace('"', '""', str_replace(["\r", "\n"], ' ', $registration->address ?? '')),
                                     $registration->entry_time?->format('Y-m-d H:i:s') ?? '',
                                     $registration->lunch_used_at ? 'Yes' : 'No',
                                     $registration->dinner_used_at ? 'Yes' : 'No'
@@ -408,32 +435,10 @@ class RegistrationResource extends Resource
                         }),
                     BulkAction::make('print_labels')
                         ->label('Print Labels')
-                        ->icon('heroicon-o-tag')
-                        ->action(function (Collection $records) {
-                            $eventId = $records->first()?->event_id;
-                            $template = $eventId ? LabelTemplate::where('event_id', $eventId)->first() : null;
-
-                            if (! $template) {
-                                $template = new LabelTemplate([
-                                    'template_name' => 'Default',
-                                    'width' => 100,
-                                    'height' => 60,
-                                    'show_qr' => true,
-                                    'show_designation' => true,
-                                    'show_organization' => true,
-                                    'show_category_color' => true,
-                                    'font_size_name' => 16,
-                                ]);
-                            }
-
-                            $service = new LabelService;
-                            $pdf = $service->generateLabelPdf($records, $template);
-                            $service->markAsPrinted($records);
-
-                            return response()->streamDownload(function () use ($pdf) {
-                                echo $pdf;
-                            }, 'labels.pdf', ['Content-Type' => 'application/pdf']);
-                        }),
+                        ->icon('heroicon-o-printer')
+                        ->action(fn (Collection $records) => redirect()->route('labels.print-now', [
+                            'registrations' => $records->pluck('id')->implode(','),
+                        ])),
                 ]),
             ]);
     }

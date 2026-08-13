@@ -28,9 +28,6 @@
     --color-success-800: #065f46;
     --color-success-900: #064e3b;
     --color-success-950: #022c22;
-
-    --radius-card: 0.75rem;
-    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
 .fi-sidebar {
@@ -41,9 +38,10 @@
     @apply border-b border-gray-100 dark:border-gray-800 px-6 py-5;
 }
 
-.fi-section {
-    @apply rounded-[var(--radius-card)] bg-white dark:bg-gray-900 shadow-[var(--shadow-card)];
-}
+/* No .fi-section override here: Filament renders some sections as
+   `fi-section-not-contained` (intentionally transparent, no card). Forcing a
+   white background on every .fi-section painted those too, which showed up as
+   white patches in the gaps between dashboard cards. */
 
 .fi-ta-table thead {
     @apply sticky top-0 z-10;

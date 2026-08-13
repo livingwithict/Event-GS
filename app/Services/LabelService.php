@@ -11,14 +11,14 @@ class LabelService
 {
     public function generateLabelPdf(Collection $registrations, LabelTemplate $template): string
     {
-        $orientation = $template->orientation ?? 'portrait';
-
         $dompdf = new Dompdf((new Options)->set([
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => false,
-            'defaultPaperSize' => 'a4',
-            'defaultPaperOrientation' => $orientation,
         ]));
+
+        // Paper is the sticker itself, one label per page. mm -> pt.
+        $mmToPt = 72 / 25.4;
+        $dompdf->setPaper([0, 0, $template->width * $mmToPt, $template->height * $mmToPt]);
 
         $html = $this->generateSheetHtml($registrations, $template);
 
@@ -36,7 +36,7 @@ class LabelService
             $qrCodePng = $template->show_qr ? base64_encode($qrService->generatePng($registration)) : null;
 
             return [
-                'name' => $registration->name,
+                'name' => $registration->displayName(),
                 'designation' => $template->show_designation ? $registration->designation : null,
                 'organization' => $template->show_organization ? $registration->organization : null,
                 'guest_number' => $registration->guest_number,
@@ -49,7 +49,57 @@ class LabelService
         return view('labels.print-sheet', [
             'labels' => $labels,
             'template' => $template,
+            'geo' => $this->geometry($template),
         ])->render();
+    }
+
+    /**
+     * All label geometry in mm, derived from the sticker size so any
+     * template dimension lays out without clipping.
+     */
+    private function geometry(LabelTemplate $template): array
+    {
+        $w = (float) $template->width;
+        $h = (float) $template->height;
+
+        $pad = max(0, min(
+            (float) ($template->margin_left ?? 2),
+            (float) ($template->margin_right ?? 2),
+            (float) ($template->margin_top ?? 2),
+            (float) ($template->margin_bottom ?? 2),
+            $w / 10,
+            $h / 10,
+        ));
+
+        $titleH = $template->show_category_color ? round($h * 0.14, 1) : 0.0;
+        $codeH = 3.8;
+        $gap = 2.0;
+
+        $bodyTop = round($pad + $titleH + ($titleH > 0 ? 1.0 : 0), 1);
+        $bodyH = round($h - $bodyTop - $pad, 1);
+
+        // QR is square: limited by the column width and by the height left under the title.
+        $qr = round(min($w * 0.35, $bodyH - $codeH), 1);
+        // Centre the QR + code block in whatever height is left.
+        $qrTop = round($bodyTop + max(0, ($bodyH - ($qr + $codeH)) / 2), 1);
+
+        // Fonts scale with the sticker; the template value is a floor, not a cap.
+        $nameFont = max((int) $template->font_size_name, (int) round($h * 0.5));
+
+        return [
+            'pad' => $pad,
+            'titleH' => $titleH,
+            'codeH' => $codeH,
+            'qr' => $qr,
+            'qrTop' => $qrTop,
+            'bodyTop' => $bodyTop,
+            'bodyH' => $bodyH,
+            'infoW' => round($w - 2 * $pad - $qr - $gap, 1),
+            'nameFont' => $nameFont,
+            'orgFont' => max(8, (int) round($nameFont * 0.6)),
+            // Helvetica bold is ~0.58em per character; keep the code inside the QR column.
+            'codeFont' => max(7, (int) round(min($qr * 0.42, $qr * 2.835 / (11 * 0.58)))),
+        ];
     }
 
     public function markAsPrinted(Collection $registrations): void

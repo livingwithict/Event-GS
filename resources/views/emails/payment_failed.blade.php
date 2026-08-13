@@ -18,7 +18,7 @@
             <p>{{ $event->name }}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->name }},</p>
+            <p>Dear {{ $registration->displayName() }},</p>
             <p>We were unable to process your payment for <strong>{{ $event->name }}</strong>.</p>
 
             <div class="alert">

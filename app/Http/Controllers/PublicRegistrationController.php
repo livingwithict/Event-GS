@@ -75,8 +75,8 @@ class PublicRegistrationController extends Controller
         $email = trim($request->email ?? '');
         $phone = trim($request->phone ?? '');
 
-        if ($this->isDuplicate($event->id, $email, $phone)) {
-            return back()->withInput()->withErrors(['email' => 'A registration with this email or phone already exists.']);
+        if ($this->isDuplicate($event->id, $email, $phone, $request->name ?? '')) {
+            return back()->withInput()->withErrors(['email' => 'You are already registered for this event. Check your email for the invitation code.']);
         }
 
         $categoryId = $request->category_id;
@@ -144,6 +144,7 @@ class PublicRegistrationController extends Controller
                 'promo_code_id' => $promoCode?->id,
                 'registration_source' => 'self',
                 'approval_status' => $approvalStatus,
+                'salutation' => trim($request->salutation ?? '') ?: null,
                 'name' => trim($request->name),
                 'email' => $email ?: null,
                 'phone' => $phone ?: null,
@@ -404,23 +405,27 @@ class PublicRegistrationController extends Controller
         return response($html);
     }
 
-    private function isDuplicate(int $eventId, string $email, string $phone): bool
+    /**
+     * A shared organisation email or phone is normal — several colleagues use one.
+     * Only the same name on the same contact is a real double submission.
+     */
+    private function isDuplicate(int $eventId, string $email, string $phone, string $name = ''): bool
     {
-        $query = Registration::where('event_id', $eventId);
-
-        if (! empty($email) && ! empty($phone)) {
-            return $query->where(fn ($q) => $q->where('email', $email)->orWhere('phone', $phone))->exists();
+        if (empty($email) && empty($phone)) {
+            return false;
         }
 
-        if (! empty($email)) {
-            return $query->where('email', $email)->exists();
-        }
-
-        if (! empty($phone)) {
-            return $query->where('phone', $phone)->exists();
-        }
-
-        return false;
+        return Registration::where('event_id', $eventId)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower(trim($name))])
+            ->where(function ($q) use ($email, $phone) {
+                if (! empty($email)) {
+                    $q->orWhere('email', $email);
+                }
+                if (! empty($phone)) {
+                    $q->orWhere('phone', $phone);
+                }
+            })
+            ->exists();
     }
 
     private function sendConfirmation(Registration $reg, Event $event, ?Payment $payment = null): void

@@ -25,7 +25,7 @@
     <div class="qr">
         <img src="data:image/svg+xml;base64,{{ base64_encode($qrSvg) }}" alt="QR code">
     </div>
-    <div class="name">{{ $registration->name }}</div>
+    <div class="name">{{ $registration->displayName() }}</div>
     <div class="guest-number">{{ $registration->guest_number }}</div>
     @if($category)
         <div class="category">{{ $category->name }}</div>

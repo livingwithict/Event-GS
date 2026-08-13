@@ -96,7 +96,7 @@ class LabelTemplateResource extends Resource
                                     ->label('Organization')
                                     ->default(true),
                                 Forms\Components\Toggle::make('show_category_color')
-                                    ->label('Category Color Strip')
+                                    ->label('Category Title Bar')
                                     ->default(true),
                             ]),
                     ])

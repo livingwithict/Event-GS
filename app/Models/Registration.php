@@ -17,7 +17,7 @@ class Registration extends Model
     use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'event_id', 'category_id', 'promo_code_id', 'registration_source', 'unique_code', 'guest_number', 'qr_hash', 'name', 'email', 'phone',
+        'event_id', 'category_id', 'promo_code_id', 'registration_source', 'unique_code', 'guest_number', 'qr_hash', 'salutation', 'name', 'email', 'phone',
         'organization', 'designation', 'address', 'website',
         'photo_path', 'meal_preference', 'special_assistance', 'notes', 'pan_vat', 'gender', 'consented_at',
         'payment_status', 'paid_at',
@@ -53,6 +53,15 @@ class Registration extends Model
             ->setDescriptionForEvent(fn (string $eventName) => "Registration {$this->name} ({$this->unique_code}) was {$eventName}");
     }
 
+    /** Titles offered in the registration forms. Add to this list, not to each form. */
+    public const SALUTATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Er.', 'Prof.', 'Prof. Dr.', 'Adv.', 'Hon.', 'CA.'];
+
+    /** Name as it should be printed and read out: "Dr. Sita Rai". */
+    public function displayName(): string
+    {
+        return trim(($this->salutation ? $this->salutation.' ' : '').$this->name);
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Registration $reg) {
@@ -71,14 +80,19 @@ class Registration extends Model
     public static function generateGuestNumber(int $eventId): string
     {
         $event = Event::find($eventId);
-        $code = strtoupper(Str::slug($event?->slug ?? 'EVT', ''));
-        $code = substr(preg_replace('/[^A-Z0-9]/', '', $code), 0, 6);
-        $code = str_pad($code, 3, 'EVT');
+
+        $prefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $event?->invitation_code_format));
+
+        if ($prefix === '') {
+            // No format set on the event: fall back to the event slug.
+            $prefix = strtoupper(preg_replace('/[^A-Z0-9]/', '', strtoupper(Str::slug($event?->slug ?? 'EVT', ''))));
+            $prefix = str_pad(substr($prefix, 0, 6), 3, 'EVT');
+        }
 
         $chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
         do {
-            $random = substr(str_shuffle($chars), 0, 6);
-            $guestNumber = "{$code}-G-{$random}";
+            $random = substr(str_shuffle($chars), 0, 5);
+            $guestNumber = "{$prefix}-{$random}";
         } while (self::where('event_id', $eventId)->where('guest_number', $guestNumber)->exists());
 
         return $guestNumber;

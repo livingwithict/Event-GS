@@ -14,9 +14,10 @@ class PublicRegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'salutation' => 'nullable|string|max:20',
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^(\+977|0)?9\d{9}$/'],
+            'phone' => ['nullable', 'string', 'max:50'],
             'category_id' => 'nullable|exists:participant_categories,id',
             'designation' => 'nullable|string|max:255',
             'organization' => 'nullable|string|max:255',

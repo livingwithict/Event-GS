@@ -5,11 +5,14 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\ImportBatchResource\Pages;
 use App\Models\ImportBatch;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 use UnitEnum;
 
 class ImportBatchResource extends Resource
@@ -68,6 +71,18 @@ class ImportBatchResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
+                DeleteAction::make()
+                    ->modalHeading('Delete import batch')
+                    ->modalDescription('Removes the batch, its staged rows and its error log. Guests already registered from it are kept.')
+                    ->disabled(fn (ImportBatch $record) => $record->status === 'processing'),
+            ])
+            ->toolbarActions([
+                DeleteBulkAction::make()
+                    ->modalDescription('Removes the batches, their staged rows and error logs. Guests already registered from them are kept.')
+                    ->action(function (Collection $records) {
+                        $records->reject(fn (ImportBatch $b) => $b->status === 'processing')
+                            ->each(fn (ImportBatch $b) => $b->delete());
+                    }),
             ]);
     }
 

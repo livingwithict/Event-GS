@@ -27,6 +27,9 @@
 <body>
     <div class="header">
         <div>
+            @if($logo = $event->logoDataUri())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:40px;margin-bottom:6px;">
+            @endif
             <h1>{{ config('app.name') }}</h1>
             <p style="font-size:14px;color:#6b7280;margin-top:4px;">{{ $event->name }}</p>
         </div>

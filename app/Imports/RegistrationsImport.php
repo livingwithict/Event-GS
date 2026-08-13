@@ -47,19 +47,9 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                if (! empty($email) && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $this->recordError($rowNumber, $row, 'Invalid email format.');
-
-                    continue;
-                }
-
-                $normalizedPhone = $this->normalizePhone($phone);
-                if (! empty($phone) && ! $normalizedPhone) {
-                    $this->recordError($rowNumber, $row, 'Invalid phone number format.');
-
-                    continue;
-                }
-                $phone = $normalizedPhone ?: '';
+                // Contact details are taken as typed: guest lists carry landlines,
+                // extensions, two addresses in one cell. Losing the guest over a
+                // format rule costs more than an address we cannot mail.
 
                 $gender = trim($row['gender'] ?? '');
                 if (! empty($gender) && ! in_array($gender, ['male', 'female', 'other'])) {
@@ -75,8 +65,12 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                if ($this->skipDuplicates) {
-                    $dupeQuery = Registration::where('event_id', $this->event->id);
+                // Colleagues share an organisation email/phone, so a duplicate is
+                // the same name on the same contact — not the contact alone.
+                if ($this->skipDuplicates && (! empty($email) || ! empty($phone))) {
+                    $dupeQuery = Registration::where('event_id', $this->event->id)
+                        ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)]);
+
                     if (! empty($email)) {
                         $dupeQuery->where('email', $email);
                     } elseif (! empty($phone)) {
@@ -84,7 +78,7 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     }
 
                     if ($dupeQuery->exists()) {
-                        $this->recordError($rowNumber, $row, "Duplicate registration ({$email}{$phone}).");
+                        $this->recordError($rowNumber, $row, "{$name} is already registered ({$email}{$phone}).");
 
                         continue;
                     }
@@ -97,11 +91,13 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     'import_batch_id' => $this->batch?->id,
                     'row_number' => $rowNumber,
                     'raw_data' => $rawData,
+                    'salutation' => trim($row['salutation'] ?? '') ?: null,
                     'name' => $name,
                     'email' => $email ?: null,
                     'phone' => $phone ?: null,
                     'organization' => trim($row['organization'] ?? '') ?: null,
                     'designation' => trim($row['designation'] ?? '') ?: null,
+                    'address' => trim($row['address'] ?? '') ?: null,
                     'category_name' => trim($row['category'] ?? '') ?: null,
                     'status' => 'pending',
                 ]);
@@ -151,30 +147,6 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
         }
 
         return (array) $row;
-    }
-
-    private function normalizePhone(string $phone): ?string
-    {
-        $phone = trim($phone);
-
-        if ($phone === '' || $phone === '0') {
-            return null;
-        }
-
-        $stripped = preg_replace('/[^\d+]/', '', $phone);
-
-        // CSV parsers may strip the + from numbers like +9779800000001 → 9779800000001
-        // Detect 977-prefixed 13-digit numbers and re-add the +
-        if (str_starts_with($stripped, '977') && strlen($stripped) >= 13 && strlen($stripped) <= 14) {
-            $stripped = '+'.$stripped;
-        }
-
-        // Must have at least 10 digits
-        if (preg_match('/^\+?\d{10,15}$/', $stripped)) {
-            return $stripped;
-        }
-
-        return null;
     }
 
     private function recordError(int $rowNumber, $row, string $message): void

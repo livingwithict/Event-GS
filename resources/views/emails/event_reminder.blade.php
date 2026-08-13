@@ -17,11 +17,14 @@
 <body>
     <div class="container">
         <div class="header">
+            @if($logo = $event->logoUrl())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px;margin-bottom:10px;">
+            @endif
             <h1>Event Reminder</h1>
             <p>{{ $event->name }}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->name }},</p>
+            <p>Dear {{ $registration->displayName() }},</p>
             <p>This is a friendly reminder that <strong>{{ $event->name }}</strong> is happening soon!</p>
 
             <div class="reminder-box">

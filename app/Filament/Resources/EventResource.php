@@ -82,6 +82,12 @@ class EventResource extends Resource
                             ->maxLength(255)
                             ->prefix('/event/')
                             ->unique(ignoreRecord: true),
+                        TextInput::make('invitation_code_format')
+                            ->label('Invitation Code Format')
+                            ->maxLength(20)
+                            ->helperText('Prefix for invitation codes, e.g. DNC26 produces DNC26-A7K2M.')
+                            ->rule('regex:/^[A-Za-z0-9]+$/')
+                            ->dehydrateStateUsing(fn (?string $state) => $state ? strtoupper($state) : null),
                         Placeholder::make('public_registration_url')
                             ->label('Public Registration URL')
                             ->content(fn (?Event $record): string => $record

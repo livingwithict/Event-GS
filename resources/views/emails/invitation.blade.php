@@ -13,11 +13,14 @@
 <body>
     <div class="container">
         <div class="header">
+            @if($logo = $event->logoUrl())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px;margin-bottom:10px;">
+            @endif
             <h1>{{ $event->name }}</h1>
             <p>{{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }} | {{ $event->venue }}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->name }},</p>
+            <p>Dear {{ $registration->displayName() }},</p>
             <p>You are invited to <strong>{{ $event->name }}</strong>.</p>
             <p>Please present the QR code below at the entrance:</p>
             <div class="qr-code">

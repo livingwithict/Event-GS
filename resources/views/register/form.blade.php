@@ -42,8 +42,8 @@
     <div class="container">
         <div class="card">
             <div class="header">
-                @if($event->logo_path)
-                    <img src="{{ Storage::url($event->logo_path) }}" alt="{{ $event->name }}" style="max-height:40px;margin-bottom:8px;">
+                @if($logo = $event->logoUrl())
+                    <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:40px;margin-bottom:8px;">
                 @endif
                 <h1>{{ $event->name }}</h1>
                 <p>{{ $event->start_datetime?->format('M j, Y H:i') ?? '' }} &middot; {{ $event->venue }}</p>
@@ -114,6 +114,16 @@
                             <option value="5" {{ old('companion_count') === '5' ? 'selected' : '' }}>5 companions</option>
                         </select>
                         <div class="hint">Additional guests sharing your registration (up to 5)</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="salutation">Title</label>
+                        <select id="salutation" name="salutation">
+                            <option value="">None</option>
+                            @foreach (\App\Models\Registration::SALUTATIONS as $title)
+                                <option value="{{ $title }}" @selected(old('salutation') === $title)>{{ $title }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="field">

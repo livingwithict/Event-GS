@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -19,7 +20,7 @@ class Event extends Model
     use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'description',
+        'name', 'slug', 'invitation_code_format', 'description',
         'logo_path', 'banner_path',
         'event_date', 'start_datetime', 'end_datetime',
         'registration_open_at', 'registration_close_at',
@@ -56,6 +57,31 @@ class Event extends Model
                 $event->event_date = $event->start_datetime->toDateString();
             }
         });
+    }
+
+    /** Absolute URL for the logo — emails and public pages need the full host. */
+    public function logoUrl(): ?string
+    {
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        return url(Storage::disk('public')->url($this->logo_path));
+    }
+
+    /**
+     * Logo as a data URI for PDFs. Dompdf cannot fetch remote files, and reading
+     * through the disk works whether or not public/storage is linked.
+     */
+    public function logoDataUri(): ?string
+    {
+        if (! $this->logo_path || ! Storage::disk('public')->exists($this->logo_path)) {
+            return null;
+        }
+
+        $mime = Storage::disk('public')->mimeType($this->logo_path) ?: 'image/png';
+
+        return 'data:'.$mime.';base64,'.base64_encode(Storage::disk('public')->get($this->logo_path));
     }
 
     public function getActivitylogOptions(): LogOptions

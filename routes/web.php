@@ -12,8 +12,9 @@ use App\Models\Event;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    // Upcoming first, soonest at the top; anything already over drops below.
     $events = Event::where('status', 'published')
-        ->orderBy('start_datetime')
+        ->orderByRaw('(start_datetime < now()) asc, start_datetime asc')
         ->get();
 
     return view('welcome', ['events' => $events]);
@@ -28,6 +29,9 @@ Route::get('/ticket/{token}/qr-print', [RegistrationQrController::class, 'downlo
 Route::middleware('auth')->group(function () {
     Route::get('/labels/{registration}/print', [LabelController::class, 'printSingle'])->name('labels.print-single');
     Route::post('/labels/print', [LabelController::class, 'printBulk'])->name('labels.print');
+    // Auto-print: a wrapper page that loads the PDF and fires the print dialog.
+    Route::get('/labels/print-now', [LabelController::class, 'printNow'])->name('labels.print-now');
+    Route::get('/labels/pdf', [LabelController::class, 'pdf'])->name('labels.pdf');
 });
 
 Route::get('/admin/onsite-register/{event}', [OnsiteRegistrationController::class, 'show'])

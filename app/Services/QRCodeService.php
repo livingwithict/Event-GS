@@ -9,7 +9,7 @@ class QRCodeService
 {
     public function getPayload(Registration $registration): string
     {
-        return config('app.url').'/checkin/t/'.$registration->guest_number;
+        return $registration->guest_number;
     }
 
     public function generateSvg(Registration $registration, int $size = 300): string
@@ -49,11 +49,10 @@ class QRCodeService
             return Registration::where('unique_code', $code)->first();
         }
 
-        if (str_contains($code, '-G-')) {
-            return Registration::where('guest_number', $code)->first();
-        }
-
-        return $this->resolveFromToken($code);
+        // Codes are uppercase, but a scanner may read an old lowercase payload
+        // or a human may type one in, so match case-insensitively.
+        return Registration::whereRaw('UPPER(guest_number) = ?', [strtoupper($code)])->first()
+            ?? $this->resolveFromToken($code);
     }
 
     public function resolveFromToken(string $token): ?Registration

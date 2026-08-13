@@ -23,6 +23,9 @@
 <body>
     <div class="container">
         <div class="card">
+            @if($logo = $event->logoUrl())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:44px;margin-bottom:12px;">
+            @endif
             <div class="icon">&#10003;</div>
             <h1>Registration Confirmed!</h1>
             <div class="guest-number">{{ $guestNumber }}</div>

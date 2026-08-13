@@ -32,8 +32,8 @@
         <div class="color-strip"></div>
         <div class="main">
             <div class="header">
-                @if($event->logo_path && file_exists(public_path('storage/'.$event->logo_path)))
-                <img class="logo" src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('storage/'.$event->logo_path))) }}" alt="Logo">
+                @if($logo = $event->logoDataUri())
+                <img class="logo" src="{{ $logo }}" alt="Logo">
                 @else
                 <div class="logo-placeholder">LOGO</div>
                 @endif
@@ -45,7 +45,7 @@
 
             <div class="body-section">
                 <div class="info">
-                    <div class="name">{{ $registration->name }}</div>
+                    <div class="name">{{ $registration->displayName() }}</div>
                     @if($registration->designation || $registration->organization)
                     <div class="subtitle">{{ implode(' · ', array_filter([$registration->designation, $registration->organization])) }}</div>
                     @endif

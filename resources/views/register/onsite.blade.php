@@ -57,9 +57,20 @@
                 <form method="POST" action="{{ route('onsite.register.store', $event->id) }}">
                     @csrf
 
-                    <div class="field">
-                        <label for="name">Full Name *</label>
-                        <input type="text" id="name" name="name" value="{{ old('name') }}" required autofocus>
+                    <div class="row">
+                        <div class="field">
+                            <label for="salutation">Title</label>
+                            <select id="salutation" name="salutation">
+                                <option value="">None</option>
+                                @foreach (\App\Models\Registration::SALUTATIONS as $title)
+                                    <option value="{{ $title }}" @selected(old('salutation') === $title)>{{ $title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="name">Full Name *</label>
+                            <input type="text" id="name" name="name" value="{{ old('name') }}" required autofocus>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -91,6 +102,13 @@
                         <div class="field">
                             <label for="designation">Designation</label>
                             <input type="text" id="designation" name="designation" value="{{ old('designation') }}">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="field">
+                            <label for="address">Address</label>
+                            <input type="text" id="address" name="address" value="{{ old('address') }}">
                         </div>
                     </div>
 

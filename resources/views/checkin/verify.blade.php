@@ -32,8 +32,8 @@
     <div class="container">
         <div class="card">
             <div class="header">
-                @if($event->logo_path)
-                    <img src="{{ Storage::url($event->logo_path) }}" alt="{{ $event->name }}" style="max-height:40px;margin-bottom:8px;">
+                @if($logo = $event->logoUrl())
+                    <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:40px;margin-bottom:8px;">
                 @endif
                 <h1>{{ $event->name }}</h1>
                 <p>{{ $event->start_datetime?->format('M j, Y') }} &middot; {{ $event->venue }}</p>
@@ -46,7 +46,7 @@
             <div class="body">
                 <div class="info-row">
                     <span class="info-label">Name</span>
-                    <span class="info-value">{{ $registration->name }}</span>
+                    <span class="info-value">{{ $registration->displayName() }}</span>
                 </div>
                 @if($registration->designation)
                     <div class="info-row">

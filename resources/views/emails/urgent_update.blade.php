@@ -17,7 +17,7 @@
             <p>{{ $event->name }}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->name }},</p>
+            <p>Dear {{ $registration->displayName() }},</p>
             <p>We have an important update regarding <strong>{{ $event->name }}</strong>.</p>
 
             <p>Please stay tuned for further details. If you have questions, contact us at {{ $event->contact_info ?? 'events@ictfoundation.org.np' }}.</p>

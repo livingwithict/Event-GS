@@ -19,11 +19,14 @@
 <body>
     <div class="container">
         <div class="header">
+            @if($logo = $event->logoUrl())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px;margin-bottom:10px;">
+            @endif
             <h1>Registration Confirmed</h1>
             <p>{{ $event->name }}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->name }},</p>
+            <p>Dear {{ $registration->displayName() }},</p>
             <p>Your registration for <strong>{{ $event->name }}</strong> has been confirmed. We're excited to have you!</p>
 
             <div class="guest-number">

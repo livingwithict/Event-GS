@@ -28,14 +28,11 @@ class QRCodeServiceTest extends TestCase
         $this->assertStringContainsString('<svg', $svg);
     }
 
-    public function test_qr_payload_contains_checkin_url(): void
+    public function test_qr_payload_is_the_plain_invitation_code(): void
     {
         $reg = Registration::factory()->create();
 
-        $payload = $this->service->getPayload($reg);
-
-        $this->assertStringContainsString('/checkin/t/', $payload);
-        $this->assertStringContainsString($reg->guest_number, $payload);
+        $this->assertSame($reg->guest_number, $this->service->getPayload($reg));
     }
 
     public function test_resolve_valid_uuid_returns_registration(): void

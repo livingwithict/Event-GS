@@ -18,6 +18,20 @@ class RegistrationModelTest extends TestCase
         $this->assertEquals(36, strlen($reg->unique_code));
     }
 
+    public function test_guest_number_uses_event_invitation_code_format(): void
+    {
+        $event = \App\Models\Event::factory()->create(['invitation_code_format' => 'DNC26']);
+        $reg = Registration::factory()->create(['event_id' => $event->id]);
+        $this->assertMatchesRegularExpression('/^DNC26-[A-Z0-9]{5}$/', $reg->guest_number);
+    }
+
+    public function test_guest_number_falls_back_to_slug_when_no_format(): void
+    {
+        $event = \App\Models\Event::factory()->create(['invitation_code_format' => null, 'slug' => 'digital-nepal']);
+        $reg = Registration::factory()->create(['event_id' => $event->id]);
+        $this->assertMatchesRegularExpression('/^DIGITA-[A-Z0-9]{5}$/', $reg->guest_number);
+    }
+
     public function test_registration_qr_hash_is_deterministic(): void
     {
         $reg = Registration::factory()->create();

@@ -11,7 +11,7 @@ class ImportStaging extends Model
 
     protected $fillable = [
         'event_id', 'import_batch_id', 'row_number', 'raw_data',
-        'name', 'email', 'phone', 'organization', 'designation', 'category_name',
+        'name', 'email', 'phone', 'organization', 'designation', 'address', 'salutation', 'category_name',
         'status', 'registration_id', 'error_message',
     ];
 

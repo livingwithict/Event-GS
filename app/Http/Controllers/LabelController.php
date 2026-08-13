@@ -26,12 +26,69 @@ class LabelController extends Controller
         $service = new LabelService;
         $pdf = $service->generateLabelPdf(collect([$registration]), $template);
 
-        $service->markAsPrinted(collect([$registration]));
+        // Preview shows the label inline without burning the "printed" flag.
+        $preview = $request->boolean('preview');
+
+        if (! $preview) {
+            $service->markAsPrinted(collect([$registration]));
+        }
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="label-'.$registration->guest_number.'.pdf"',
+            'Content-Disposition' => ($preview ? 'inline' : 'attachment').'; filename="label-'.$registration->guest_number.'.pdf"',
         ]);
+    }
+
+    /** Wrapper page: loads the label PDF in an iframe and fires the print dialog. */
+    public function printNow(Request $request)
+    {
+        $registrations = $this->resolveRegistrations($request);
+
+        return view('labels.print-now', [
+            'pdfUrl' => route('labels.pdf', ['registrations' => $registrations->pluck('id')->implode(',')]),
+            'count' => $registrations->count(),
+        ]);
+    }
+
+    /** Inline PDF for the auto-print wrapper. Marks the labels as printed. */
+    public function pdf(Request $request)
+    {
+        $registrations = $this->resolveRegistrations($request);
+
+        $service = new LabelService;
+        $pdf = $service->generateLabelPdf($registrations, $this->resolveTemplate($registrations->first()->event, $request));
+
+        $service->markAsPrinted($registrations);
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="labels.pdf"',
+        ]);
+    }
+
+    /**
+     * Registrations named by ?registrations=1,2,3 — all must belong to one event
+     * so a single label template and one access check apply to the whole batch.
+     */
+    private function resolveRegistrations(Request $request): \Illuminate\Database\Eloquent\Collection
+    {
+        $ids = array_filter(array_map('intval', explode(',', (string) $request->query('registrations'))));
+
+        abort_if(empty($ids), 400, 'No registrations selected.');
+
+        $registrations = Registration::with('event', 'category')->whereIn('id', $ids)->orderBy('guest_number')->get();
+
+        abort_if($registrations->isEmpty(), 404, 'Registrations not found.');
+        abort_if($registrations->pluck('event_id')->unique()->count() > 1, 422, 'Select registrations from a single event.');
+
+        $event = $registrations->first()->event;
+        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
+
+        if (! $event->settingEnabled('enable_label_printing')) {
+            abort(403, 'Label printing is not enabled for this event.');
+        }
+
+        return $registrations;
     }
 
     public function printBulk(Request $request)

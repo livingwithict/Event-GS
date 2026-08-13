@@ -3,98 +3,106 @@
 <head>
     <meta charset="utf-8">
     <style>
-        @page { size: A4; margin: {{ $template->margin_top ?? 8 }}mm {{ $template->margin_right ?? 8 }}mm {{ $template->margin_bottom ?? 8 }}mm {{ $template->margin_left ?? 8 }}mm; }
+        /* One sticker per page. Everything is absolutely positioned in mm so
+           dompdf lays it out exactly and nothing can push past the edge. */
+        @page { size: {{ $template->width }}mm {{ $template->height }}mm; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        .sheet { display: flex; flex-wrap: wrap; gap: 2mm; }
+
         .label {
+            position: relative;
             width: {{ $template->width }}mm;
             height: {{ $template->height }}mm;
-            border: 0.5px solid #d1d5db;
-            border-radius: 2px;
-            display: flex;
             overflow: hidden;
-            page-break-inside: avoid;
-            position: relative;
+            page-break-after: always;
         }
-        .color-strip {
-            width: 5mm;
-            flex-shrink: 0;
-        }
-        .label-body {
-            flex: 1;
-            padding: 3mm 4mm;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .label-name {
-            font-size: {{ $template->font_size_name }}px;
+        .label:last-child { page-break-after: auto; }
+
+        .title {
+            position: absolute;
+            top: {{ $geo['pad'] }}mm;
+            left: {{ $geo['pad'] }}mm;
+            width: {{ $template->width - 2 * $geo['pad'] }}mm;
+            height: {{ $geo['titleH'] }}mm;
+            line-height: {{ $geo['titleH'] }}mm;
+            font-size: {{ max(7, (int) round($geo['titleH'] * 2.4)) }}px;
             font-weight: 700;
-            color: #111827;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #ffffff;
+            background: #1a56db;
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .info {
+            position: absolute;
+            top: {{ $geo['bodyTop'] }}mm;
+            left: {{ $geo['pad'] }}mm;
+            width: {{ $geo['infoW'] }}mm;
+            height: {{ $geo['bodyH'] }}mm;
+            overflow: hidden;
+        }
+        .name {
+            font-size: {{ $geo['nameFont'] }}px;
+            font-weight: 700;
+            color: #000000;
+            line-height: 1.1;
+        }
+        .org {
+            font-size: {{ $geo['orgFont'] }}px;
+            color: #374151;
             line-height: 1.2;
+            margin-top: 0.8mm;
+        }
+
+        .qr {
+            position: absolute;
+            top: {{ $geo['qrTop'] }}mm;
+            right: {{ $geo['pad'] }}mm;
+            width: {{ $geo['qr'] }}mm;
+            text-align: center;
+        }
+        .qr img { width: {{ $geo['qr'] }}mm; height: {{ $geo['qr'] }}mm; display: block; }
+        .code {
+            width: {{ $geo['qr'] }}mm;
+            height: {{ $geo['codeH'] }}mm;
+            line-height: {{ $geo['codeH'] }}mm;
+            font-size: {{ $geo['codeFont'] }}px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            color: #000000;
+            text-align: center;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .label-detail {
-            font-size: 9px;
-            color: #6b7280;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: 1px;
-        }
-        .label-qr {
-            width: 18mm;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2mm;
-        }
-        .label-qr img {
-            width: 16mm;
-            height: 16mm;
-        }
-        .label-guest {
-            font-size: 7px;
-            font-family: 'Courier New', monospace;
-            color: #9ca3af;
-            margin-top: 2px;
         }
     </style>
 </head>
 <body>
-    <div class="sheet">
-        @foreach($labels as $label)
-        <div class="label">
-            @if($label['category_color'])
-            <div class="color-strip" style="background: {{ $label['category_color'] }};"></div>
+    @foreach($labels as $label)
+    <div class="label">
+        @if($geo['titleH'] > 0 && $label['category_name'])
+        <div class="title" @if($label['category_color']) style="background: {{ $label['category_color'] }};" @endif>{{ $label['category_name'] }}</div>
+        @endif
+
+        <div class="info">
+            <div class="name">{{ $label['name'] }}</div>
+            @if($label['organization'])
+            <div class="org">{{ $label['organization'] }}</div>
             @endif
-
-            <div class="label-body">
-                <div class="label-name">{{ $label['name'] }}</div>
-                @if($label['designation'])
-                <div class="label-detail">{{ $label['designation'] }}</div>
-                @endif
-                @if($label['organization'])
-                <div class="label-detail">{{ $label['organization'] }}</div>
-                @endif
-                @if($label['category_name'])
-                <div class="label-detail" style="color: {{ $label['category_color'] ?? '#6b7280' }}; font-weight:600;">{{ $label['category_name'] }}</div>
-                @endif
-                <div class="label-guest">{{ $label['guest_number'] }}</div>
-            </div>
-
-            @if($label['qr_code'])
-            <div class="label-qr">
-                <img src="data:image/png;base64,{{ $label['qr_code'] }}" alt="QR">
-            </div>
+            @if($label['designation'])
+            <div class="org">{{ $label['designation'] }}</div>
             @endif
         </div>
-        @endforeach
+
+        @if($label['qr_code'])
+        <div class="qr">
+            <img src="data:image/png;base64,{{ $label['qr_code'] }}" alt="QR">
+            <div class="code">{{ $label['guest_number'] }}</div>
+        </div>
+        @endif
     </div>
+    @endforeach
 </body>
 </html>

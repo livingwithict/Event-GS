@@ -10,6 +10,8 @@ class EventObserver
 {
     public function saved(Event $event): void
     {
+        $this->ensureBaseActions($event);
+
         if (! $event->isMultiDay()) {
             $this->deactivateDayActions($event);
 
@@ -29,6 +31,42 @@ class EventObserver
         }
 
         $this->deactivateExcessDayActions($event, $totalDays);
+    }
+
+    /**
+     * Entrance / Lunch / Dinner exist for every event and carry the column they
+     * stamp, so a scan updates the registration and writes a ScanLog in one place.
+     */
+    private function ensureBaseActions(Event $event): void
+    {
+        $meals = $event->meal_types ?? ['lunch', 'dinner'];
+
+        $actions = [
+            ['CHECKIN', 'Entrance', 'entry_time', 1, true],
+            ['LUNCH', 'Lunch', 'lunch_used_at', 2, in_array('lunch', $meals)],
+            ['DINNER', 'Dinner', 'dinner_used_at', 3, in_array('dinner', $meals)],
+        ];
+
+        foreach ($actions as [$code, $name, $column, $sort, $enabled]) {
+            $action = ScanActionType::firstOrNew(['event_id' => $event->id, 'action_code' => $code]);
+
+            $action->fill([
+                'action_name' => $action->action_name ?: $name,
+                'column_mapping' => $column,
+                'allow_multiple' => false,
+                'sort_order' => $sort,
+            ]);
+
+            // Only the meal toggles follow the event settings; never silently
+            // re-enable an action an admin turned off by hand.
+            if (! $action->exists) {
+                $action->is_active = $enabled;
+            } elseif (! $enabled) {
+                $action->is_active = false;
+            }
+
+            $action->save();
+        }
     }
 
     private function ensureDayAction(int $eventId, string $code, string $name): void
