@@ -271,7 +271,8 @@ class EventResource extends Resource
                             ->default(false),
                         Toggle::make('settings.enable_label_printing')
                             ->label('Label Printing')
-                            ->default(false),
+                            ->helperText('Badge stickers for the desk.')
+                            ->default(true),
                         Toggle::make('settings.enable_notifications')
                             ->label('Email/SMS Notifications')
                             ->default(true),

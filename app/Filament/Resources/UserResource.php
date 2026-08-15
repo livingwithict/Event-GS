@@ -14,6 +14,7 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -56,11 +57,21 @@ class UserResource extends Resource
                             ->maxLength(255),
                         Forms\Components\TextInput::make('password')
                             ->password()
+                            ->revealable()
                             ->dehydrateStateUsing(fn ($state) => filled($state) ? Hash::make($state) : null)
                             ->dehydrated(fn ($state) => filled($state))
                             ->required(fn (string $context) => $context === 'create')
+                            ->minLength(10)
                             ->maxLength(255)
-                            ->hint(fn (string $context) => $context === 'edit' ? 'Leave blank to keep current password' : null),
+                            ->helperText(fn (string $context) => $context === 'edit'
+                                ? 'Leave blank to keep the current password.'
+                                : 'At least 10 characters. Write it down — it cannot be read back later.')
+                            ->suffixAction(
+                                \Filament\Actions\Action::make('generate')
+                                    ->icon('heroicon-m-sparkles')
+                                    ->tooltip('Generate a password')
+                                    ->action(fn (Set $set) => $set('password', static::generatePassword())),
+                            ),
                         Forms\Components\Select::make('role')
                             ->options(fn () => Role::options())
                             ->disabled(fn (?User $record) => $record?->id === Auth::id())
@@ -118,6 +129,24 @@ class UserResource extends Resource
                 DeleteAction::make()
                     ->visible(fn (User $record) => $record->id !== Auth::id()),
             ]);
+    }
+
+    public static function canCreate(): bool
+    {
+        return Auth::user()?->hasAbility(Ability::UsersManage) ?? false;
+    }
+
+    /** 10 characters, no 0/O or 1/l — these get read aloud to staff. */
+    public static function generatePassword(): string
+    {
+        $alphabet = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $password = '';
+
+        for ($i = 0; $i < 10; $i++) {
+            $password .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+
+        return $password;
     }
 
     public static function canEdit($record): bool
