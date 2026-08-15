@@ -33,9 +33,12 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Event Hub')
-            ->brandLogo(asset('logo.png'))
+            // Root-relative, not asset(): the panel config is cached by
+            // filament:optimize, which would freeze an absolute http:// URL and
+            // break the padlock behind the TLS-terminating proxy.
+            ->brandLogo('/logo.png')
             ->brandLogoHeight('2.25rem')
-            ->favicon(asset('favicon.jpg'))
+            ->favicon('/favicon.jpg')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
                 'primary' => Color::Indigo,

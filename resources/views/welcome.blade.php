@@ -29,7 +29,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name', 'Event Hub') }} — Events</title>
     <meta name="description" content="Register for events run by ICT Foundation Nepal. One invitation code covers the entrance, lunch and dinner.">
-    <link rel="icon" href="{{ asset('favicon.jpg') }}">
+    <link rel="icon" href="/favicon.jpg">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&display=swap" rel="stylesheet">
     <style>
@@ -175,7 +175,7 @@
     <div class="wrap">
         <header>
             <span class="brand">
-                <img src="{{ asset('logo.png') }}" alt="{{ config('app.name', 'Event Hub') }}">
+                <img src="/logo.png" alt="{{ config('app.name', 'Event Hub') }}">
             </span>
             <a class="signin" href="{{ url('/admin') }}">Staff sign in</a>
         </header>
