@@ -37,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
             // filament:optimize, which would freeze an absolute http:// URL and
             // break the padlock behind the TLS-terminating proxy.
             ->brandLogo('/logo.png')
+            ->darkModeBrandLogo('/logo-white.png')
             ->brandLogoHeight('2.25rem')
             ->favicon('/favicon.jpg')
             ->viteTheme('resources/css/filament/admin/theme.css')
