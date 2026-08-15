@@ -23,6 +23,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->append(SecurityHeaders::class);
 
+        // Public traffic arrives via the nginx reverse proxy on 172.16.52.46.
+        // Without this, Laravel sees the proxy's plain HTTP hop and builds
+        // http:// asset URLs, which the browser then blocks on an https page.
+        $middleware->trustProxies(at: [
+            '172.16.52.46',
+            '127.0.0.1',
+        ]);
+
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('admin/*')
             ? $request->expectsJson()
                 ? response()->json(['message' => 'Unauthenticated.'], 401)
