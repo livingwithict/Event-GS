@@ -49,7 +49,7 @@ class AuthTest extends TestCase
 
     public function test_scanner_cannot_access_manager_endpoints(): void
     {
-        $scanner = User::factory()->create(['role' => 'scanner']);
+        $scanner = User::factory()->create(['role' => 'scanner_staff']);
 
         $event = Event::factory()->create();
 
@@ -60,7 +60,7 @@ class AuthTest extends TestCase
 
     public function test_manager_can_access_import_endpoint(): void
     {
-        $manager = User::factory()->create(['role' => 'admin']);
+        $manager = User::factory()->create(['role' => 'super_admin']);
         $event = Event::factory()->create();
 
         // Manager passes authorization but gets 422 validation (file required)

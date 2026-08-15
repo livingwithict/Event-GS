@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\Ability;
 use App\Imports\RegistrationsImport;
 use App\Models\Event;
 use App\Models\ImportBatch;
@@ -40,6 +41,16 @@ class ImportPreview extends Page implements HasTable
     protected string $view = 'filament.pages.import-preview';
 
     public ?int $eventId = null;
+
+    public static function canAccess(): bool
+    {
+        return Auth::user()?->hasAbility(Ability::ImportsManage) ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
 
     public function mount(): void
     {

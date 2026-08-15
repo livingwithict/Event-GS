@@ -33,7 +33,7 @@ trait HasEventScope
 
         $user = Auth::user();
 
-        if ($user?->isManager()) {
+        if ($user?->roleEnum()?->isEventScoped()) {
             $hasAccess = $user->assignedEvents()->where('event_id', $eventId)->exists();
             if (! $hasAccess) {
                 return;

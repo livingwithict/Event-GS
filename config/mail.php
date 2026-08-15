@@ -115,4 +115,13 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+     * Where guest replies go. The From address is a Resend sending identity, not
+     * a mailbox — replies to it are lost unless this points at a real inbox.
+     */
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS'),
+        'name' => env('MAIL_REPLY_TO_NAME', env('MAIL_FROM_NAME')),
+    ],
+
 ];

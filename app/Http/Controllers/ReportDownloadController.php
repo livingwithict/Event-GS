@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Ability;
 use App\Exports\CardDeliveryExport;
 use App\Exports\CategorySummaryExport;
 use App\Exports\EventSummaryPdfExport;
@@ -17,7 +18,7 @@ class ReportDownloadController extends Controller
 
     public function pdfSummary(Event $event)
     {
-        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ReportsView);
         $pdf = (new EventSummaryPdfExport)->generate($event);
 
         return response($pdf, 200, [
@@ -28,7 +29,7 @@ class ReportDownloadController extends Controller
 
     public function payments(Event $event)
     {
-        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ReportsView);
 
         return Excel::download(
             new PaymentExport($event->id),
@@ -38,7 +39,7 @@ class ReportDownloadController extends Controller
 
     public function scannerActivity(Event $event)
     {
-        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ReportsView);
 
         return Excel::download(
             new ScannerActivityExport($event->id),
@@ -48,7 +49,7 @@ class ReportDownloadController extends Controller
 
     public function categorySummary(Event $event)
     {
-        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ReportsView);
 
         return Excel::download(
             new CategorySummaryExport($event->id),
@@ -58,7 +59,7 @@ class ReportDownloadController extends Controller
 
     public function cardDelivery(Event $event)
     {
-        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ReportsView);
 
         return Excel::download(
             new CardDeliveryExport($event),

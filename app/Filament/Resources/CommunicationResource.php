@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CommunicationResource\Pages;
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Models\Communication;
 use App\Services\CommunicationService;
@@ -21,9 +22,9 @@ class CommunicationResource extends Resource
 {
     use HasRoleBasedVisibility;
 
-    protected static function getVisibleRoles(): array
+    protected static function requiredAbility(): string
     {
-        return ['super_admin', 'admin', 'manager'];
+        return Ability::CommunicationsView;
     }
 
     protected static ?string $model = Communication::class;
@@ -51,7 +52,21 @@ class CommunicationResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('registration.name')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('registration.name')
+                    ->label('Guest')
+                    ->description(fn ($record) => $record->registration?->guest_number)
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('recipient')
+                    ->label('Sent to')
+                    ->state(fn ($record) => $record->type === 'sms'
+                        ? $record->registration?->phone
+                        : $record->registration?->email)
+                    ->copyable()
+                    ->searchable(query: fn ($query, $search) => $query->whereHas(
+                        'registration',
+                        fn ($q) => $q->where('email', 'ilike', "%{$search}%")->orWhere('phone', 'ilike', "%{$search}%"),
+                    )),
                 Tables\Columns\TextColumn::make('type')->badge()->colors(['email' => 'info', 'sms' => 'success']),
                 Tables\Columns\TextColumn::make('email_type')
                     ->label('Notification Type')
@@ -90,6 +105,7 @@ class CommunicationResource extends Resource
                     ]),
                 Tables\Filters\SelectFilter::make('status')->options(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed']),
             ])
+            ->defaultSort('id', 'desc')
             ->defaultPaginationPageOption(20)
             ->paginationPageOptions([10, 20, 50])
             ->emptyStateHeading('No communications yet')

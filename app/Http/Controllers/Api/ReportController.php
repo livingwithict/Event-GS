@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\Exports\AttendanceExport;
 use App\Exports\CardDeliveryExport;
 use App\Exports\CategorySummaryExport;
@@ -27,7 +28,7 @@ class ReportController extends Controller
 
     private function authorizeReport(Event $event): void
     {
-        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ReportsView);
     }
 
     private function getFormat(): string

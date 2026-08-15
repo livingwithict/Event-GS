@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
@@ -19,7 +20,7 @@ class GuestSearchController extends Controller
             'event_id' => 'required|integer|exists:events,id',
         ]);
         $event = Event::findOrFail($validated['event_id']);
-        $this->authorizeEventAccess($event, ['scanner', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::Scan);
         $query = $validated['q'];
 
         // Try full-text search first (PostgreSQL only)

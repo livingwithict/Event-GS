@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ScanActionRequest;
@@ -16,7 +17,7 @@ class ScanActionController extends Controller
     public function store(ScanActionRequest $request)
     {
         $reg = Registration::findOrFail($request->registration_id);
-        $this->authorizeEventAccess($reg->event, ['scanner', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($reg->event, Ability::Scan);
         $actionType = ScanActionType::findOrFail($request->action_type_id);
 
         if ($actionType->event_id !== $reg->event_id) {
@@ -45,7 +46,7 @@ class ScanActionController extends Controller
         $day = request('day');
         $event = Event::find($eventId);
         abort_unless($event, 404);
-        $this->authorizeEventAccess($event, ['scanner', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::Scan);
 
         $query = ScanActionType::where('event_id', $eventId)
             ->active()

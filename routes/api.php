@@ -20,7 +20,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Scanner endpoints (scanner, admin, super_admin, manager)
-    Route::middleware(['role:scanner,admin,super_admin,manager', 'throttle:60,1', 'idempotent'])->group(function () {
+    Route::middleware(['role:scanner_staff,registration_staff,event_admin,super_admin', 'throttle:60,1', 'idempotent'])->group(function () {
         Route::post('/scan', [ScanController::class, 'store']);
         Route::post('/entry', [EntryController::class, 'store']);
         Route::post('/meal', [MealController::class, 'store']);
@@ -31,7 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Manager+ endpoints (admin, super_admin, manager, finance)
-    Route::middleware('role:admin,super_admin,manager,finance')->group(function () {
+    Route::middleware('role:event_admin,super_admin,finance')->group(function () {
         Route::get('/event/{event}/dashboard', [EventDashboardController::class, 'show']);
         Route::get('/reports/attendance/{event}', [ReportController::class, 'attendance']);
         Route::get('/reports/noshow/{event}', [ReportController::class, 'noShow']);
@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Manager-only endpoints (import, send invites)
-    Route::middleware('role:admin,super_admin')->group(function () {
+    Route::middleware('role:event_admin,super_admin')->group(function () {
         Route::post('/event/{event}/import', [ImportController::class, 'import']);
         Route::post('/event/{event}/send-invites', [CommunicationController::class, 'sendInvites']);
     });

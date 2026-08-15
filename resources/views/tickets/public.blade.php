@@ -16,7 +16,7 @@
 </head>
 <body>
     <div class="actions">
-        <a href="{{ route('ticket.download', $registration->qr_hash) }}" class="btn btn-primary">Download PDF</a>
+        <a href="{{ route('ticket.download', $registration->qr_hash) }}" class="btn btn-primary" target="_blank" rel="noopener">Open PDF</a>
     </div>
     <div class="ticket-wrapper">
         {!! $html !!}

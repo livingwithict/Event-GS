@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\ScanActionTypeResource\Pages;
 use App\Models\ScanActionType;
@@ -25,6 +26,11 @@ use UnitEnum;
 class ScanActionTypeResource extends Resource
 {
     use HasRoleBasedVisibility;
+
+    protected static function requiredAbility(): string
+    {
+        return Ability::SettingsManage;
+    }
 
     protected static ?string $model = ScanActionType::class;
 

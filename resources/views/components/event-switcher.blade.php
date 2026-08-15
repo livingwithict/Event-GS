@@ -89,7 +89,7 @@
             </template>
         </div>
 
-        @if(Auth::user()?->isSuperAdmin() || Auth::user()?->isAdmin())
+        @if(Auth::user()?->hasAbility(\App\Enums\Ability::EventsManage))
         <div class="border-t border-gray-100 dark:border-gray-800 p-1">
             <a href="{{ \App\Filament\Resources\EventResource::getUrl('create') }}"
                 class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"

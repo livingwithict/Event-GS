@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Ability;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Requests\ImportRegistrationsRequest;
 use App\Imports\RegistrationsImport;
@@ -15,7 +16,7 @@ class ImportController extends Controller
 
     public function import(ImportRegistrationsRequest $request, Event $event)
     {
-        $this->authorizeEventAccess($event, ['admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ImportsManage);
         $file = $request->file('file');
 
         $batch = ImportBatch::create([

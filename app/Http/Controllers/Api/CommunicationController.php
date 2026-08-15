@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendBulkEmail;
@@ -16,7 +17,7 @@ class CommunicationController extends Controller
 
     public function sendInvites(Request $request, Event $event): JsonResponse
     {
-        $this->authorizeEventAccess($event, ['admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::CommunicationsSend);
         $validated = $request->validate([
             'type' => 'required|in:email,sms',
             'email_type' => 'nullable|string|in:registration_confirmation,payment_success,payment_failed,event_reminder,post_event_thank_you,invitation,urgent_update',

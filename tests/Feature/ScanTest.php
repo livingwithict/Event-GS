@@ -16,7 +16,7 @@ class ScanTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->scanner = User::factory()->create(['role' => 'scanner']);
+        $this->scanner = User::factory()->create(['role' => 'scanner_staff']);
     }
 
     public function test_scan_valid_qr_returns_guest_data(): void

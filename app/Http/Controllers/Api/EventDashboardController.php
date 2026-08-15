@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
@@ -14,7 +15,7 @@ class EventDashboardController extends Controller
 
     public function show(Event $event)
     {
-        $this->authorizeEventAccess($event, ['finance', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($event, Ability::ReportsView);
         $day = request('day');
         $stats = $event->getStats();
         $total = $stats['total_registrations'];

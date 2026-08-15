@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\Events\EntryRecorded;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
@@ -16,7 +17,7 @@ class EntryController extends Controller
     public function store(EntryRequest $request)
     {
         $reg = Registration::findOrFail($request->registration_id);
-        $this->authorizeEventAccess($reg->event, ['scanner', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($reg->event, Ability::Scan);
 
         if (! $reg->canPerformAction('CHECKIN')) {
             return response()->json(['message' => 'Check-in is not allowed for this guest\'s category.'], 403);

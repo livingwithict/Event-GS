@@ -40,18 +40,31 @@ if ((Get-Service postgresql* -ErrorAction SilentlyContinue | Where-Object Status
 & $php artisan config:clear | Out-Null
 & $php artisan migrate --force
 
+# Warm the caches that cost the most per request. Blade and Filament still
+# recompile changed files, so this is safe while developing. Not config:cache —
+# that would freeze .env.
+& $php artisan filament:optimize | Out-Null
+& $php artisan view:cache | Out-Null
+
 # display_errors=Off keeps PHP notices out of Livewire JSON responses (breaks login).
 Start-Bg $php '-d display_errors=Off artisan serve --port=8000' 'serve'
-Start-Bg $php 'artisan queue:work --tries=3' 'queue'
+# SendBulkEmail dispatches onto "high"; without naming it those jobs never run.
+Start-Bg $php 'artisan queue:work --queue=high,default --tries=3' 'queue'
 # npm is a .cmd shim, so it has to go through cmd.exe.
 Start-Bg 'cmd.exe' '/c npm run dev' 'vite'
 
-Start-Sleep 5
+Start-Sleep 3
 
-try {
-    $r = Invoke-WebRequest 'http://localhost:8000/admin/login' -UseBasicParsing -TimeoutSec 20
-    $ok = $r.StatusCode -eq 200 -and $r.Content.StartsWith('<!DOCTYPE')
-} catch { $ok = $false }
+# The first request compiles views and can take 20s+ on a cold start, so retry
+# rather than calling it dead.
+$ok = $false
+foreach ($attempt in 1..3) {
+    try {
+        $r = Invoke-WebRequest 'http://localhost:8000/admin/login' -UseBasicParsing -TimeoutSec 45
+        $ok = $r.StatusCode -eq 200 -and $r.Content.StartsWith('<!DOCTYPE')
+        if ($ok) { break }
+    } catch { Start-Sleep 3 }
+}
 
 if ($ok) {
     Write-Host "`nReady -> http://localhost:8000/admin/login" -ForegroundColor Green

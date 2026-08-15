@@ -14,7 +14,7 @@ class LabelPrintTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => 'admin']);
+        return User::factory()->create(['role' => 'super_admin']);
     }
 
     public function test_print_now_page_loads_the_pdf_for_the_selected_registrations(): void

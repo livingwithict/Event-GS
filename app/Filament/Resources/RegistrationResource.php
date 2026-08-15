@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\RegistrationResource\Pages;
 use App\Models\LabelTemplate;
@@ -22,6 +23,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use App\Jobs\SendBulkEmail;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -29,15 +31,16 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class RegistrationResource extends Resource
 {
     use HasRoleBasedVisibility;
 
-    protected static function getVisibleRoles(): array
+    protected static function requiredAbility(): string
     {
-        return ['super_admin', 'admin', 'manager', 'finance'];
+        return Ability::GuestsView;
     }
 
     protected static ?string $model = Registration::class;
@@ -298,12 +301,14 @@ class RegistrationResource extends Resource
                         'registration' => $record->load(['event', 'category']),
                         'qrSvg' => app(QRCodeService::class)->generateSvg($record),
                     ])),
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsEdit)),
                 Action::make('approve')
                     ->label('Approve')
                     ->icon('heroicon-o-check')
                     ->color('success')
-                    ->visible(fn (Registration $record) => $record->approval_status === 'pending')
+                    ->visible(fn (Registration $record) => $record->approval_status === 'pending'
+                        && (Auth::user()?->hasAbility(Ability::GuestsApprove) ?? false))
                     ->action(function (Registration $record) {
                         $record->update(['approval_status' => 'approved']);
                         try {
@@ -322,7 +327,8 @@ class RegistrationResource extends Resource
                     ->label('Reject')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
-                    ->visible(fn (Registration $record) => $record->approval_status === 'pending')
+                    ->visible(fn (Registration $record) => $record->approval_status === 'pending'
+                        && (Auth::user()?->hasAbility(Ability::GuestsApprove) ?? false))
                     ->requiresConfirmation()
                     ->action(function (Registration $record) {
                         $record->update(['approval_status' => 'rejected']);
@@ -336,7 +342,8 @@ class RegistrationResource extends Resource
                     ->label('Promote')
                     ->icon('heroicon-o-arrow-up-circle')
                     ->color('primary')
-                    ->visible(fn (Registration $record) => $record->approval_status === 'waitlisted')
+                    ->visible(fn (Registration $record) => $record->approval_status === 'waitlisted'
+                        && (Auth::user()?->hasAbility(Ability::GuestsApprove) ?? false))
                     ->action(function (Registration $record) {
                         $record->update(['approval_status' => 'approved']);
                         try {
@@ -356,39 +363,50 @@ class RegistrationResource extends Resource
                     ->icon('heroicon-o-shield-check')
                     ->url(fn (Registration $record): string => route('checkin.verify', $record->guest_number))
                     ->openUrlInNewTab(),
-                Action::make('download_ticket')
+                Action::make('view_ticket')
                     ->label('Ticket')
                     ->icon('heroicon-o-ticket')
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::TicketsView))
                     ->url(fn ($record) => route('ticket.download', $record->qr_hash))
                     ->openUrlInNewTab(),
                 Action::make('download_qr')
                     ->label('Download QR')
                     ->icon('heroicon-o-qr-code')
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::TicketsView))
                     ->url(fn (Registration $record): string => route('ticket.qr-print', $record->qr_hash))
                     ->openUrlInNewTab(),
                 Action::make('preview_label')
                     ->label('Preview Label')
                     ->icon('heroicon-o-eye')
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
                     ->url(fn ($record) => route('labels.print-single', ['registration' => $record->id, 'preview' => 1]))
                     ->openUrlInNewTab(),
                 Action::make('print_label')
                     ->label('Print Label')
                     ->icon('heroicon-o-printer')
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
                     ->url(fn ($record) => route('labels.print-now', ['registrations' => $record->id]))
                     ->openUrlInNewTab(),
-                DeleteAction::make(),
-                ForceDeleteAction::make(),
-                RestoreAction::make(),
+                DeleteAction::make()
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
+                ForceDeleteAction::make()
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
+                RestoreAction::make()
+                    ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
+                    ForceDeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
+                    RestoreBulkAction::make()
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
                     BulkAction::make('approve_registrations')
                         ->label('Approve')
                         ->icon('heroicon-o-check')
                         ->color('success')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsApprove))
                         ->action(function (Collection $records) {
                             $records->each(fn ($r) => $r->update(['approval_status' => 'approved']));
                         }),
@@ -396,6 +414,7 @@ class RegistrationResource extends Resource
                         ->label('Reject')
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsApprove))
                         ->action(function (Collection $records) {
                             $records->each(fn ($r) => $r->update(['approval_status' => 'rejected']));
                         }),
@@ -403,6 +422,7 @@ class RegistrationResource extends Resource
                         ->label('Badge Collected')
                         ->icon('heroicon-o-check-badge')
                         ->color('primary')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsEdit))
                         ->action(function (Collection $records) {
                             $records->each(fn ($r) => $r->update(['badge_status' => 'collected']));
                         }),
@@ -433,9 +453,51 @@ class RegistrationResource extends Resource
                                 echo $csv;
                             }, 'registrations.csv', ['Content-Type' => 'text/csv']);
                         }),
+                    BulkAction::make('send_invitation')
+                        ->label('Send Invitation Email')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::CommunicationsSend))
+                        ->requiresConfirmation()
+                        ->modalHeading('Send invitation emails?')
+                        ->modalDescription('Each guest gets their ticket attached. This sends real email and cannot be undone.')
+                        ->modalSubmitActionLabel('Send now')
+                        ->schema([
+                            \Filament\Forms\Components\TextInput::make('subject')
+                                ->label('Subject line')
+                                ->default('Your invitation')
+                                ->required()
+                                ->maxLength(150),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $byEvent = $records->filter(fn ($r) => filled($r->email))->groupBy('event_id');
+
+                            if ($byEvent->isEmpty()) {
+                                Notification::make()->warning()
+                                    ->title('No email addresses')
+                                    ->body('None of the selected guests have an email address.')
+                                    ->send();
+
+                                return;
+                            }
+
+                            $queued = 0;
+
+                            foreach ($byEvent as $eventId => $group) {
+                                foreach ($group->pluck('id')->chunk(50) as $chunk) {
+                                    SendBulkEmail::dispatch($chunk->all(), (int) $eventId, $data['subject'], 'invitation');
+                                }
+                                $queued += $group->count();
+                            }
+
+                            Notification::make()->success()
+                                ->title("Queued for {$queued} guests")
+                                ->body('Sending runs in the background. Track it in Communications.')
+                                ->send();
+                        }),
                     BulkAction::make('print_labels')
                         ->label('Print Labels')
                         ->icon('heroicon-o-printer')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
                         ->action(fn (Collection $records) => redirect()->route('labels.print-now', [
                             'registrations' => $records->pluck('id')->implode(','),
                         ])),

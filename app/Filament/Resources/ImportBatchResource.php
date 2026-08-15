@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\ImportBatchResource\Pages;
 use App\Models\ImportBatch;
@@ -19,9 +20,9 @@ class ImportBatchResource extends Resource
 {
     use HasRoleBasedVisibility;
 
-    protected static function getVisibleRoles(): array
+    protected static function requiredAbility(): string
     {
-        return ['super_admin', 'admin', 'manager'];
+        return Ability::ImportsManage;
     }
 
     protected static ?string $model = ImportBatch::class;

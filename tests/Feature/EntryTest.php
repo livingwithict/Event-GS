@@ -16,7 +16,7 @@ class EntryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->scanner = User::factory()->create(['role' => 'scanner']);
+        $this->scanner = User::factory()->create(['role' => 'scanner_staff']);
     }
 
     public function test_record_entry_for_first_time(): void

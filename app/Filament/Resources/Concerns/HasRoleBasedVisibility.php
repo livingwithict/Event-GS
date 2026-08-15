@@ -2,27 +2,27 @@
 
 namespace App\Filament\Resources\Concerns;
 
+use App\Enums\Ability;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * A resource declares the ability it needs, not the roles that happen to have
+ * it today, so adding or re-scoping a role never means editing every resource.
+ */
 trait HasRoleBasedVisibility
 {
-    private static function userHasRole(string ...$roles): bool
-    {
-        return in_array(Auth::user()?->role, $roles);
-    }
-
     public static function canAccess(array $parameters = []): bool
     {
-        return static::userHasRole(...static::getVisibleRoles());
+        return Auth::user()?->hasAbility(static::requiredAbility()) ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return static::userHasRole(...static::getVisibleRoles());
+        return static::canAccess();
     }
 
-    protected static function getVisibleRoles(): array
+    protected static function requiredAbility(): string
     {
-        return ['super_admin', 'admin'];
+        return Ability::EventsView;
     }
 }

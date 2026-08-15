@@ -46,7 +46,7 @@ class OnsitePaymentTest extends TestCase
 
     public function test_onsite_registration_with_gateway_payment_creates_payment_and_renders_redirect(): void
     {
-        $manager = User::factory()->create(['role' => 'manager']);
+        $manager = User::factory()->create(['role' => 'event_admin']);
         $event = Event::factory()->create([
             'settings' => array_merge(Event::factory()->make()->settings ?? [], [
                 'enable_payment' => true,
@@ -84,7 +84,7 @@ class OnsitePaymentTest extends TestCase
 
     public function test_onsite_registration_with_cash_payment_creates_no_payment(): void
     {
-        $manager = User::factory()->create(['role' => 'manager']);
+        $manager = User::factory()->create(['role' => 'event_admin']);
         $event = Event::factory()->create([
             'settings' => ['enable_payment' => true, 'tax_rate' => 0],
         ]);
@@ -114,7 +114,7 @@ class OnsitePaymentTest extends TestCase
 
     public function test_onsite_registration_with_no_payment_method_for_paid_category_skips_gateway(): void
     {
-        $manager = User::factory()->create(['role' => 'manager']);
+        $manager = User::factory()->create(['role' => 'event_admin']);
         $event = Event::factory()->create([
             'settings' => ['enable_payment' => true, 'tax_rate' => 0],
         ]);

@@ -36,7 +36,10 @@ class ArrivalDistributionWidget extends ChartWidget
             ->join('scan_action_types', 'scan_logs.action_type_id', '=', 'scan_action_types.id')
             ->where('scan_action_types.action_code', 'CHECKIN')
             ->when($eventId, fn ($q) => $q->where('scan_logs.event_id', $eventId))
-            ->selectRaw('EXTRACT(HOUR FROM scan_logs.scanned_at)::int as hour, COUNT(*) as count')
+            // Hour-of-day differs by driver: Postgres in production, SQLite in tests.
+            ->selectRaw(DB::getDriverName() === 'pgsql'
+                ? 'EXTRACT(HOUR FROM scan_logs.scanned_at)::int as hour, COUNT(*) as count'
+                : "CAST(strftime('%H', scan_logs.scanned_at) AS INTEGER) as hour, COUNT(*) as count")
             ->groupBy('hour')
             ->orderBy('hour')
             ->get();

@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     // Upcoming first, soonest at the top; anything already over drops below.
+    // Bound timestamp rather than now(), which SQLite does not have.
     $events = Event::where('status', 'published')
-        ->orderByRaw('(start_datetime < now()) asc, start_datetime asc')
+        ->orderByRaw('case when start_datetime < ? then 1 else 0 end asc', [now()])
+        ->orderBy('start_datetime')
         ->get();
 
     return view('welcome', ['events' => $events]);

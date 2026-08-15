@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
+use App\Enums\Role;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\Event;
@@ -11,6 +13,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -32,9 +35,9 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Users';
 
-    protected static function getVisibleRoles(): array
+    protected static function requiredAbility(): string
     {
-        return ['super_admin', 'admin'];
+        return Ability::UsersManage;
     }
 
     public static function form(Schema $schema): Schema
@@ -59,14 +62,19 @@ class UserResource extends Resource
                             ->maxLength(255)
                             ->hint(fn (string $context) => $context === 'edit' ? 'Leave blank to keep current password' : null),
                         Forms\Components\Select::make('role')
-                            ->options(fn () => static::getRoleOptions())
+                            ->options(fn () => Role::options())
                             ->disabled(fn (?User $record) => $record?->id === Auth::id())
+                            ->helperText(fn (Get $get, ?User $record) => $record?->id === Auth::id()
+                                ? 'You cannot change your own role.'
+                                : Role::tryFrom((string) $get('role'))?->description())
+                            ->native(false)
+                            ->live()
                             ->required()
-                            ->default('manager'),
+                            ->default(Role::Viewer->value),
                     ]),
                 Section::make('Event Assignments')
-                    ->description('Select the events this user can access.')
-                    ->visible(fn (?User $record) => $record === null || in_array($record->role, ['manager', 'scanner', 'finance'], true))
+                    ->description('Every role except Super Admin only sees the events assigned here.')
+                    ->visible(fn (Get $get) => Role::tryFrom((string) $get('role'))?->isEventScoped() ?? false)
                     ->schema([
                         Forms\Components\CheckboxList::make('assignedEvents')
                             ->label('Assigned Events')
@@ -86,15 +94,15 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('role')
                     ->badge()
-                    ->colors([
-                        'super_admin' => 'danger',
-                        'admin' => 'warning',
-                        'manager' => 'success',
-                        'scanner' => 'info',
-                        'finance' => 'primary',
-                        'viewer' => 'gray',
-                    ])
+                    ->formatStateUsing(fn (string $state) => Role::tryFrom($state)?->label() ?? $state)
+                    ->color(fn (string $state) => Role::tryFrom($state)?->colour() ?? 'gray')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('assignedEvents.name')
+                    ->label('Events')
+                    ->badge()
+                    ->limitList(2)
+                    ->placeholder('All events')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y')
                     ->sortable()
@@ -114,41 +122,26 @@ class UserResource extends Resource
 
     public static function canEdit($record): bool
     {
-        $user = Auth::user();
-
-        return $user !== null
-            && ($user->isSuperAdmin() || ($user->isAdmin() && $record->role !== 'super_admin'));
+        return Auth::user()?->hasAbility(Ability::UsersManage) ?? false;
     }
 
     public static function canDelete($record): bool
     {
+        // Nobody deletes themselves, and the last super admin cannot be removed.
         $user = Auth::user();
 
-        return $user !== null
-            && $record->id !== $user->id
-            && $record->role !== 'super_admin'
-            && ($user->isSuperAdmin() || ($user->isAdmin() && $record->role !== 'admin'));
-    }
-
-    public static function getRoleOptions(): array
-    {
-        $currentUser = Auth::user();
-
-        if ($currentUser?->isSuperAdmin()) {
-            return [
-                'admin' => 'Admin',
-                'manager' => 'Manager',
-                'scanner' => 'Scanner',
-                'finance' => 'Finance',
-                'viewer' => 'Viewer',
-            ];
+        if (! $user?->hasAbility(Ability::UsersManage) || $record->id === $user->id) {
+            return false;
         }
 
-        return [
-            'manager' => 'Manager',
-            'scanner' => 'Scanner',
-            'viewer' => 'Viewer',
-        ];
+        return $record->role !== Role::SuperAdmin->value
+            || User::where('role', Role::SuperAdmin->value)->count() > 1;
+    }
+
+    /** @return array<string, string> */
+    public static function getRoleOptions(): array
+    {
+        return Role::options();
     }
 
     public static function getPages(): array

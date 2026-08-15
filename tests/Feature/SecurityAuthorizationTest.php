@@ -14,7 +14,7 @@ class SecurityAuthorizationTest extends TestCase
 
     public function test_scanner_cannot_access_an_unassigned_event(): void
     {
-        $scanner = User::factory()->create(['role' => 'scanner']);
+        $scanner = User::factory()->create(['role' => 'scanner_staff']);
         $assignedEvent = Event::factory()->create();
         $otherEvent = Event::factory()->create();
         $registration = Registration::factory()->create(['event_id' => $otherEvent->id]);
@@ -31,7 +31,7 @@ class SecurityAuthorizationTest extends TestCase
 
     public function test_manager_cannot_download_an_unassigned_event_report(): void
     {
-        $manager = User::factory()->create(['role' => 'manager']);
+        $manager = User::factory()->create(['role' => 'event_admin']);
         $assignedEvent = Event::factory()->create();
         $otherEvent = Event::factory()->create();
         $manager->assignedEvents()->attach($assignedEvent->id);

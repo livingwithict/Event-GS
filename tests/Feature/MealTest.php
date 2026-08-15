@@ -16,7 +16,7 @@ class MealTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->scanner = User::factory()->create(['role' => 'scanner']);
+        $this->scanner = User::factory()->create(['role' => 'scanner_staff']);
     }
 
     public function test_record_lunch_first_time(): void

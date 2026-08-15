@@ -21,7 +21,7 @@ class EventSwitcherController extends Controller
 
         $event = Event::findOrFail($eventId);
 
-        if ($user->isManager()) {
+        if ($user->roleEnum()?->isEventScoped()) {
             $hasAccess = $user->assignedEvents()->where('event_id', $eventId)->exists();
             if (! $hasAccess) {
                 abort(403, 'You do not have access to this event.');
@@ -37,7 +37,7 @@ class EventSwitcherController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->isManager()) {
+        if ($user->roleEnum()?->isEventScoped()) {
             return $user->assignedEvents()
                 ->orderBy('start_datetime')
                 ->get()

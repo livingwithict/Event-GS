@@ -21,7 +21,7 @@ class Event extends Model
 
     protected $fillable = [
         'name', 'slug', 'invitation_code_format', 'description',
-        'logo_path', 'banner_path',
+        'logo_path', 'banner_path', 'ticket_path',
         'event_date', 'start_datetime', 'end_datetime',
         'registration_open_at', 'registration_close_at',
         'venue', 'contact_info',
@@ -75,13 +75,48 @@ class Event extends Model
      */
     public function logoDataUri(): ?string
     {
-        if (! $this->logo_path || ! Storage::disk('public')->exists($this->logo_path)) {
+        return $this->imageDataUri($this->logo_path);
+    }
+
+    /** Where the name and QR sit on the invitation card, in pixels of the artwork. */
+    public const TICKET_LAYOUT_DEFAULTS = [
+        'width' => 1492,
+        'height' => 1054,
+        'name_x' => 200,
+        'name_y' => 500,
+        // Name must not run past x=725, so 200 + 525.
+        'name_w' => 525,
+        'name_h' => 45,
+        'name_align' => 'left',
+        'name_color' => '#111827',
+        'qr_x' => 1110,
+        'qr_y' => 500,
+        'qr_size' => 234,
+    ];
+
+    public function ticketLayout(): array
+    {
+        return array_merge(self::TICKET_LAYOUT_DEFAULTS, array_filter(
+            $this->settings['ticket_layout'] ?? [],
+            fn ($v) => $v !== null && $v !== '',
+        ));
+    }
+
+    /** Invitation card artwork, as a data URI for the ticket PDF. */
+    public function ticketDataUri(): ?string
+    {
+        return $this->imageDataUri($this->ticket_path);
+    }
+
+    private function imageDataUri(?string $path): ?string
+    {
+        if (! $path || ! Storage::disk('public')->exists($path)) {
             return null;
         }
 
-        $mime = Storage::disk('public')->mimeType($this->logo_path) ?: 'image/png';
+        $mime = Storage::disk('public')->mimeType($path) ?: 'image/png';
 
-        return 'data:'.$mime.';base64,'.base64_encode(Storage::disk('public')->get($this->logo_path));
+        return 'data:'.$mime.';base64,'.base64_encode(Storage::disk('public')->get($path));
     }
 
     public function getActivitylogOptions(): LogOptions

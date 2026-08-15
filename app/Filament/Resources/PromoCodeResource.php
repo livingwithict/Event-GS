@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\PromoCodeResource\Pages;
 use App\Models\PromoCode;
@@ -18,6 +19,11 @@ use UnitEnum;
 class PromoCodeResource extends Resource
 {
     use HasRoleBasedVisibility;
+
+    protected static function requiredAbility(): string
+    {
+        return Ability::SettingsManage;
+    }
 
     protected static ?string $model = PromoCode::class;
 

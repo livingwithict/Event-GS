@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\LabelTemplateResource\Pages;
 use App\Models\LabelTemplate;
@@ -20,6 +21,11 @@ use UnitEnum;
 class LabelTemplateResource extends Resource
 {
     use HasRoleBasedVisibility;
+
+    protected static function requiredAbility(): string
+    {
+        return Ability::SettingsManage;
+    }
 
     protected static ?string $model = LabelTemplate::class;
 

@@ -40,7 +40,7 @@
             <a href="{{ route('ticket.qr-print', $qrHash) }}" class="btn">Download Printable QR (6 × 8)</a>
             @endif
             @if($qrHash)
-            <a href="{{ route('ticket.download', $qrHash) }}" class="btn">Download Your Ticket</a>
+            <a href="{{ route('ticket.download', $qrHash) }}" class="btn" target="_blank" rel="noopener">View Your Ticket</a>
             @endif
             <p class="message">
                 A confirmation has been sent to your email/phone.<br>

@@ -35,9 +35,10 @@ class TicketController extends Controller
         $ticketService = new TicketService;
         $pdf = $ticketService->generatePdf($registration);
 
+        // Inline: the browser's PDF viewer opens it, with its own download button.
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$registration->guest_number.'-ticket.pdf"',
+            'Content-Disposition' => 'inline; filename="'.$registration->guest_number.'-ticket.pdf"',
         ]);
     }
 }

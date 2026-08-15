@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\EventResource\Pages;
 use App\Models\Event;
@@ -26,6 +27,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -41,9 +44,9 @@ class EventResource extends Resource
 {
     use HasRoleBasedVisibility;
 
-    protected static function getVisibleRoles(): array
+    protected static function requiredAbility(): string
     {
-        return ['super_admin', 'admin', 'manager', 'finance'];
+        return Ability::EventsView;
     }
 
     protected static ?string $model = Event::class;
@@ -173,6 +176,70 @@ class EventResource extends Resource
                             ->directory('events/banners')
                             ->maxSize(5120)
                             ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp']),
+
+                        FileUpload::make('ticket_path')
+                            ->label('Invitation card artwork')
+                            ->image()
+                            ->imagePreviewHeight('160')
+                            ->disk('public')
+                            ->directory('events/tickets')
+                            ->maxSize(8192)
+                            ->acceptedFileTypes(['image/png', 'image/jpeg'])
+                            ->helperText('The guest name and QR are printed onto this. Leave empty to use the built-in ticket design.')
+                            ->columnSpanFull(),
+
+                        Placeholder::make('ticket_layout_hint')
+                            ->hiddenLabel()
+                            ->content('Positions below are in pixels of the artwork, measured from its top-left corner.')
+                            ->columnSpanFull(),
+
+                        Fieldset::make('Artwork size')
+                            ->schema([
+                                TextInput::make('settings.ticket_layout.width')
+                                    ->label('Width')->numeric()->suffix('px')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['width']),
+                                TextInput::make('settings.ticket_layout.height')
+                                    ->label('Height')->numeric()->suffix('px')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['height']),
+                            ])->columns(2)->columnSpanFull(),
+
+                        Fieldset::make('QR code')
+                            ->schema([
+                                TextInput::make('settings.ticket_layout.qr_x')
+                                    ->label('Left')->numeric()->suffix('px')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['qr_x']),
+                                TextInput::make('settings.ticket_layout.qr_y')
+                                    ->label('Top')->numeric()->suffix('px')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['qr_y']),
+                                TextInput::make('settings.ticket_layout.qr_size')
+                                    ->label('Size')->numeric()->suffix('px')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['qr_size']),
+                            ])->columns(2)->columnSpanFull(),
+
+                        Fieldset::make('Guest name')
+                            ->schema([
+                                TextInput::make('settings.ticket_layout.name_x')
+                                    ->label('Left')->numeric()->suffix('px')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['name_x']),
+                                TextInput::make('settings.ticket_layout.name_y')
+                                    ->label('Top')->numeric()->suffix('px')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['name_y']),
+                                TextInput::make('settings.ticket_layout.name_w')
+                                    ->label('Max width')->numeric()->suffix('px')
+                                    ->helperText('Longer names shrink to fit.')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['name_w']),
+                                TextInput::make('settings.ticket_layout.name_h')
+                                    ->label('Height')->numeric()->suffix('px')
+                                    ->helperText('The name sits on the bottom edge.')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['name_h']),
+                                Select::make('settings.ticket_layout.name_align')
+                                    ->label('Alignment')
+                                    ->options(['left' => 'Left', 'center' => 'Centre', 'right' => 'Right'])
+                                    ->placeholder('Left'),
+                                TextInput::make('settings.ticket_layout.name_color')
+                                    ->label('Colour')
+                                    ->placeholder(Event::TICKET_LAYOUT_DEFAULTS['name_color']),
+                            ])->columns(2)->columnSpanFull(),
                     ])->columns(2)
                     ->columnSpan(1)
                     ->collapsible()
@@ -288,13 +355,15 @@ class EventResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('year')
                     ->label('Year')
-                    ->options(fn () => Event::selectRaw('EXTRACT(YEAR FROM start_datetime) as year')
-                        ->distinct()
-                        ->orderByDesc('year')
-                        ->pluck('year', 'year')
-                        ->map(fn ($y) => (string) $y)
-                        ->toArray(),
-                    )
+                    // Derived in PHP: EXTRACT is Postgres-only and this list is tiny.
+                    ->options(fn () => Event::query()
+                        ->whereNotNull('start_datetime')
+                        ->orderByDesc('start_datetime')
+                        ->pluck('start_datetime')
+                        ->map(fn ($date) => $date->format('Y'))
+                        ->unique()
+                        ->mapWithKeys(fn ($year) => [$year => $year])
+                        ->all())
                     ->query(fn (Tables\Filters\SelectFilter $filter, $query) => $filter->getState()['value']
                         ? $query->whereYear('start_datetime', $filter->getState()['value'])
                         : $query

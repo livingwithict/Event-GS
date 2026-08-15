@@ -24,11 +24,16 @@ class CommunicationService
         try {
             $template = $this->getTemplateForType($emailType);
             $data = $this->getTemplateData($registration, $event, $emailType);
-            $attachTicket = in_array($emailType, ['registration_confirmation', 'payment_success']);
+            // The invitation is the ticket: guests show it at the entrance.
+            $attachTicket = in_array($emailType, ['invitation', 'registration_confirmation', 'payment_success']);
 
             Mail::send($template, $data, function ($message) use ($registration, $subject, $attachTicket) {
                 $message->to($registration->email)
                     ->subject($subject);
+
+                if ($replyTo = config('mail.reply_to.address')) {
+                    $message->replyTo($replyTo, config('mail.reply_to.name'));
+                }
 
                 if ($attachTicket) {
                     try {

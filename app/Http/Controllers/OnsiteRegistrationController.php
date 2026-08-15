@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Ability;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Models\Event;
 use App\Models\ParticipantCategory;
@@ -16,7 +17,7 @@ class OnsiteRegistrationController extends Controller
 
     public function show(Event $event)
     {
-        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
+        $this->authorizeEventAccess($event, Ability::GuestsRegister);
 
         $event->load(['categories' => fn ($q) => $q->active()->ordered()]);
 
@@ -28,7 +29,7 @@ class OnsiteRegistrationController extends Controller
 
     public function store(Request $request, Event $event)
     {
-        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
+        $this->authorizeEventAccess($event, Ability::GuestsRegister);
 
         $validated = $request->validate([
             'salutation' => 'nullable|string|max:20',

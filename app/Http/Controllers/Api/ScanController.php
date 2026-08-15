@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\DTOs\ScanResponseDTO;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
@@ -23,7 +24,7 @@ class ScanController extends Controller
             return response()->json(['message' => 'Registration not found.'], 404);
         }
 
-        $this->authorizeEventAccess($reg->event, ['scanner', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($reg->event, Ability::Scan);
 
         if ($request->filled('event_id') && (int) $request->event_id !== $reg->event_id) {
             return response()->json(['message' => 'This participant does not belong to the selected event.'], 403);

@@ -15,7 +15,7 @@ class SetDefaultActiveEvent
 
         $user = $event->user;
 
-        if ($user->isManager()) {
+        if ($user->roleEnum()?->isEventScoped()) {
             $firstEvent = $user->assignedEvents()->orderBy('start_datetime')->first();
         } else {
             $firstEvent = Event::orderBy('start_datetime')->first();

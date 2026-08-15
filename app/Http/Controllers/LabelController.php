@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Ability;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Models\Event;
 use App\Models\LabelTemplate;
@@ -16,7 +17,7 @@ class LabelController extends Controller
     public function printSingle(Request $request, Registration $registration)
     {
         $event = $registration->event;
-        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
+        $this->authorizeEventAccess($event, Ability::LabelsPrint);
 
         if (! $event->settingEnabled('enable_label_printing')) {
             abort(403, 'Label printing is not enabled for this event.');
@@ -82,7 +83,7 @@ class LabelController extends Controller
         abort_if($registrations->pluck('event_id')->unique()->count() > 1, 422, 'Select registrations from a single event.');
 
         $event = $registrations->first()->event;
-        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
+        $this->authorizeEventAccess($event, Ability::LabelsPrint);
 
         if (! $event->settingEnabled('enable_label_printing')) {
             abort(403, 'Label printing is not enabled for this event.');
@@ -102,7 +103,7 @@ class LabelController extends Controller
         ]);
 
         $event = Event::findOrFail($validated['event_id']);
-        $this->authorizeEventAccess($event, ['super_admin', 'admin', 'manager']);
+        $this->authorizeEventAccess($event, Ability::LabelsPrint);
 
         if (! $event->settingEnabled('enable_label_printing')) {
             abort(403, 'Label printing is not enabled for this event.');

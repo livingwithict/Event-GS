@@ -23,7 +23,7 @@ class ScanStationTest extends TestCase
         parent::setUp();
 
         $this->event = Event::factory()->create(['status' => 'published']);
-        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        $this->actingAs(User::factory()->create(['role' => 'super_admin']));
     }
 
     private function action(string $code): ScanActionType

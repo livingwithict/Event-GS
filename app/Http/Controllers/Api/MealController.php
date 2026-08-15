@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Ability;
 use App\Events\MealUsed;
 use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Http\Controllers\Controller;
@@ -16,7 +17,7 @@ class MealController extends Controller
     public function store(MealRequest $request)
     {
         $reg = Registration::findOrFail($request->registration_id);
-        $this->authorizeEventAccess($reg->event, ['scanner', 'manager', 'admin', 'super_admin']);
+        $this->authorizeEventAccess($reg->event, Ability::Scan);
         $mealType = $request->meal_type;
 
         $actionCode = strtoupper($mealType);

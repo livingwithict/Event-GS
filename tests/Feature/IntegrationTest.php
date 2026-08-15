@@ -17,7 +17,7 @@ class IntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->scanner = User::factory()->create(['role' => 'scanner']);
+        $this->scanner = User::factory()->create(['role' => 'scanner_staff']);
     }
 
     public function test_full_scan_entry_meal_flow(): void
@@ -63,7 +63,7 @@ class IntegrationTest extends TestCase
         $dinnerResponse->assertOk();
 
         // Step 7: Verify dashboard stats
-        $manager = User::factory()->create(['role' => 'admin']);
+        $manager = User::factory()->create(['role' => 'super_admin']);
         $dashboardResponse = $this->actingAs($manager)
             ->getJson("/api/event/{$event->id}/dashboard");
         $dashboardResponse->assertOk()

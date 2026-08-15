@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\PaymentResource\Pages;
 use App\Models\Payment;
@@ -28,9 +29,9 @@ class PaymentResource extends Resource
 {
     use HasRoleBasedVisibility;
 
-    protected static function getVisibleRoles(): array
+    protected static function requiredAbility(): string
     {
-        return ['super_admin', 'admin', 'finance'];
+        return Ability::PaymentsView;
     }
 
     protected static ?string $model = Payment::class;

@@ -49,10 +49,10 @@ class DiagnoseAuth extends Command
 
         // 3. Role check
         $this->line('[3] Role check for admin panel');
-        $allowed = ['super_admin', 'admin', 'manager', 'finance'];
-        $roleOk = in_array($user->role, $allowed);
-        $this->line("    Role: {$user->role}");
-        $this->line('    In allowed list ['.implode(', ', $allowed).']: '.($roleOk ? '<fg=green>YES</>' : '<fg=red>NO</>'));
+        $role = $user->roleEnum();
+        $this->line("    Role: {$user->role}".($role ? " ({$role->label()})" : ' <fg=red>UNRECOGNISED</>'));
+        $this->line('    Panel access: '.($role ? '<fg=green>YES</>' : '<fg=red>NO</>'));
+        $this->line('    Abilities: '.($role ? implode(', ', $role->abilities()) : 'none'));
 
         // 4. Rate limit check
         $this->line('[4] Rate limit check');

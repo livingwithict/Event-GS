@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\Ability;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Models\ScanActionType;
@@ -38,7 +39,7 @@ class ScanStation extends Page
 
     public static function canAccess(): bool
     {
-        return in_array(Auth::user()?->role, ['super_admin', 'admin', 'manager', 'scanner']);
+        return Auth::user()?->hasAbility(Ability::Scan) ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -77,9 +78,11 @@ class ScanStation extends Page
     {
         $user = Auth::user();
 
-        $query = $user?->isManager() ? $user->assignedEvents() : Event::query();
-
-        return $query->orderByDesc('start_datetime')->pluck('name', 'id');
+        // Qualify the columns: for scoped roles this query joins event_user,
+        // where a bare `id` is ambiguous.
+        return ($user?->accessibleEvents() ?? Event::query())
+            ->orderByDesc('events.start_datetime')
+            ->pluck('events.name', 'events.id');
     }
 
     /** Scan submitted: barcode wedge types the code and sends Enter. */
