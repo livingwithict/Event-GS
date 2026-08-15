@@ -16,6 +16,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +28,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Behind the reverse proxy the app only ever sees a plain HTTP hop, so
+        // generated URLs (assets, favicon, redirects) come out http:// and the
+        // browser blocks them as mixed content. Follow APP_URL instead.
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         $this->registerAbilities();
 
         Event::observe(EventObserver::class);

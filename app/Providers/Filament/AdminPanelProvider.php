@@ -33,7 +33,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Event Hub')
-            ->favicon(asset('favicon.ico'))
+            ->brandLogo(asset('logo.png'))
+            ->brandLogoHeight('2.25rem')
+            ->favicon(asset('favicon.jpg'))
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
                 'primary' => Color::Indigo,

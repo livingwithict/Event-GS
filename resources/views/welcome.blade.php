@@ -29,6 +29,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name', 'Event Hub') }} — Events</title>
     <meta name="description" content="Register for events run by ICT Foundation Nepal. One invitation code covers the entrance, lunch and dinner.">
+    <link rel="icon" href="{{ asset('favicon.jpg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&display=swap" rel="stylesheet">
     <style>
@@ -59,11 +60,8 @@
             display: flex; align-items: center; justify-content: space-between; gap: 16px;
             padding: 18px 0;
         }
-        .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; color: var(--ink); }
-        .brand span.mark {
-            width: 26px; height: 26px; border-radius: 7px; background: var(--blue);
-            display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 700;
-        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink); }
+        .brand img { height: 34px; width: auto; display: block; }
         header a.signin { font-size: 14px; color: var(--body); text-decoration: none; }
         header a.signin:hover { color: var(--blue); }
 
@@ -177,8 +175,7 @@
     <div class="wrap">
         <header>
             <span class="brand">
-                <span class="mark">{{ Str::substr(config('app.name', 'E'), 0, 1) }}</span>
-                {{ config('app.name', 'Event Hub') }}
+                <img src="{{ asset('logo.png') }}" alt="{{ config('app.name', 'Event Hub') }}">
             </span>
             <a class="signin" href="{{ url('/admin') }}">Staff sign in</a>
         </header>

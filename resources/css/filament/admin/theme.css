@@ -43,6 +43,12 @@
    white background on every .fi-section painted those too, which showed up as
    white patches in the gaps between dashboard cards. */
 
+/* The logo is dark artwork on transparent. In dark mode, crush it to solid
+   black then invert, which yields a clean white mark without a second file. */
+:where(.dark) .fi-logo {
+    filter: brightness(0) invert(1);
+}
+
 .fi-ta-table thead {
     @apply sticky top-0 z-10;
 }
