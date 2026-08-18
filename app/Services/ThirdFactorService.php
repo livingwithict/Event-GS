@@ -28,7 +28,7 @@ class ThirdFactorService
             ->acceptJson()
             ->post("{$baseUrl}/v3/session/", array_filter([
                 'workflow_id' => config('services.thirdfactor.workflow_id'),
-                'vendor_data' => $registration->unique_code,
+                'vendor_data' => $registration->guest_number,
                 'contact_email' => $registration->email,
                 'contact_phone' => $registration->phone,
                 'prefill' => array_filter([

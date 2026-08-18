@@ -30,7 +30,7 @@ class ThirdFactorWebhookController extends Controller
             : null;
 
         if (! $registration && $vendorData) {
-            $registration = Registration::where('unique_code', $vendorData)->first();
+            $registration = Registration::where('guest_number', $vendorData)->first();
         }
 
         if (! $registration) {
