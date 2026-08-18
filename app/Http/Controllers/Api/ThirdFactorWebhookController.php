@@ -23,15 +23,10 @@ class ThirdFactorWebhookController extends Controller
         $payload = $request->json()->all();
         $event = $payload['event'] ?? '';
         $sessionId = $payload['data']['session']['id'] ?? $payload['id'] ?? null;
-        $vendorData = $payload['data']['session']['vendor_data'] ?? null;
 
         $registration = $sessionId
             ? Registration::where('thirdfactor_session_id', $sessionId)->first()
             : null;
-
-        if (! $registration && $vendorData) {
-            $registration = Registration::where('guest_number', $vendorData)->first();
-        }
 
         if (! $registration) {
             logger()->info('ThirdFactor webhook: no matching registration', ['event' => $event, 'session_id' => $sessionId]);
