@@ -9,8 +9,8 @@ readonly class ScanResponseDTO
     public function __construct(
         public int $id,
         public string $name,
-        public ?string $organization,
         public ?string $designation,
+        public ?string $organization,
         public bool $hasEntered,
         public bool $lunchUsed,
         public bool $dinnerUsed,
@@ -30,8 +30,8 @@ readonly class ScanResponseDTO
         return new self(
             id: $reg->id,
             name: $reg->name,
-            organization: $reg->organization,
             designation: $reg->designation,
+            organization: $reg->organization,
             hasEntered: $reg->hasEntered(),
             lunchUsed: $reg->hasUsedMeal('lunch'),
             dinnerUsed: $reg->hasUsedMeal('dinner'),

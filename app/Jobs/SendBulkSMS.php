@@ -6,12 +6,13 @@ use App\Models\Registration;
 use App\Services\CommunicationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
 class SendBulkSMS implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(
         public array $registrationIds,
@@ -28,10 +29,12 @@ class SendBulkSMS implements ShouldQueue
 
     public function handle(CommunicationService $service): void
     {
+        // Landlines sit in the same column as mobiles since phone is free text;
+        // sending to them just burns credits on a guaranteed rejection.
         $registrationIds = array_filter($this->registrationIds, function ($regId) {
             $reg = Registration::find($regId);
 
-            return $reg && $reg->phone;
+            return $reg && $reg->hasMobileNumber();
         });
 
         if (empty($registrationIds)) {
@@ -42,6 +45,7 @@ class SendBulkSMS implements ShouldQueue
             foreach ($registrationIds as $regId) {
                 $reg = Registration::find($regId);
                 $service->sendSms($reg, $this->message, $this->emailType);
+
             }
 
             return;

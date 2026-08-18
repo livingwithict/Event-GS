@@ -86,9 +86,9 @@ class RegistrationResource extends Resource
                             ->tel()
                             ->maxLength(50)
                             ->helperText('Mobile, landline or extension — any format.'),
-                        Forms\Components\TextInput::make('organization')
-                            ->maxLength(255),
                         Forms\Components\TextInput::make('designation')
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('organization')
                             ->maxLength(255),
                         Forms\Components\Textarea::make('address')
                             ->maxLength(65535)
@@ -430,7 +430,7 @@ class RegistrationResource extends Resource
                         ->label('Export CSV')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records) {
-                            $csv = "Title,Name,Guest #,Category,Email,Phone,Organization,Designation,Address,Entry Time,Lunch Used,Dinner Used\n";
+                            $csv = "Title,Name,Guest #,Category,Email,Phone,Designation,Organization,Address,Entry Time,Lunch Used,Dinner Used\n";
                             foreach ($records as $registration) {
                                 $csv .= sprintf(
                                     "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
@@ -440,8 +440,8 @@ class RegistrationResource extends Resource
                                     str_replace('"', '""', $registration->category?->name ?? ''),
                                     str_replace('"', '""', $registration->email ?? ''),
                                     str_replace('"', '""', $registration->phone ?? ''),
-                                    str_replace('"', '""', $registration->organization ?? ''),
                                     str_replace('"', '""', $registration->designation ?? ''),
+                                    str_replace('"', '""', $registration->organization ?? ''),
                                     str_replace('"', '""', str_replace(["\r", "\n"], ' ', $registration->address ?? '')),
                                     $registration->entry_time?->format('Y-m-d H:i:s') ?? '',
                                     $registration->lunch_used_at ? 'Yes' : 'No',

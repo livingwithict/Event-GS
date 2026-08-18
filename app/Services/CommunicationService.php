@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Registration;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use App\Services\ThirdFactorService;
 
 class CommunicationService
 {
@@ -181,7 +182,7 @@ class CommunicationService
 
     private function shouldSendSms(): bool
     {
-        return config('services.sparrow.driver') === 'sparrow'
+        return in_array(config('services.sparrow.driver'), ['sociair', 'sparrow'], true)
             && ! empty(config('services.sparrow.token'));
     }
 
@@ -364,6 +365,15 @@ class CommunicationService
         if (in_array($emailType, ['registration_confirmation', 'payment_success', 'event_reminder', 'invitation'])) {
             $qrService = app(QRCodeService::class);
             $data['qrCodeSvg'] = $qrService->generateSvg($registration);
+        }
+
+        if ($emailType === 'invitation') {
+            $thirdFactor = app(ThirdFactorService::class);
+            if ($thirdFactor->enabled() && ! $registration->thirdfactor_verification_url) {
+                $thirdFactor->createEnrollmentSession($registration);
+                $registration->refresh();
+            }
+            $data['faceEnrollmentUrl'] = $registration->thirdfactor_verification_url;
         }
 
         if ($emailType === 'payment_success' || $emailType === 'payment_failed') {

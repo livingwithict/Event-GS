@@ -88,11 +88,11 @@
 
         <div class="info">
             <div class="name">{{ $label['name'] }}</div>
-            @if($label['organization'])
-            <div class="org">{{ $label['organization'] }}</div>
-            @endif
             @if($label['designation'])
             <div class="org">{{ $label['designation'] }}</div>
+            @endif
+            @if($label['organization'])
+            <div class="org">{{ $label['organization'] }}</div>
             @endif
         </div>
 

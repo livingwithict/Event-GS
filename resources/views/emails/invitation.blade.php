@@ -26,6 +26,12 @@
             <div class="qr-code">
                 {!! $qrCodeSvg !!}
             </div>
+            @if(!empty($faceEnrollmentUrl))
+                <p>Please complete a quick face verification before the event so we can check you in faster:</p>
+                <p style="text-align:center;">
+                    <a href="{{ $faceEnrollmentUrl }}" style="display:inline-block;background:#1a56db;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Complete face verification</a>
+                </p>
+            @endif
         </div>
         <div class="footer">
             <p>ICT Foundation Nepal</p>

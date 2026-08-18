@@ -96,12 +96,12 @@
 
                     <div class="row">
                         <div class="field">
-                            <label for="organization">Organization</label>
-                            <input type="text" id="organization" name="organization" value="{{ old('organization') }}">
-                        </div>
-                        <div class="field">
                             <label for="designation">Designation</label>
                             <input type="text" id="designation" name="designation" value="{{ old('designation') }}">
+                        </div>
+                        <div class="field">
+                            <label for="organization">Organization</label>
+                            <input type="text" id="organization" name="organization" value="{{ old('organization') }}">
                         </div>
                     </div>
 

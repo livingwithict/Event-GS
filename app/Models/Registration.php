@@ -25,6 +25,7 @@ class Registration extends Model
         'label_printed', 'label_printed_at', 'label_printed_by', 'label_collected_at',
         'badge_status', 'approval_status',
         'group_id', 'companion_count',
+        'thirdfactor_session_id', 'thirdfactor_verification_url', 'thirdfactor_status', 'thirdfactor_enrolled_at',
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class Registration extends Model
             'label_printed' => 'boolean',
             'label_printed_at' => 'datetime',
             'label_collected_at' => 'datetime',
+            'thirdfactor_enrolled_at' => 'datetime',
             'badge_status' => 'string',
             'companion_count' => 'integer',
         ];
@@ -55,6 +57,29 @@ class Registration extends Model
 
     /** Titles offered in the registration forms. Add to this list, not to each form. */
     public const SALUTATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Er.', 'Prof.', 'Prof. Dr.', 'Adv.', 'Hon.', 'CA.'];
+
+    /**
+     * Nepali mobiles are ten digits starting 96/97/98, optionally written with
+     * +977 or a leading 0. Landlines and extensions cannot receive SMS, and
+     * phone is free text, so both end up in the same column.
+     */
+    public function hasMobileNumber(): bool
+    {
+        return self::isMobileNumber((string) $this->phone);
+    }
+
+    public static function isMobileNumber(?string $phone): bool
+    {
+        $digits = preg_replace('/\D/', '', (string) $phone);
+
+        if (str_starts_with($digits, '977')) {
+            $digits = substr($digits, 3);
+        }
+
+        $digits = ltrim($digits, '0');
+
+        return (bool) preg_match('/^9[678]\d{8}$/', $digits);
+    }
 
     /** Name as it should be printed and read out: "Dr. Sita Rai". */
     public function displayName(): string

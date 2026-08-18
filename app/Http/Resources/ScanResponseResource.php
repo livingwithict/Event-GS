@@ -18,8 +18,8 @@ class ScanResponseResource extends JsonResource
         return [
             'id' => $this->dto->id,
             'name' => $this->dto->name,
-            'organization' => $this->dto->organization,
             'designation' => $this->dto->designation,
+            'organization' => $this->dto->organization,
             'has_entered' => $this->dto->hasEntered,
             'lunch_used' => $this->dto->lunchUsed,
             'dinner_used' => $this->dto->dinnerUsed,

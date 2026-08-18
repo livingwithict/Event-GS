@@ -35,10 +35,22 @@ return [
         ],
     ],
 
+    /*
+     * Sociair SMS. The config key was historically "sparrow" — the old env names
+     * still work so a deployed .env keeps running, but new setups use SOCIAIR_*.
+     * driver: "sociair" sends for real, anything else writes to the log.
+     */
+    'thirdfactor' => [
+        'base_url' => env('THIRDFACTOR_BASE_URL', 'https://dnc-console.v3.thirdfactor.ai'),
+        'api_key' => env('THIRDFACTOR_API_KEY'),
+        'workflow_id' => env('THIRDFACTOR_WORKFLOW_ID'),
+        'webhook_secret' => env('THIRDFACTOR_WEBHOOK_SECRET'),
+    ],
+
     'sparrow' => [
         'driver' => env('SMS_DRIVER', 'log'),
-        'token' => env('SPARROW_SMS_TOKEN'),
-        'base_url' => env('SPARROW_SMS_BASE_URL', 'https://sms.sociair.com/api'),
+        'token' => env('SOCIAIR_SMS_TOKEN', env('SPARROW_SMS_TOKEN')),
+        'base_url' => env('SOCIAIR_SMS_BASE_URL', env('SPARROW_SMS_BASE_URL', 'https://sms.sociair.com/api')),
         'batch_size' => (int) env('SMS_BATCH_SIZE', 50),
     ],
 
