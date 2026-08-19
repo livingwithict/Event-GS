@@ -11,7 +11,9 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Placeholder;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -44,7 +46,45 @@ class CommunicationResource extends Resource
     {
         return $schema
             ->components([
-                // Read-only - communications are created via API
+                Section::make('Communication')
+                    ->columns(2)
+                    ->schema([
+                        Placeholder::make('registration.name')
+                            ->label('Guest')
+                            ->content(fn (?Communication $record) => $record?->registration?->displayName() ?? '—'),
+                        Placeholder::make('recipient')
+                            ->label('Sent to')
+                            ->content(fn (?Communication $record) => $record?->type === 'sms'
+                                ? ($record?->registration?->phone ?? '—')
+                                : ($record?->registration?->email ?? '—')),
+                        Placeholder::make('type')
+                            ->content(fn (?Communication $record) => ucfirst($record?->type ?? '—')),
+                        Placeholder::make('email_type')
+                            ->label('Notification type')
+                            ->content(fn (?Communication $record) => str_replace('_', ' ', ucwords($record?->email_type ?? '—'))),
+                        Placeholder::make('subject')
+                            ->content(fn (?Communication $record) => $record?->subject ?: '—'),
+                        Placeholder::make('status')
+                            ->content(fn (?Communication $record) => ucfirst($record?->status ?? '—')),
+                        Placeholder::make('sent_at')
+                            ->label('Sent at')
+                            ->content(fn (?Communication $record) => $record?->sent_at?->format('M j, Y g:i A') ?? '—'),
+                        Placeholder::make('provider_message_id')
+                            ->label('Provider message ID')
+                            ->content(fn (?Communication $record) => $record?->provider_message_id ?: '—'),
+                        Placeholder::make('content')
+                            ->label('Message content')
+                            ->columnSpanFull()
+                            ->content(fn (?Communication $record) => $record?->content ?: '—')
+                            ->visible(fn (?Communication $record) => filled($record?->content)),
+                        Placeholder::make('metadata')
+                            ->label('Details / error')
+                            ->columnSpanFull()
+                            ->content(fn (?Communication $record) => $record?->metadata
+                                ? json_encode($record->metadata, JSON_PRETTY_PRINT)
+                                : '—')
+                            ->visible(fn (?Communication $record) => filled($record?->metadata)),
+                    ]),
             ]);
     }
 
