@@ -40,7 +40,8 @@ class CommunicationService
                     try {
                         $ticketService = app(TicketService::class);
                         $pdf = $ticketService->generatePdf($registration);
-                        $message->attachData($pdf, $registration->guest_number.'-ticket.pdf', [
+                        $fileName = trim(preg_replace('/[^A-Za-z0-9 ]/', '', $registration->displayName())) ?: 'Guest';
+                        $message->attachData($pdf, "{$fileName}-Ticket.pdf", [
                             'mime' => 'application/pdf',
                         ]);
                     } catch (\Throwable $e) {
@@ -363,18 +364,10 @@ class CommunicationService
             'registration' => $registration,
         ];
 
-        if (in_array($emailType, ['registration_confirmation', 'payment_success', 'event_reminder', 'invitation'])) {
-            $qrService = app(QRCodeService::class);
-            $data['qrCodeSvg'] = $qrService->generateSvg($registration);
+        if (in_array($emailType, ['registration_confirmation', 'payment_success', 'event_reminder'])) {
+            $data['qrCodeSvg'] = app(QRCodeService::class)->generateSvg($registration);
         }
 
-        if ($emailType === 'invitation') {
-            try {
-                $data['ticketJpeg'] = app(TicketService::class)->generateJpeg($registration);
-            } catch (\Throwable $e) {
-                logger()->error('Failed to rasterize ticket for inline embed: '.$e->getMessage());
-            }
-        }
 
         if ($emailType === 'face_verification') {
             $thirdFactor = app(ThirdFactorService::class);

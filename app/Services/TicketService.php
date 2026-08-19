@@ -5,24 +5,9 @@ namespace App\Services;
 use App\Models\Registration;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Imagick;
 
 class TicketService
 {
-    /** Rasterized JPEG of the ticket, for embedding inline in emails. */
-    public function generateJpeg(Registration $registration, int $dpi = 150): string
-    {
-        $imagick = new Imagick;
-        $imagick->setResolution($dpi, $dpi);
-        $imagick->readImageBlob($this->generatePdf($registration));
-        $imagick->setImageFormat('jpeg');
-        $imagick->setImageCompressionQuality(85);
-        $imagick->setImageBackgroundColor('white');
-        $imagick->mergeImageLayers(Imagick::LAYERMETHOD_FLATTEN);
-
-        return $imagick->getImageBlob();
-    }
-
     public function generatePdf(Registration $registration): string
     {
         $registration->loadMissing('event');

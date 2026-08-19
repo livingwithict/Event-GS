@@ -29,6 +29,7 @@ Route::get('/verify/complete', fn () => view('verify.complete'))->name('verifica
 Route::get('/ticket/{token}', [TicketController::class, 'show'])->name('ticket.show');
 Route::get('/ticket/{token}/download', [TicketController::class, 'download'])->name('ticket.download');
 Route::get('/ticket/{token}/qr-print', [RegistrationQrController::class, 'download'])->name('ticket.qr-print');
+Route::get('/ticket/{token}/qr.png', [RegistrationQrController::class, 'image'])->name('ticket.qr-image');
 
 Route::middleware('auth')->group(function () {
     Route::get('/labels/{registration}/print', [LabelController::class, 'printSingle'])->name('labels.print-single');
