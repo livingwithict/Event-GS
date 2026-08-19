@@ -45,8 +45,10 @@ class CommunicationResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
+            ->columns(1)
             ->components([
                 Section::make('Communication')
+                    ->columnSpanFull()
                     ->columns(2)
                     ->schema([
                         Placeholder::make('registration.name')
@@ -153,7 +155,7 @@ class CommunicationResource extends Resource
             ->emptyStateHeading('No communications yet')
             ->emptyStateDescription('Communications are created when invites or reminders are sent.')
             ->recordActions([
-                ViewAction::make(),
+                ViewAction::make()->modalWidth('2xl'),
                 Action::make('resend')
                     ->label('Resend')
                     ->icon('heroicon-o-arrow-path')

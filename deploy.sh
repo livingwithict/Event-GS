@@ -76,6 +76,14 @@ chown -R www-data:www-data storage bootstrap/cache
 say "Reloading PHP-FPM"
 systemctl reload "$PHP_FPM"
 
+say "Restarting queue worker"
+# The worker is a long-running process — it keeps running whatever code was
+# loaded when it started until something restarts it. config/route caches
+# and an FPM reload only affect new web requests, not this.
+systemctl restart eventgs-queue.service
+sleep 1
+systemctl is-active --quiet eventgs-queue.service || die "eventgs-queue.service failed to restart"
+
 say "Health check"
 CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $DOMAIN" http://127.0.0.1/admin/login)
 [[ "$CODE" == "200" ]] || die "/admin/login returned $CODE — check storage/logs/laravel-$(date +%F).log"

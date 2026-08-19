@@ -30,7 +30,11 @@ class ThirdFactorWebhookController extends Controller
             : null;
 
         if (! $registration) {
-            logger()->info('ThirdFactor webhook: no matching registration', ['event' => $event, 'session_id' => $sessionId]);
+            logger()->info('ThirdFactor webhook: no matching registration', [
+                'event' => $event,
+                'session_id' => $sessionId,
+                'raw_payload' => $payload,
+            ]);
 
             return response('ok', 200);
         }
