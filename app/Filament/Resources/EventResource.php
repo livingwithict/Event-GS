@@ -171,8 +171,6 @@ class EventResource extends Resource
                             ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp']),
                         FileUpload::make('partner_logos')
                             ->label('Partner / Sponsor Logos')
-                            ->helperText('Shown in the "In association with" section of face-verification emails. Upload logos that already include any subtext (e.g. company name / tagline) baked into the image.')
-                            ->image()
                             ->multiple()
                             ->reorderable()
                             ->disk('public')

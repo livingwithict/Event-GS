@@ -18,7 +18,7 @@
                 <tr>
                     <td align="left" valign="middle">
                         @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px; display:block;">
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:56px; display:block;">
                         @else
                             <span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span>
                         @endif
@@ -29,7 +29,7 @@
                                 <span style="display:inline-block; padding:3px 10px; background-color:#f3e8ff; color:#7e22ce; border-radius:999px; font-size:10px; font-weight:700; letter-spacing:0.04em;">IN ASSOCIATION WITH</span>
                             </div>
                             @foreach($partnerLogos as $partnerLogo)
-                                <img src="{{ $partnerLogo }}" alt="Partner logo" style="max-height:22px; margin-left:10px; vertical-align:middle;">
+                                <img src="{{ $partnerLogo }}" alt="Partner logo" style="max-height:40px; margin-left:10px; vertical-align:middle;">
                             @endforeach
                         @endif
                     </td>
@@ -84,7 +84,7 @@
                 <tr>
                     <td valign="middle" style="width:44px;">
                         @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:32px; display:block;">
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:56px; display:block;">
                         @endif
                     </td>
                     <td valign="middle">
