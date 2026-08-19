@@ -368,6 +368,14 @@ class CommunicationService
             $data['qrCodeSvg'] = $qrService->generateSvg($registration);
         }
 
+        if ($emailType === 'invitation') {
+            try {
+                $data['ticketJpeg'] = app(TicketService::class)->generateJpeg($registration);
+            } catch (\Throwable $e) {
+                logger()->error('Failed to rasterize ticket for inline embed: '.$e->getMessage());
+            }
+        }
+
         if ($emailType === 'face_verification') {
             $thirdFactor = app(ThirdFactorService::class);
             if ($thirdFactor->enabled() && ! $registration->thirdfactor_verification_url) {
