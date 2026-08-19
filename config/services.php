@@ -49,6 +49,12 @@ return [
         'expires_in_hours' => env('THIRDFACTOR_EXPIRES_IN_HOURS', 24),
     ],
 
+    'pickndrop' => [
+        'base_url' => env('PICKNDROP_BASE_URL', 'https://app-t.pickndropnepal.com'),
+        'api_key' => env('PICKNDROP_API_KEY'),
+        'api_secret' => env('PICKNDROP_API_SECRET'),
+    ],
+
     'sparrow' => [
         'driver' => env('SMS_DRIVER', 'log'),
         'token' => env('SOCIAIR_SMS_TOKEN', env('SPARROW_SMS_TOKEN')),

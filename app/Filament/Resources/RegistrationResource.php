@@ -5,11 +5,13 @@ namespace App\Filament\Resources;
 use App\Enums\Ability;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\RegistrationResource\Pages;
+use App\Models\InvitationCategory;
 use App\Models\LabelTemplate;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
 use App\Services\CommunicationService;
 use App\Services\LabelService;
+use App\Services\PickAndDropService;
 use App\Services\QRCodeService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -151,6 +153,18 @@ class RegistrationResource extends Resource
                             ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
                             ->default('not_printed')
                             ->required(),
+                        Forms\Components\Select::make('invitation_category_id')
+                            ->label('Invitation Category')
+                            ->relationship('invitationCategory', 'name')
+                            ->live()
+                            ->required(),
+                        Forms\Components\Select::make('destination_branch')
+                            ->label('Delivery Branch')
+                            ->options(fn () => collect(app(PickAndDropService::class)->getBranches())
+                                ->pluck('branch_name', 'name'))
+                            ->searchable()
+                            ->visible(fn (callable $get) => InvitationCategory::find($get('invitation_category_id'))?->key === InvitationCategory::PhysicalEmail)
+                            ->nullable(),
                     ])
                     ->columnSpan(1),
             ]);
@@ -253,6 +267,15 @@ class RegistrationResource extends Resource
                         ->where('status', 'sent')
                         ->exists())
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('invitationCategory.name')
+                    ->label('Invitation')
+                    ->badge()
+                    ->color(fn (Registration $record) => match ($record->invitationCategory?->key) {
+                        InvitationCategory::PhysicalEmail => 'info',
+                        InvitationCategory::FaceVerification => 'warning',
+                        default => 'gray',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('card_delivered')
                     ->label('Card')
                     ->boolean()
@@ -276,6 +299,9 @@ class RegistrationResource extends Resource
                 Tables\Filters\SelectFilter::make('category_id')
                     ->relationship('category', 'name')
                     ->label('Category'),
+                Tables\Filters\SelectFilter::make('invitation_category_id')
+                    ->relationship('invitationCategory', 'name')
+                    ->label('Invitation Category'),
                 Tables\Filters\SelectFilter::make('registration_source')
                     ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
                     ->label('Source'),
@@ -385,13 +411,13 @@ class RegistrationResource extends Resource
                     ->url(fn (Registration $record): string => route('ticket.qr-print', $record->qr_hash))
                     ->openUrlInNewTab(),
                 Action::make('preview_label')
-                    ->label('Preview Label')
+                    ->label('Preview ID Label')
                     ->icon('heroicon-o-eye')
                     ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
                     ->url(fn ($record) => route('labels.print-single', ['registration' => $record->id, 'preview' => 1]))
                     ->openUrlInNewTab(),
                 Action::make('print_label')
-                    ->label('Print Label')
+                    ->label('Print ID Label')
                     ->icon('heroicon-o-printer')
                     ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
                     ->url(fn ($record) => route('labels.print-now', ['registrations' => $record->id]))
@@ -517,12 +543,103 @@ class RegistrationResource extends Resource
                                 ->send();
                         }),
                     BulkAction::make('print_labels')
-                        ->label('Print Labels')
+                        ->label('Print ID Labels')
                         ->icon('heroicon-o-printer')
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
                         ->action(fn (Collection $records) => redirect()->route('labels.print-now', [
                             'registrations' => $records->pluck('id')->implode(','),
                         ])),
+                    BulkAction::make('set_destination_branch')
+                        ->label('Set Delivery Branch')
+                        ->icon('heroicon-o-map-pin')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
+                        ->schema([
+                            Forms\Components\Select::make('destination_branch')
+                                ->label('Branch')
+                                ->options(fn () => collect(app(PickAndDropService::class)->getBranches())
+                                    ->pluck('branch_name', 'name'))
+                                ->searchable()
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $records->each(fn ($r) => $r->update(['destination_branch' => $data['destination_branch']]));
+
+                            Notification::make()->success()
+                                ->title("Delivery branch set for {$records->count()} guests")
+                                ->send();
+                        }),
+                    BulkAction::make('create_delivery_orders')
+                        ->label('Create Delivery Orders')
+                        ->icon('heroicon-o-truck')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records) {
+                            $service = app(PickAndDropService::class);
+                            $created = 0;
+                            $failed = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->invitationCategory?->key !== InvitationCategory::PhysicalEmail || $record->pickndrop_order_id) {
+                                    continue;
+                                }
+                                if (! $record->destination_branch || ! $record->phone) {
+                                    $failed++;
+
+                                    continue;
+                                }
+
+                                try {
+                                    $data = $service->createOrder($record);
+                                    $record->update([
+                                        'pickndrop_order_id' => $data['orderID'] ?? null,
+                                        'pickndrop_tracking_number' => $data['vendor_tracking_number'] ?? null,
+                                        'pickndrop_tracking_url' => $data['tracking_url'] ?? null,
+                                    ]);
+                                    $created++;
+                                } catch (\Throwable $e) {
+                                    logger()->error('PickAndDrop createOrder failed: '.$e->getMessage(), ['registration_id' => $record->id]);
+                                    $failed++;
+                                }
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title("Created {$created} delivery orders".($failed ? ", {$failed} failed" : ''))
+                                ->send();
+                        }),
+                    BulkAction::make('print_delivery_labels')
+                        ->label('Print Delivery Labels')
+                        ->icon('heroicon-o-tag')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
+                        ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
+                            'registrations' => $records->pluck('id')->implode(','),
+                        ])),
+                    BulkAction::make('request_pickup')
+                        ->label('Request Pickup')
+                        ->icon('heroicon-o-truck')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
+                        ->schema([
+                            Forms\Components\TextInput::make('vendor_address')
+                                ->label('Pickup Address')
+                                ->required()
+                                ->helperText('Your business address on file with PickAndDrop.'),
+                        ])
+                        ->action(function (array $data) {
+                            try {
+                                app(PickAndDropService::class)->createPickupRequest($data['vendor_address']);
+
+                                Notification::make()->success()
+                                    ->title('Pickup requested')
+                                    ->send();
+                            } catch (\Throwable $e) {
+                                logger()->error('PickAndDrop pickup request failed: '.$e->getMessage());
+
+                                Notification::make()->danger()
+                                    ->title('Pickup request failed')
+                                    ->body($e->getMessage())
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }

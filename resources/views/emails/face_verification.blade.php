@@ -1,38 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <style>
-        body { font-family: sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #1a56db; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { padding: 20px; border: 1px solid #e5e7eb; border-top: none; }
-        .footer { font-size: 12px; color: #666; text-align: center; padding: 20px; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ $event->name }}</title>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            @if($logo = $event->logoUrl())
-                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px;margin-bottom:10px;">
-            @endif
-            <h1>{{ $event->name }}</h1>
-            <p>{{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }} | {{ $event->venue }}</p>
-        </div>
-        <div class="content">
-            <p>Dear {{ $registration->displayName() }},</p>
-            <p>You are invited to <strong>{{ $event->name }}</strong>. Before we send your ticket, please complete a quick face verification so we can check you in faster at the entrance:</p>
+<body style="margin:0; padding:0; background-color:#f1f5f9; font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:32px 16px;">
+<tr>
+<td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;">
+
+    {{-- Header: event logo + partner lockup --}}
+    <tr>
+        <td style="padding:28px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td align="left" valign="middle">
+                        @if($logo = $event->logoUrl())
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px; display:block;">
+                        @else
+                            <span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span>
+                        @endif
+                    </td>
+                    <td align="right" valign="middle">
+                        @if(!empty($partnerLogos))
+                            <div style="margin-bottom:6px;">
+                                <span style="display:inline-block; padding:3px 10px; background-color:#f3e8ff; color:#7e22ce; border-radius:999px; font-size:10px; font-weight:700; letter-spacing:0.04em;">IN ASSOCIATION WITH</span>
+                            </div>
+                            @foreach($partnerLogos as $partnerLogo)
+                                <img src="{{ $partnerLogo }}" alt="Partner logo" style="max-height:22px; margin-left:10px; vertical-align:middle;">
+                            @endforeach
+                        @endif
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    <tr><td style="height:1px; background-color:#e2e8f0;"></td></tr>
+
+    {{-- Greeting + CTA --}}
+    <tr>
+        <td style="padding:32px 32px 8px;">
+            <p style="margin:0 0 8px; color:#0f172b; font-size:16px;">Hi {{ $registration->name }},</p>
+            <p style="margin:0 0 4px; color:#475569; font-size:15px; line-height:1.6;">
+                You're invited to <strong style="color:#2e3192;">{{ $event->name }}</strong>.
+            </p>
+            <p style="margin:0; color:#475569; font-size:15px; line-height:1.6;">
+                Complete a quick face verification to confirm your RSVP.
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:20px 32px 8px;">
             @if(!empty($faceEnrollmentUrl))
-                <p style="text-align:center;">
-                    <a href="{{ $faceEnrollmentUrl }}" style="display:inline-block;background:#1a56db;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Complete face verification</a>
-                </p>
-                <p>Your ticket will be emailed to you automatically once verification is complete.</p>
+                <a href="{{ $faceEnrollmentUrl }}"
+                   style="display:inline-block; background-color:#2e3192; color:#ffffff; font-size:14px; font-weight:600; padding:12px 28px; border-radius:8px; text-decoration:none;">
+                    Verify Now
+                </a>
             @else
-                <p>We were unable to generate your verification link. Please contact us for assistance.</p>
+                <p style="margin:0; color:#b91c1c; font-size:13px;">We were unable to generate your verification link. Please contact us for assistance.</p>
             @endif
-        </div>
-        <div class="footer">
-            <p>ICT Foundation Nepal</p>
-        </div>
-    </div>
+        </td>
+    </tr>
+
+    {{-- Event details --}}
+    <tr>
+        <td style="padding:24px 32px 8px;">
+            <p style="margin:0; color:#0f172b; font-size:15px; font-weight:700;">{{ $event->name }}</p>
+            <p style="margin:4px 0 0; color:#64748b; font-size:13px;">
+                {{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }}
+                @if($event->venue) &middot; {{ $event->venue }} @endif
+            </p>
+        </td>
+    </tr>
+
+    {{-- Footer --}}
+    <tr>
+        <td style="background-color:#f8fafc; padding:24px 32px; border-top:1px solid #e2e8f0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td valign="middle" style="width:44px;">
+                        @if($logo = $event->logoUrl())
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:32px; display:block;">
+                        @endif
+                    </td>
+                    <td valign="middle">
+                        <p style="margin:0 0 6px; color:#0f172b; font-size:13px;">We look forward to welcoming you! &#128591;</p>
+                        <p style="margin:0; color:#64748b; font-size:12px;">
+                            Warm Regards,<br>
+                            ICT Foundation Nepal
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+</table>
+</td>
+</tr>
+</table>
 </body>
 </html>

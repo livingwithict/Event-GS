@@ -376,6 +376,7 @@ class CommunicationService
                 $registration->refresh();
             }
             $data['faceEnrollmentUrl'] = $registration->thirdfactor_verification_url;
+            $data['partnerLogos'] = $event->partnerLogoUrls();
         }
 
         if ($emailType === 'payment_success' || $emailType === 'payment_failed') {

@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('registrations', function (Blueprint $table) {
+            $table->string('destination_branch')->nullable()->after('delivery_method');
+            $table->string('pickndrop_order_id')->nullable()->after('destination_branch');
+            $table->string('pickndrop_tracking_number')->nullable()->after('pickndrop_order_id');
+            $table->string('pickndrop_tracking_url')->nullable()->after('pickndrop_tracking_number');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('registrations', function (Blueprint $table) {
+            $table->dropColumn([
+                'destination_branch', 'pickndrop_order_id', 'pickndrop_tracking_number', 'pickndrop_tracking_url',
+            ]);
+        });
+    }
+};

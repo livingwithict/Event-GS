@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CheckinController;
+use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\EventSwitcherController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\OnsiteRegistrationController;
@@ -37,6 +38,8 @@ Route::middleware('auth')->group(function () {
     // Auto-print: a wrapper page that loads the PDF and fires the print dialog.
     Route::get('/labels/print-now', [LabelController::class, 'printNow'])->name('labels.print-now');
     Route::get('/labels/pdf', [LabelController::class, 'pdf'])->name('labels.pdf');
+
+    Route::get('/delivery/labels', [DeliveryController::class, 'labels'])->name('delivery.labels');
 });
 
 Route::get('/admin/onsite-register/{event}', [OnsiteRegistrationController::class, 'show'])

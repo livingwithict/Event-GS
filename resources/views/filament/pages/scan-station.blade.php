@@ -90,7 +90,7 @@
                                 color="gray"
                                 class="mt-4"
                             >
-                                Print Label
+                                Print ID Label
                             </x-filament::button>
                         @endif
                     </div>

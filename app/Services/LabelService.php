@@ -102,6 +102,46 @@ class LabelService
         ];
     }
 
+    /**
+     * Shipping label for the envelope, handed to PickAndDrop with the batch.
+     * Same sticker size as the ID label (same printer), but no QR or guest
+     * code: it's pasted on the outside of the envelope, and the
+     * entry/lunch/dinner QR must never be exposed there.
+     */
+    public function generateDeliveryLabelPdf(Collection $registrations, LabelTemplate $template): string
+    {
+        $dompdf = new Dompdf((new Options)->set([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => false,
+        ]));
+
+        $mmToPt = 72 / 25.4;
+        $dompdf->setPaper([0, 0, $template->width * $mmToPt, $template->height * $mmToPt]);
+
+        $labels = $registrations->map(fn ($registration) => [
+            'name' => $registration->displayName(),
+            'phone' => $registration->phone,
+            'address' => $registration->address,
+            'tracking_number' => $registration->pickndrop_tracking_number,
+        ])->toArray();
+
+        $pad = max(0, min(
+            (float) ($template->margin_left ?? 2),
+            (float) ($template->margin_right ?? 2),
+            (float) ($template->margin_top ?? 2),
+            (float) ($template->margin_bottom ?? 2),
+        ));
+
+        $dompdf->loadHtml(view('labels.delivery-label', [
+            'labels' => $labels,
+            'template' => $template,
+            'pad' => $pad,
+        ])->render());
+        $dompdf->render();
+
+        return $dompdf->output();
+    }
+
     public function markAsPrinted(Collection $registrations): void
     {
         $userId = auth()->id();

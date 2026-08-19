@@ -68,7 +68,7 @@ enum Role: string
             self::EventAdmin => [
                 Ability::EventsView, Ability::EventsManage,
                 Ability::GuestsView, Ability::GuestsEdit, Ability::GuestsRegister, Ability::GuestsApprove,
-                Ability::LabelsPrint, Ability::TicketsView, Ability::Scan,
+                Ability::LabelsPrint, Ability::DeliveryManage, Ability::TicketsView, Ability::Scan,
                 Ability::CommunicationsView, Ability::CommunicationsSend,
                 Ability::ImportsManage, Ability::ReportsView,
                 Ability::PaymentsView,
@@ -78,7 +78,7 @@ enum Role: string
             self::RegistrationStaff => [
                 Ability::EventsView,
                 Ability::GuestsView, Ability::GuestsEdit, Ability::GuestsRegister,
-                Ability::LabelsPrint, Ability::TicketsView, Ability::Scan,
+                Ability::LabelsPrint, Ability::DeliveryManage, Ability::TicketsView, Ability::Scan,
             ],
 
             // Deliberately narrow: the Scan Station shows the guest it just

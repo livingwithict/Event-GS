@@ -21,7 +21,7 @@ class Event extends Model
 
     protected $fillable = [
         'name', 'slug', 'invitation_code_format', 'description',
-        'logo_path', 'banner_path', 'ticket_path',
+        'logo_path', 'partner_logos', 'banner_path', 'ticket_path',
         'event_date', 'start_datetime', 'end_datetime',
         'registration_open_at', 'registration_close_at',
         'venue', 'contact_info',
@@ -38,6 +38,7 @@ class Event extends Model
             'registration_open_at' => 'datetime',
             'registration_close_at' => 'datetime',
             'meal_types' => 'array',
+            'partner_logos' => 'array',
             'settings' => 'array',
         ];
     }
@@ -76,6 +77,14 @@ class Event extends Model
     public function logoDataUri(): ?string
     {
         return $this->imageDataUri($this->logo_path);
+    }
+
+    /** Absolute URLs for sponsor/partner logos, in upload order. */
+    public function partnerLogoUrls(): array
+    {
+        return collect($this->partner_logos ?? [])
+            ->map(fn ($path) => url(Storage::disk('public')->url($path)))
+            ->all();
     }
 
     /** Where the name and QR sit on the invitation card, in pixels of the artwork. */

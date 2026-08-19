@@ -7,6 +7,7 @@ use App\Imports\RegistrationsImport;
 use App\Models\Event;
 use App\Models\ImportBatch;
 use App\Models\ImportStaging;
+use App\Models\InvitationCategory;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
 use App\Services\CommunicationService;
@@ -118,6 +119,12 @@ class ImportPreview extends Page implements HasTable
                 TextColumn::make('organization')->searchable()->limit(20),
                 TextColumn::make('address')->searchable()->limit(25)->toggleable(),
                 TextColumn::make('category_name')->label('Category')->badge()->color('gray'),
+                TextColumn::make('raw_data.invitation_category')
+                    ->label('Invitation')
+                    ->badge()
+                    ->color('gray')
+                    ->placeholder('Email Only')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
@@ -176,6 +183,21 @@ class ImportPreview extends Page implements HasTable
             ]);
     }
 
+    /** Matches loosely: "Physical/Email", "physical_email" and "physical email" all resolve the same row. */
+    private function matchInvitationCategory(?string $value): ?int
+    {
+        $needle = preg_replace('/[^a-z0-9]+/', '', strtolower(trim($value ?? '')));
+
+        if ($needle === '') {
+            return null;
+        }
+
+        return InvitationCategory::all()
+            ->first(fn ($category) => preg_replace('/[^a-z0-9]+/', '', strtolower($category->key)) === $needle
+                || preg_replace('/[^a-z0-9]+/', '', strtolower($category->name)) === $needle)
+            ?->id;
+    }
+
     private function registerContact(ImportStaging $staging): void
     {
         if ($staging->status !== 'pending') {
@@ -193,11 +215,15 @@ class ImportPreview extends Page implements HasTable
                 ->value('id');
         }
 
+        $invitationCategoryId = $this->matchInvitationCategory($raw['invitation_category'] ?? null)
+            ?? InvitationCategory::where('key', InvitationCategory::EmailOnly)->value('id');
+
         $reg = Registration::create([
             'event_id' => $event->id,
             'category_id' => $categoryId,
             'registration_source' => 'csv',
             'approval_status' => 'approved',
+            'invitation_category_id' => $invitationCategoryId,
             'salutation' => trim($raw['salutation'] ?? '') ?: null,
             'name' => trim($raw['name'] ?? ''),
             'email' => trim($raw['email'] ?? '') ?: null,

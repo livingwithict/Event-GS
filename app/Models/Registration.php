@@ -24,6 +24,8 @@ class Registration extends Model
         'entry_time', 'lunch_used_at', 'dinner_used_at',
         'label_printed', 'label_printed_at', 'label_printed_by', 'label_collected_at',
         'badge_status', 'approval_status',
+        'invitation_category_id', 'destination_branch',
+        'pickndrop_order_id', 'pickndrop_tracking_number', 'pickndrop_tracking_url',
         'group_id', 'companion_count',
         'thirdfactor_session_id', 'thirdfactor_verification_url', 'thirdfactor_status', 'thirdfactor_enrolled_at',
     ];
@@ -99,6 +101,9 @@ class Registration extends Model
             if (empty($reg->guest_number) && $reg->event_id) {
                 $reg->guest_number = self::generateGuestNumber($reg->event_id);
             }
+            if (empty($reg->invitation_category_id)) {
+                $reg->invitation_category_id = InvitationCategory::where('key', InvitationCategory::EmailOnly)->value('id');
+            }
         });
     }
 
@@ -131,6 +136,11 @@ class Registration extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ParticipantCategory::class, 'category_id');
+    }
+
+    public function invitationCategory(): BelongsTo
+    {
+        return $this->belongsTo(InvitationCategory::class);
     }
 
     public function promoCode(): BelongsTo

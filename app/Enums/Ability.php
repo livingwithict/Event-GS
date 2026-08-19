@@ -22,6 +22,8 @@ final class Ability
 
     public const LabelsPrint = 'labels.print';
 
+    public const DeliveryManage = 'delivery.manage';
+
     public const TicketsView = 'tickets.view';
 
     public const Scan = 'scan';

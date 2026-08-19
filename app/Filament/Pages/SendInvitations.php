@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Enums\Ability;
 use App\Jobs\SendBulkEmail;
 use App\Models\Event;
+use App\Models\InvitationCategory;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
 use Filament\Actions\Action;
@@ -76,6 +77,11 @@ class SendInvitations extends Page
                             ->options(fn () => ParticipantCategory::where('event_id', $this->data['event_id'] ?? 0)
                                 ->orderBy('name')->pluck('name', 'id'))
                             ->live(),
+                        Select::make('invitation_category_id')
+                            ->label('Invitation Category')
+                            ->placeholder('All invitation categories')
+                            ->options(fn () => InvitationCategory::pluck('name', 'id'))
+                            ->live(),
                         Toggle::make('approved_only')
                             ->label('Approved guests only')
                             ->live(),
@@ -116,6 +122,10 @@ class SendInvitations extends Page
 
         if ($this->data['category_id'] ?? null) {
             $query->where('category_id', $this->data['category_id']);
+        }
+
+        if ($this->data['invitation_category_id'] ?? null) {
+            $query->where('invitation_category_id', $this->data['invitation_category_id']);
         }
 
         if ($this->data['approved_only'] ?? false) {
