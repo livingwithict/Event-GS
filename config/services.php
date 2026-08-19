@@ -45,6 +45,8 @@ return [
         'api_key' => env('THIRDFACTOR_API_KEY'),
         'workflow_id' => env('THIRDFACTOR_WORKFLOW_ID'),
         'webhook_secret' => env('THIRDFACTOR_WEBHOOK_SECRET'),
+        'callback_url' => env('THIRDFACTOR_CALLBACK_URL'),
+        'expires_in_hours' => env('THIRDFACTOR_EXPIRES_IN_HOURS', 24),
     ],
 
     'sparrow' => [

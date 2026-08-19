@@ -80,6 +80,19 @@
                         @foreach ($result['lines'] as $line)
                             <p class="mt-1 text-base text-gray-700 dark:text-gray-200">{{ $line }}</p>
                         @endforeach
+
+                        @if ($result['can_print_label'] ?? false)
+                            <x-filament::button
+                                tag="a"
+                                href="{{ route('labels.print-now', ['registrations' => $result['registration_id']]) }}"
+                                target="_blank"
+                                icon="heroicon-o-printer"
+                                color="gray"
+                                class="mt-4"
+                            >
+                                Print Label
+                            </x-filament::button>
+                        @endif
                     </div>
                 </div>
             @else

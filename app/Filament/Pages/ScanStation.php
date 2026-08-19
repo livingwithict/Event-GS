@@ -181,10 +181,18 @@ class ScanStation extends Page
 
     private function push(string $status, string $title, array $lines, ?Registration $reg = null): void
     {
+        $action = ScanActionType::find($this->actionTypeId);
+
         $this->result = [
             'status' => $status,
             'title' => $title,
             'lines' => array_values($lines),
+            'registration_id' => $reg?->id,
+            'can_print_label' => $status !== 'error'
+                && $reg
+                && $action?->action_code === 'CHECKIN'
+                && Auth::user()?->hasAbility(Ability::LabelsPrint)
+                && $reg->event->settingEnabled('enable_label_printing'),
         ];
 
         array_unshift($this->recent, [
