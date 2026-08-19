@@ -22,8 +22,9 @@ class ThirdFactorWebhookController extends Controller
         }
 
         $payload = $request->json()->all();
-        $event = $payload['event'] ?? '';
-        $sessionId = $payload['data']['session']['id'] ?? $payload['id'] ?? null;
+        $event = $payload['event_type'] ?? '';
+        $sessionId = $payload['session_id'] ?? null;
+        $status = $payload['status'] ?? '';
 
         $registration = $sessionId
             ? Registration::where('thirdfactor_session_id', $sessionId)->first()
@@ -38,15 +39,6 @@ class ThirdFactorWebhookController extends Controller
 
             return response('ok', 200);
         }
-
-        $status = match (true) {
-            str_contains($event, 'approved') => 'approved',
-            str_contains($event, 'declined') => 'declined',
-            str_contains($event, 'review') => 'review',
-            str_contains($event, 'expired') => 'expired',
-            str_contains($event, 'abandoned') => 'abandoned',
-            default => $event,
-        };
 
         $wasAlreadyApproved = $registration->thirdfactor_status === 'approved';
 
