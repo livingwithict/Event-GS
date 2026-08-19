@@ -351,6 +351,7 @@ class CommunicationService
             'event_reminder' => 'emails.event_reminder',
             'post_event_thank_you' => 'emails.post_event_thank_you',
             'urgent_update' => 'emails.urgent_update',
+            'face_verification' => 'emails.face_verification',
             default => 'emails.invitation',
         };
     }
@@ -367,7 +368,7 @@ class CommunicationService
             $data['qrCodeSvg'] = $qrService->generateSvg($registration);
         }
 
-        if ($emailType === 'invitation') {
+        if ($emailType === 'face_verification') {
             $thirdFactor = app(ThirdFactorService::class);
             if ($thirdFactor->enabled() && ! $registration->thirdfactor_verification_url) {
                 $thirdFactor->createEnrollmentSession($registration);

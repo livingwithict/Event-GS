@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBulkEmail;
 use App\Models\Registration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -43,10 +44,17 @@ class ThirdFactorWebhookController extends Controller
             default => $event,
         };
 
+        $wasAlreadyApproved = $registration->thirdfactor_status === 'approved';
+
         $registration->update([
             'thirdfactor_status' => $status,
             'thirdfactor_enrolled_at' => $status === 'approved' ? now() : $registration->thirdfactor_enrolled_at,
         ]);
+
+        // First time this registration clears verification: send the ticket.
+        if ($status === 'approved' && ! $wasAlreadyApproved && $registration->email) {
+            SendBulkEmail::dispatch([$registration->id], $registration->event_id, 'Your Event Ticket', 'invitation');
+        }
 
         return response('ok', 200);
     }

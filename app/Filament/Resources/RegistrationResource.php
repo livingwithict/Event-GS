@@ -122,12 +122,10 @@ class RegistrationResource extends Resource
                         Forms\Components\Select::make('event_id')
                             ->relationship('event', 'name')
                             ->required()
-                            ->searchable()
                             ->live(),
                         Forms\Components\Select::make('category_id')
                             ->relationship('category', 'name')
                             ->label('Category')
-                            ->searchable()
                             ->visible(fn (callable $get) => filled($get('event_id')))
                             ->options(fn (callable $get) => ParticipantCategory::where('event_id', $get('event_id'))
                                 ->active()
@@ -454,17 +452,30 @@ class RegistrationResource extends Resource
                             }, 'registrations.csv', ['Content-Type' => 'text/csv']);
                         }),
                     BulkAction::make('send_invitation')
-                        ->label('Send Invitation Email')
+                        ->label('Send Email')
                         ->icon('heroicon-o-paper-airplane')
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::CommunicationsSend))
                         ->requiresConfirmation()
-                        ->modalHeading('Send invitation emails?')
-                        ->modalDescription('Each guest gets their ticket attached. This sends real email and cannot be undone.')
+                        ->modalHeading('Send emails?')
+                        ->modalDescription('This sends real email to the selected guests and cannot be undone.')
                         ->modalSubmitActionLabel('Send now')
                         ->schema([
+                            \Filament\Forms\Components\Select::make('email_type')
+                                ->label('Email')
+                                ->options([
+                                    'invitation' => 'Invitation (attaches the ticket)',
+                                    'face_verification' => 'Face verification (sends the enrollment link, ticket follows automatically after)',
+                                    'registration_confirmation' => 'Registration confirmation (attaches the ticket)',
+                                    'event_reminder' => 'Event reminder',
+                                    'urgent_update' => 'Urgent update',
+                                    'post_event_thank_you' => 'Post-event thank you',
+                                ])
+                                ->default('invitation')
+                                ->required()
+                                ->live(),
                             \Filament\Forms\Components\TextInput::make('subject')
                                 ->label('Subject line')
-                                ->default('Your invitation')
+                                ->default('Invitation')
                                 ->required()
                                 ->maxLength(150),
                         ])
@@ -484,7 +495,7 @@ class RegistrationResource extends Resource
 
                             foreach ($byEvent as $eventId => $group) {
                                 foreach ($group->pluck('id')->chunk(50) as $chunk) {
-                                    SendBulkEmail::dispatch($chunk->all(), (int) $eventId, $data['subject'], 'invitation');
+                                    SendBulkEmail::dispatch($chunk->all(), (int) $eventId, $data['subject'], $data['email_type']);
                                 }
                                 $queued += $group->count();
                             }

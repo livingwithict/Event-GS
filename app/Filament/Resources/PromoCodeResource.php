@@ -49,8 +49,7 @@ class PromoCodeResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('event_id')
                             ->relationship('event', 'name')
-                            ->required()
-                            ->searchable(),
+                            ->required(),
                         Forms\Components\TextInput::make('code')
                             ->required()
                             ->maxLength(50)

@@ -49,8 +49,7 @@ class LabelTemplateResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('event_id')
                             ->relationship('event', 'name')
-                            ->required()
-                            ->searchable(),
+                            ->required(),
                         Forms\Components\TextInput::make('template_name')
                             ->required()
                             ->maxLength(100),

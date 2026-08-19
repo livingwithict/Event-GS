@@ -78,6 +78,7 @@ class CommunicationResource extends Resource
                         'event_reminder' => 'warning',
                         'post_event_thank_you' => 'info',
                         'invitation' => 'primary',
+                        'face_verification' => 'gray',
                         'urgent_update' => 'danger',
                     ])
                     ->formatStateUsing(fn ($state) => str_replace('_', ' ', ucwords($state ?? '')))
@@ -101,6 +102,7 @@ class CommunicationResource extends Resource
                         'event_reminder' => 'Event Reminder',
                         'post_event_thank_you' => 'Post-Event Thank You',
                         'invitation' => 'Invitation',
+                        'face_verification' => 'Face Verification',
                         'urgent_update' => 'Urgent Update',
                     ]),
                 Tables\Filters\SelectFilter::make('status')->options(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed']),

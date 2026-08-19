@@ -91,6 +91,7 @@ class SendInvitations extends Page
                             ->label('Email')
                             ->options([
                                 'invitation' => 'Invitation (attaches the ticket)',
+                                'face_verification' => 'Face verification (sends the enrollment link, ticket follows automatically after)',
                                 'registration_confirmation' => 'Registration confirmation (attaches the ticket)',
                                 'event_reminder' => 'Event reminder',
                                 'urgent_update' => 'Urgent update',

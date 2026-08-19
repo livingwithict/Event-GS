@@ -37,7 +37,7 @@ class ThirdFactorService
                     'phone' => $registration->phone,
                 ]),
                 'callback_url' => config('services.thirdfactor.callback_url')
-                    ?: route('register.success', $registration->event->slug),
+                    ?: route('verification.complete'),
                 'expires_in_hours' => config('services.thirdfactor.expires_in_hours'),
             ]));
 

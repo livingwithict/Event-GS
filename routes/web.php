@@ -24,6 +24,8 @@ Route::get('/', function () {
 
 Route::get('/checkin/t/{token}', [CheckinController::class, 'show'])->name('checkin.verify');
 
+Route::get('/verify/complete', fn () => view('verify.complete'))->name('verification.complete');
+
 Route::get('/ticket/{token}', [TicketController::class, 'show'])->name('ticket.show');
 Route::get('/ticket/{token}/download', [TicketController::class, 'download'])->name('ticket.download');
 Route::get('/ticket/{token}/qr-print', [RegistrationQrController::class, 'download'])->name('ticket.qr-print');

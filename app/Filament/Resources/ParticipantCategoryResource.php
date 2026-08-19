@@ -59,8 +59,7 @@ class ParticipantCategoryResource extends Resource
                     ->schema([
                         Select::make('event_id')
                             ->relationship('event', 'name')
-                            ->required()
-                            ->searchable(),
+                            ->required(),
                         TextInput::make('name')
                             ->required()
                             ->maxLength(100)
@@ -110,7 +109,6 @@ class ParticipantCategoryResource extends Resource
                         Select::make('label_template_id')
                             ->label('Label Template')
                             ->relationship('labelTemplate', 'template_name')
-                            ->searchable()
                             ->nullable()
                             ->helperText('Template used when printing labels for this category'),
                         CheckboxList::make('qr_access_permissions')

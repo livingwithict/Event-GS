@@ -54,8 +54,7 @@ class ScanActionTypeResource extends Resource
                     ->schema([
                         Select::make('event_id')
                             ->relationship('event', 'name')
-                            ->required()
-                            ->searchable(),
+                            ->required(),
                         TextInput::make('action_name')
                             ->label('Action Name')
                             ->required()
