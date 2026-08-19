@@ -242,6 +242,17 @@ class RegistrationResource extends Resource
                     ])
                     ->sortable()
                     ->toggleable(),
+                Tables\Columns\IconColumn::make('invitation_sent')
+                    ->label('Invitation')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->state(fn ($record) => $record->communications()
+                        ->where('type', 'email')
+                        ->whereIn('email_type', ['invitation', 'face_verification'])
+                        ->where('status', 'sent')
+                        ->exists())
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('card_delivered')
                     ->label('Card')
                     ->boolean()
@@ -250,7 +261,7 @@ class RegistrationResource extends Resource
                     ->state(fn ($record) => $record->scanLogs()
                         ->whereHas('actionType', fn ($q) => $q->where('action_code', 'CARD_DELIVERY'))
                         ->exists())
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->modifyQueryUsing(function ($query) {
                 $eventId = session('active_event_id');
