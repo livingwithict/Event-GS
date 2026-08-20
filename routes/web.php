@@ -25,6 +25,16 @@ Route::get('/', function () {
 
 Route::get('/checkin/t/{token}', [CheckinController::class, 'show'])->name('checkin.verify');
 
+// Local-only: render an email template with real data straight in the browser, no send required.
+// e.g. /dev/emails/1/face_verification
+if (app()->environment('local')) {
+    Route::get('/dev/emails/{registration}/{type}', function (\App\Models\Registration $registration, string $type) {
+        $registration->loadMissing('event');
+
+        return app(\App\Services\CommunicationService::class)->renderPreview($registration, $registration->event, $type);
+    })->name('dev.email-preview');
+}
+
 Route::get('/verify/complete', fn () => view('verify.complete'))->name('verification.complete');
 
 Route::get('/ticket/{token}', [TicketController::class, 'show'])->name('ticket.show');

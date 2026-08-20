@@ -13,23 +13,23 @@
 
     {{-- Header: event logo + partner lockup --}}
     <tr>
-        <td style="padding:28px 32px;">
+        <td style="padding:24px 24px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                     <td align="left" valign="middle">
                         @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:56px; display:block;">
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:96px; display:block;">
                         @else
                             <span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span>
                         @endif
                     </td>
                     <td align="right" valign="middle">
                         @if(!empty($partnerLogos))
-                            <div style="margin-bottom:6px;">
+                            <div style="margin-bottom:12px; margin-right:48px; text-align:right;">
                                 <span style="display:inline-block; padding:3px 10px; background-color:#f3e8ff; color:#7e22ce; border-radius:999px; font-size:10px; font-weight:700; letter-spacing:0.04em;">IN ASSOCIATION WITH</span>
                             </div>
                             @foreach($partnerLogos as $partnerLogo)
-                                <img src="{{ $partnerLogo }}" alt="Partner logo" style="max-height:40px; margin-left:10px; vertical-align:middle;">
+                                <img src="{{ $partnerLogo }}" alt="Partner logo" style="max-height:64px; margin-left:10px; vertical-align:middle;">
                             @endforeach
                         @endif
                     </td>
@@ -68,7 +68,7 @@
 
     {{-- Event details --}}
     <tr>
-        <td style="padding:24px 32px 8px;">
+        <td style="padding:24px 32px 24px;">
             <p style="margin:0; color:#0f172b; font-size:15px; font-weight:700;">{{ $event->name }}</p>
             <p style="margin:4px 0 0; color:#64748b; font-size:13px;">
                 {{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }}
@@ -79,17 +79,17 @@
 
     {{-- Footer --}}
     <tr>
-        <td style="background-color:#f8fafc; padding:24px 32px; border-top:1px solid #e2e8f0;">
+        <td style="background-color:#f8fafc; padding:24px 24px; border-top:1px solid #e2e8f0;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                     <td valign="middle" style="width:44px;">
                         @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:56px; display:block;">
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:64px; display:block;">
                         @endif
                     </td>
                     <td valign="middle">
-                        <p style="margin:0 0 6px; color:#0f172b; font-size:13px;">We look forward to welcoming you! &#128591;</p>
-                        <p style="margin:0; color:#64748b; font-size:12px;">
+                        <p style="margin:0 12px 6px; color:#0f172b; font-size:13px;">We look forward to welcoming you! &#128591;</p>
+                        <p style="margin:0 12px; color:#64748b; font-size:12px;">
                             Warm Regards,<br>
                             ICT Foundation Nepal
                         </p>

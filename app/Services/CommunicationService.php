@@ -12,6 +12,12 @@ use App\Services\ThirdFactorService;
 
 class CommunicationService
 {
+    /** Renders an email template with real data, without sending or logging anything — for local preview. */
+    public function renderPreview(Registration $registration, Event $event, string $emailType): string
+    {
+        return view($this->getTemplateForType($emailType), $this->getTemplateData($registration, $event, $emailType))->render();
+    }
+
     public function sendEmail(Registration $registration, Event $event, string $subject, string $emailType = 'invitation'): Communication
     {
         $comm = Communication::create([
