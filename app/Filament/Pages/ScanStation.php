@@ -133,16 +133,14 @@ class ScanStation extends Page
         if (! $reg->recordAction($action, Auth::id())) {
             $when = $this->alreadyRecordedAt($reg, $action);
 
-            $this->push('warning', $reg->displayName(), array_filter([
+            $this->push('warning', $reg->displayName(), [
                 $action->action_name.' already recorded'.($when ? ' at '.$when->format('H:i') : '').'.',
-                $this->guestLine($reg),
-            ]), $reg);
+            ], $reg);
 
             return;
         }
 
         $lines = array_filter([
-            $this->guestLine($reg),
             $reg->isPaymentRequired() && $reg->payment_status !== 'paid'
                 ? 'Payment outstanding — collect at the desk.'
                 : null,
@@ -165,14 +163,14 @@ class ScanStation extends Page
         return $reg->scanLogs()->where('action_type_id', $action->id)->latest('scanned_at')->value('scanned_at');
     }
 
-    private function guestLine(Registration $reg): string
+    /** Label => value pairs shown in the details box, in order. */
+    private function guestDetails(Registration $reg): array
     {
-        return implode(' · ', array_filter([
-            $reg->guest_number,
-            $reg->category?->name,
-            $reg->invitationCategory?->name,
-            $reg->organization,
-        ]));
+        return array_filter([
+            'Guest ID' => $reg->guest_number,
+            'Category' => $reg->category?->name,
+            'Invitation' => $reg->invitationCategory?->name,
+        ]);
     }
 
     private function fail(string $title, array $lines, ?Registration $reg = null): void
@@ -188,6 +186,7 @@ class ScanStation extends Page
             'status' => $status,
             'title' => $title,
             'lines' => array_values($lines),
+            'details' => $reg ? $this->guestDetails($reg) : [],
             'registration_id' => $reg?->id,
             'can_print_label' => $status !== 'error'
                 && $reg

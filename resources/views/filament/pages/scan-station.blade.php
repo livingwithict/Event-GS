@@ -81,6 +81,17 @@
                             <p class="mt-1 text-base text-gray-700 dark:text-gray-200">{{ $line }}</p>
                         @endforeach
 
+                        @if (!empty($result['details']))
+                            <div class="mt-4 flex flex-wrap gap-3">
+                                @foreach ($result['details'] as $label => $value)
+                                    <div class="rounded-lg border border-gray-950/10 dark:border-white/10 px-4 py-2.5">
+                                        <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $label }}</span>
+                                        <span class="ml-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $value }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
                         @if ($result['can_print_label'] ?? false)
                             <x-filament::button
                                 tag="a"

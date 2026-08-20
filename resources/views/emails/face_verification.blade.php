@@ -82,6 +82,14 @@
         </td>
     </tr>
 
+    <tr>
+        <td style="padding:12px 32px 8px;">
+            <p style="margin:0; color:#475569; font-size:15px; line-height:1.5;">
+                Your verified identity will be securely linked to your invitation and used for seamless entry at the event. Face verification will be required at the entrance to confirm your attendance.
+            </p>
+        </td>
+    </tr>
+
     {{-- Event details --}}
     <tr>
         <td style="padding:24px 32px 24px;">
