@@ -40,31 +40,33 @@ class LabelController extends Controller
         ]);
     }
 
-    /** Wrapper page: loads the label PDF in an iframe and fires the print dialog. */
+    /** Wrapper page: loads the label sheet as HTML in an iframe and fires the print dialog. */
     public function printNow(Request $request)
     {
         $registrations = $this->resolveRegistrations($request);
 
         return view('labels.print-now', [
-            'pdfUrl' => route('labels.pdf', ['registrations' => $registrations->pluck('id')->implode(',')]),
+            'sheetUrl' => route('labels.sheet', ['registrations' => $registrations->pluck('id')->implode(',')]),
             'count' => $registrations->count(),
         ]);
     }
 
-    /** Inline PDF for the auto-print wrapper. Marks the labels as printed. */
-    public function pdf(Request $request)
+    /**
+     * Raw HTML (not PDF) for the auto-print wrapper. Marks the labels as printed.
+     * Chrome's PDF viewer mis-scales small custom page sizes when printed from
+     * an embedded PDF; printing the same @page-sized HTML directly goes through
+     * Chrome's native print pipeline instead, which honors the size correctly.
+     */
+    public function sheet(Request $request)
     {
         $registrations = $this->resolveRegistrations($request);
 
         $service = new LabelService;
-        $pdf = $service->generateLabelPdf($registrations, $this->resolveTemplate($registrations->first()->event, $request));
+        $html = $service->generateSheetHtml($registrations, $this->resolveTemplate($registrations->first()->event, $request));
 
         $service->markAsPrinted($registrations);
 
-        return response($pdf, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="labels.pdf"',
-        ]);
+        return response($html, 200, ['Content-Type' => 'text/html']);
     }
 
     /**

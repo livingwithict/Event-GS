@@ -170,6 +170,7 @@ class ScanStation extends Page
         return implode(' · ', array_filter([
             $reg->guest_number,
             $reg->category?->name,
+            $reg->invitationCategory?->name,
             $reg->organization,
         ]));
     }

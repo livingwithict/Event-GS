@@ -28,6 +28,7 @@ class ScanResponseResource extends JsonResource
             'dinner_used_at' => $this->dto->dinnerUsedAt,
             'category' => $this->dto->categoryName,
             'category_color' => $this->dto->categoryColor,
+            'invitation_category' => $this->dto->invitationCategoryName,
             'guest_number' => $this->dto->guestNumber,
             'unique_code' => $this->dto->uniqueCode,
             'event_id' => $this->dto->eventId,

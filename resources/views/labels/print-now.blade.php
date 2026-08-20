@@ -24,23 +24,22 @@
         <span class="hint">Print at 100% / Actual size — not "Fit to page" — or the QR will not scan.</span>
     </div>
 
-    <iframe id="pdf" src="{{ $pdfUrl }}"></iframe>
+    <iframe id="sheet" src="{{ $sheetUrl }}"></iframe>
 
     <script>
         function printLabels() {
-            var frame = document.getElementById('pdf');
+            var frame = document.getElementById('sheet');
             try {
                 frame.contentWindow.focus();
                 frame.contentWindow.print();
             } catch (e) {
-                // Cross-origin or PDF viewer refused: fall back to printing this page.
+                // Cross-origin or the browser refused: fall back to printing this page.
                 window.print();
             }
         }
 
-        // The PDF viewer needs a moment after load before it accepts print().
-        document.getElementById('pdf').addEventListener('load', function () {
-            setTimeout(printLabels, 700);
+        document.getElementById('sheet').addEventListener('load', function () {
+            setTimeout(printLabels, 300);
         });
     </script>
 </body>
