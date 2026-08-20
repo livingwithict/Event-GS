@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ $event->name }}</title>
+<style>
+    @media only screen and (max-width: 480px) {
+        .event-logo { max-height: 56px !important; }
+        .partner-logo { max-height: 44px !important; margin-left: 6px !important; }
+        .footer-logo { max-height: 56px !important; }
+        .header-cell { padding: 16px !important; }
+    }
+</style>
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:32px 16px;">
@@ -13,24 +21,32 @@
 
     {{-- Header: event logo + partner lockup --}}
     <tr>
-        <td style="padding:24px 24px;">
+        <td class="header-cell" style="padding:24px 24px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                     <td align="left" valign="middle">
                         @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:96px; display:block;">
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" class="event-logo" style="max-height:96px; display:block;">
                         @else
                             <span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span>
                         @endif
                     </td>
                     <td align="right" valign="middle">
                         @if(!empty($partnerLogos))
-                            <div style="margin-bottom:12px; margin-right:48px; text-align:right;">
-                                <span style="display:inline-block; padding:3px 10px; background-color:#f3e8ff; color:#7e22ce; border-radius:999px; font-size:10px; font-weight:700; letter-spacing:0.04em;">IN ASSOCIATION WITH</span>
-                            </div>
-                            @foreach($partnerLogos as $partnerLogo)
-                                <img src="{{ $partnerLogo }}" alt="Partner logo" style="max-height:64px; margin-left:10px; vertical-align:middle;">
-                            @endforeach
+                            <table role="presentation" cellpadding="0" cellspacing="0" align="right">
+                                <tr>
+                                    <td align="center" style="padding-bottom:8px;">
+                                        <span style="display:inline-block; padding:3px 10px; background-color:#f3e8ff; color:#7e22ce; border-radius:999px; font-size:10px; font-weight:700; letter-spacing:0.04em;">IN ASSOCIATION WITH</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        @foreach($partnerLogos as $partnerLogo)
+                                            <img src="{{ $partnerLogo }}" alt="Partner logo" class="partner-logo" style="max-height:64px; margin-left:10px; vertical-align:middle;">
+                                        @endforeach
+                                    </td>
+                                </tr>
+                            </table>
                         @endif
                     </td>
                 </tr>
@@ -84,7 +100,7 @@
                 <tr>
                     <td valign="middle" style="width:44px;">
                         @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:64px; display:block;">
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" class="footer-logo" style="max-height:64px; display:block;">
                         @endif
                     </td>
                     <td valign="middle">
