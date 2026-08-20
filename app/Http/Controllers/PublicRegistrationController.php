@@ -8,7 +8,6 @@ use App\Models\ParticipantCategory;
 use App\Models\Payment;
 use App\Models\PromoCode;
 use App\Models\Registration;
-use App\Services\CommunicationService;
 use App\Services\Payment\ConnectIPSService;
 use App\Services\Payment\PaymentRedirector;
 use App\Services\QRCodeService;
@@ -192,10 +191,6 @@ class PublicRegistrationController extends Controller
             return $this->initiatePaymentRedirect($reg, $event, $category, $totalDiscount, $promoCode, $totalEffectivePrice);
         }
 
-        if ($approvalStatus === 'approved') {
-            $this->sendConfirmation($reg, $event);
-        }
-
         return redirect()->route('register.success', ['slug' => $slug])
             ->with('guest_number', $reg->guest_number)
             ->with('qr_hash', $reg->qr_hash);
@@ -291,7 +286,6 @@ class PublicRegistrationController extends Controller
                     }
 
                     $payment->recordPromoCodeUsageOnce();
-                    $this->sendConfirmation($payment->registration, $event, $payment);
 
                     return redirect()->route('register.success', ['slug' => $slug])
                         ->with('guest_number', $payment->registration->guest_number)
@@ -426,21 +420,6 @@ class PublicRegistrationController extends Controller
                 }
             })
             ->exists();
-    }
-
-    private function sendConfirmation(Registration $reg, Event $event, ?Payment $payment = null): void
-    {
-        try {
-            $commService = new CommunicationService;
-
-            if ($payment && $payment->isSuccessful()) {
-                $commService->sendPaymentSuccess($reg, $event, $payment);
-            } else {
-                $commService->sendRegistrationConfirmation($reg, $event);
-            }
-        } catch (\Throwable $e) {
-            logger()->error('Failed to send registration confirmation: '.$e->getMessage());
-        }
     }
 
     private function getEffectivePrice(ParticipantCategory $category): float

@@ -10,7 +10,6 @@ use App\Models\ImportStaging;
 use App\Models\InvitationCategory;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
-use App\Services\CommunicationService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\FileUpload;
@@ -239,13 +238,6 @@ class ImportPreview extends Page implements HasTable
             'notes' => trim($raw['notes'] ?? '') ?: null,
             'consented_at' => now(),
         ]);
-
-        try {
-            $commService = new CommunicationService;
-            $commService->sendRegistrationConfirmation($reg, $event);
-        } catch (\Throwable $e) {
-            logger()->error('Import registration notification failed: '.$e->getMessage());
-        }
 
         $staging->update([
             'status' => 'registered',

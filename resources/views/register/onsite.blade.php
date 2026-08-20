@@ -143,11 +143,6 @@
                         <input type="hidden" name="payment_method" value="none">
                     @endif
 
-                    <div class="toggle-row">
-                        <input type="checkbox" id="send_notifications" name="send_notifications" value="1" {{ old('send_notifications') ? 'checked' : '' }}>
-                        <label for="send_notifications">Send confirmation email/SMS</label>
-                    </div>
-
                     <button type="submit" class="submit-btn">Register Attendee</button>
                 </form>
             </div>

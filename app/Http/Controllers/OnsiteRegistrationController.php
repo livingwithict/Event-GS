@@ -7,7 +7,6 @@ use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Models\Event;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
-use App\Services\CommunicationService;
 use App\Services\Payment\PaymentRedirector;
 use Illuminate\Http\Request;
 
@@ -42,7 +41,6 @@ class OnsiteRegistrationController extends Controller
             'address' => 'nullable|string|max:500',
             'meal_preference' => 'nullable|in:veg,non-veg,vegan,halal',
             'special_assistance' => 'nullable|string|max:500',
-            'send_notifications' => 'boolean',
             'payment_method' => 'nullable|in:none,gateway,cash',
         ]);
 
@@ -93,15 +91,6 @@ class OnsiteRegistrationController extends Controller
             $html = $redirector->initiate($reg, $event, $category);
 
             return response($html);
-        }
-
-        if ($request->boolean('send_notifications')) {
-            try {
-                $commService = new CommunicationService;
-                $commService->sendRegistrationConfirmation($reg, $event);
-            } catch (\Throwable $e) {
-                logger()->error('Onsite registration notification failed: '.$e->getMessage());
-            }
         }
 
         return redirect()->route('onsite.register', $event->id)
