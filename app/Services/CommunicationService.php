@@ -368,6 +368,7 @@ class CommunicationService
         $data = [
             'event' => $event,
             'registration' => $registration,
+            'partnerLogo' => $event->partnerLogoUrls()[0] ?? null,
         ];
 
         if (in_array($emailType, ['registration_confirmation', 'payment_success', 'event_reminder'])) {

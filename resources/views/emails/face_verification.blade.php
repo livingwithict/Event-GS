@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ $event->name }}</title>
-<style>
+<!-- <style>
     @media only screen and (max-width: 480px) {
-        .event-logo { max-height: 56px !important; }
-        .partner-logo { max-height: 44px !important; margin-left: 6px !important; }
+        .event-logo { max-height: 100px !important; }
+        .partner-logo { max-height: 150px !important; margin-left: 6px !important; }
         .footer-logo { max-height: 56px !important; }
         .header-cell { padding: 16px !important; }
     }
-</style>
+</style> -->
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:32px 16px;">
@@ -24,14 +24,14 @@
         <td class="header-cell" style="padding:24px 24px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td align="left" valign="middle">
-                        @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" class="event-logo" style="max-height:96px; display:block;">
+                    <td align="center" valign="middle">
+                        @if($logo = $partnerLogo ?? $event->logoUrl())
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" class="event-logo" style="max-height:150px; display:block;">
                         @else
                             <span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span>
                         @endif
                     </td>
-                    <td align="right" valign="middle">
+                    <!-- <td align="right" valign="middle">
                         @if(!empty($partnerLogos))
                             <table role="presentation" cellpadding="0" cellspacing="0" align="right">
                                 <tr>
@@ -48,7 +48,7 @@
                                 </tr>
                             </table>
                         @endif
-                    </td>
+                    </td> -->
                 </tr>
             </table>
         </td>

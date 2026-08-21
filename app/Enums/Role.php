@@ -83,8 +83,10 @@ enum Role: string
 
             // Deliberately narrow: the Scan Station shows the guest it just
             // scanned, so door staff never need to browse the guest list.
+            // LabelsPrint is included so entrance staff can print name tags
+            // at check-in without registration-staff access.
             self::ScannerStaff => [
-                Ability::Scan,
+                Ability::Scan, Ability::LabelsPrint,
             ],
 
             self::Finance => [

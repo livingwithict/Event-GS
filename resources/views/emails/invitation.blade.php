@@ -14,13 +14,13 @@
     {{-- Header --}}
     <tr>
         <td style="background-color:#ffffff; padding:36px 32px 30px; text-align:center;">
-            @if($logo = $event->logoUrl())
-                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:64px; margin-bottom:18px;">
+            @if($logo = $partnerLogo ?? $event->logoUrl())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:150px; margin-bottom:4px;">
             @endif
-            <div style="color:#121652; font-size:22px; font-weight:700; line-height:1.3;">{{ $event->name }}</div>
+            <!-- <div style="color:#121652; font-size:22px; font-weight:700; line-height:1.3;">{{ $event->name }}</div>
             <div style="display:inline-block; margin-top:12px; padding:4px 14px; background-color:#eb0000; border-radius:999px; color:#ffffff; font-size:12px; font-weight:600; letter-spacing:0.03em;">
                 {{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }}
-            </div>
+            </div> -->
         </td>
     </tr>
 
