@@ -116,7 +116,7 @@
                 <tr>
                     <td valign="middle" style="width:44px;">
                         @if($logo = $event->logoUrl())
-                            <div style="display:inline-block; background-color:#ffffff; padding:6px 8px; border-radius:6px;">
+                            <div style="display:inline-block; padding:6px 8px; border-radius:6px;">
                                 <img src="{{ $logo }}" alt="{{ $event->name }}" class="footer-logo" style="max-height:64px; display:block;">
                             </div>
                         @endif

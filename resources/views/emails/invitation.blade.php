@@ -21,8 +21,8 @@
     <tr>
         <td style="background-color:#ffffff; text-align:center;">
             @if($logo = $partnerLogo ?? $event->logoUrl())
-                <div style="display:inline-block; background-color:#ffffff; padding:10px 16px; border-radius:8px;">
-                    <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:150px; margin-bottom:4px; display:block;">
+                <div style="display:inline-block; background-color:#ffffff; border-radius:8px;">
+                    <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:150px; display:block;">
                 </div>
             @endif
             <!-- <div style="color:#121652; font-size:22px; font-weight:700; line-height:1.3;">{{ $event->name }}</div>
