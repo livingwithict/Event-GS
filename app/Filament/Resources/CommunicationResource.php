@@ -150,6 +150,9 @@ class CommunicationResource extends Resource
                         'urgent_update' => 'Urgent Update',
                     ]),
                 Tables\Filters\SelectFilter::make('status')->options(['pending' => 'Pending', 'sent' => 'Sent', 'failed' => 'Failed']),
+                Tables\Filters\SelectFilter::make('invitation_category')
+                    ->label('Invitation Category')
+                    ->relationship('registration.invitationCategory', 'name'),
             ])
             ->defaultSort('id', 'desc')
             ->defaultPaginationPageOption(20)

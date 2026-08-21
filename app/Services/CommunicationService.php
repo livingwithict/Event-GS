@@ -20,6 +20,19 @@ class CommunicationService
 
     public function sendEmail(Registration $registration, Event $event, string $subject, string $emailType = 'invitation'): Communication
     {
+        // A retried/duplicated job (e.g. queue worker restarted mid-batch) must not
+        // re-send to guests who already got this same email moments ago.
+        $recent = Communication::where('registration_id', $registration->id)
+            ->where('type', 'email')
+            ->where('email_type', $emailType)
+            ->where('status', 'sent')
+            ->where('sent_at', '>=', now()->subMinutes(10))
+            ->first();
+
+        if ($recent) {
+            return $recent;
+        }
+
         $comm = Communication::create([
             'registration_id' => $registration->id,
             'type' => 'email',
