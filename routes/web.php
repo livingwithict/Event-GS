@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/labels/pdf', [LabelController::class, 'pdf'])->name('labels.pdf');
 
     Route::get('/delivery/labels', [DeliveryController::class, 'labels'])->name('delivery.labels');
+    Route::get('/delivery/labels/sheet', [DeliveryController::class, 'sheet'])->name('delivery.labels.sheet');
 });
 
 Route::get('/admin/onsite-register/{event}', [OnsiteRegistrationController::class, 'show'])

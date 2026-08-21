@@ -564,9 +564,10 @@ class RegistrationResource extends Resource
                         ->label('Print ID Labels')
                         ->icon('heroicon-o-printer')
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
-                        ->action(fn (Collection $records) => redirect()->route('labels.print-now', [
+                        ->url(fn (Collection $records) => route('labels.print-now', [
                             'registrations' => $records->pluck('id')->implode(','),
-                        ])),
+                        ]))
+                        ->openUrlInNewTab(),
                     BulkAction::make('set_destination_branch')
                         ->label('Set Delivery Branch')
                         ->icon('heroicon-o-map-pin')
@@ -629,9 +630,10 @@ class RegistrationResource extends Resource
                         ->label('Print Delivery Labels')
                         ->icon('heroicon-o-tag')
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
-                        ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
+                        ->url(fn (Collection $records) => route('delivery.labels', [
                             'registrations' => $records->pluck('id')->implode(','),
-                        ])),
+                        ]))
+                        ->openUrlInNewTab(),
                     BulkAction::make('request_pickup')
                         ->label('Request Pickup')
                         ->icon('heroicon-o-truck')

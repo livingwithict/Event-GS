@@ -13,8 +13,38 @@ class DeliveryController extends Controller
 {
     use AuthorizesEventAccess;
 
-    /** Inline PDF of delivery labels for the named registrations, to paste on envelopes. */
+    /** Wrapper page: loads the delivery label sheet as HTML in an iframe and fires the print dialog, same as ID labels. */
     public function labels(Request $request)
+    {
+        $registrations = $this->resolveRegistrations($request);
+
+        return view('labels.print-now', [
+            'sheetUrl' => route('delivery.labels.sheet', ['registrations' => $registrations->pluck('id')->implode(',')]),
+            'count' => $registrations->count(),
+        ]);
+    }
+
+    /** Raw HTML for the auto-print wrapper, same approach as ID labels. */
+    public function sheet(Request $request)
+    {
+        $registrations = $this->resolveRegistrations($request);
+
+        $event = $registrations->first()->event;
+        $template = LabelTemplate::where('event_id', $event->id)->first() ?? new LabelTemplate([
+            'width' => 100,
+            'height' => 60,
+            'margin_left' => 2,
+            'margin_right' => 2,
+            'margin_top' => 2,
+            'margin_bottom' => 2,
+        ]);
+
+        $html = app(LabelService::class)->generateDeliverySheetHtml($registrations, $template);
+
+        return response($html, 200, ['Content-Type' => 'text/html']);
+    }
+
+    private function resolveRegistrations(Request $request): \Illuminate\Database\Eloquent\Collection
     {
         $ids = array_filter(array_map('intval', explode(',', (string) $request->query('registrations'))));
 
@@ -28,22 +58,6 @@ class DeliveryController extends Controller
         $event = $registrations->first()->event;
         $this->authorizeEventAccess($event, Ability::DeliveryManage);
 
-        // Same sticker as the ID label: the event's configured template, or
-        // the same built-in default LabelController falls back to.
-        $template = LabelTemplate::where('event_id', $event->id)->first() ?? new LabelTemplate([
-            'width' => 100,
-            'height' => 60,
-            'margin_left' => 2,
-            'margin_right' => 2,
-            'margin_top' => 2,
-            'margin_bottom' => 2,
-        ]);
-
-        $pdf = app(LabelService::class)->generateDeliveryLabelPdf($registrations, $template);
-
-        return response($pdf, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="delivery-labels.pdf"',
-        ]);
+        return $registrations;
     }
 }

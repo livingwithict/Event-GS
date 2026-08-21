@@ -118,8 +118,18 @@ class LabelService
         $mmToPt = 72 / 25.4;
         $dompdf->setPaper([0, 0, $template->width * $mmToPt, $template->height * $mmToPt]);
 
+        $dompdf->loadHtml($this->generateDeliverySheetHtml($registrations, $template));
+        $dompdf->render();
+
+        return $dompdf->output();
+    }
+
+    public function generateDeliverySheetHtml(Collection $registrations, LabelTemplate $template): string
+    {
         $labels = $registrations->map(fn ($registration) => [
             'name' => $registration->displayName(),
+            'designation' => $template->show_designation ? $registration->designation : null,
+            'organization' => $template->show_organization ? $registration->organization : null,
             'phone' => $registration->phone,
             'address' => $registration->address,
             'tracking_number' => $registration->pickndrop_tracking_number,
@@ -132,14 +142,11 @@ class LabelService
             (float) ($template->margin_bottom ?? 2),
         ));
 
-        $dompdf->loadHtml(view('labels.delivery-label', [
+        return view('labels.delivery-label', [
             'labels' => $labels,
             'template' => $template,
             'pad' => $pad,
-        ])->render());
-        $dompdf->render();
-
-        return $dompdf->output();
+        ])->render();
     }
 
     public function markAsPrinted(Collection $registrations): void
