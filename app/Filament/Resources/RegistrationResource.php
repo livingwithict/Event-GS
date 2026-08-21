@@ -258,14 +258,25 @@ class RegistrationResource extends Resource
                     ->toggleable(),
                 Tables\Columns\IconColumn::make('invitation_sent')
                     ->label('Invitation')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->state(fn ($record) => $record->communications()
-                        ->where('type', 'email')
-                        ->whereIn('email_type', ['invitation', 'face_verification'])
-                        ->where('status', 'sent')
-                        ->exists())
+                    ->state(function ($record) {
+                        $sentEmailTypes = $record->communications()
+                            ->where('type', 'email')
+                            ->whereIn('email_type', ['invitation', 'face_verification'])
+                            ->where('status', 'sent')
+                            ->pluck('email_type');
+
+                        if ($sentEmailTypes->contains('invitation')) {
+                            return 'sent';
+                        }
+
+                        return $sentEmailTypes->contains('face_verification') ? 'pending' : 'none';
+                    })
+                    ->icon(fn (string $state) => $state === 'none' ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                    ->color(fn (string $state) => match ($state) {
+                        'sent' => 'success',
+                        'pending' => 'warning',
+                        default => 'danger',
+                    })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('invitationCategory.name')
                     ->label('Invitation')

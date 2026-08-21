@@ -10,6 +10,8 @@ use App\Services\CommunicationService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Resources\Resource;
@@ -171,9 +173,11 @@ class CommunicationResource extends Resource
                             $commService->sendSms($reg, $record->content ?? '', $record->email_type);
                         }
                     }),
+                DeleteAction::make(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                     BulkAction::make('export')
                         ->label('Export CSV')
                         ->icon('heroicon-o-arrow-down-tray')
