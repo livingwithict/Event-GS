@@ -177,28 +177,31 @@ class RegistrationResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->formatStateUsing(fn (Registration $record) => $record->displayName())
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('guest_number')
                     ->label('Guest #')
                     ->searchable()
                     ->sortable()
                     ->copyable()
-                    ->fontFamily('mono'),
+                    ->fontFamily('mono')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
                     ->color(fn ($record) => $record->category?->badge_color ?? 'gray')
                     ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('email')->searchable(),
-                Tables\Columns\TextColumn::make('phone')->searchable(),
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('email')->searchable()->toggleable(),
+                Tables\Columns\TextColumn::make('phone')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('designation')->searchable()->toggleable(),
-                Tables\Columns\TextColumn::make('organization')->searchable(),
+                Tables\Columns\TextColumn::make('organization')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
                     ->limit(30)
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('event.name')->sortable(),
+                Tables\Columns\TextColumn::make('event.name')->sortable()->toggleable(),
                 Tables\Columns\TextColumn::make('registration_source')
                     ->label('Source')
                     ->badge()
@@ -207,7 +210,8 @@ class RegistrationResource extends Resource
                         'csv' => 'info',
                         'admin_manual' => 'gray',
                     ])
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('approval_status')
                     ->label('Approval')
                     ->badge()
@@ -233,13 +237,16 @@ class RegistrationResource extends Resource
                     ->label('Entered')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle'),
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('lunch_used_at')
                     ->label('Lunch')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('dinner_used_at')
                     ->label('Dinner')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('label_printed')
                     ->label('Label')
                     ->boolean()
@@ -257,7 +264,7 @@ class RegistrationResource extends Resource
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\IconColumn::make('invitation_sent')
-                    ->label('Invitation')
+                    ->label('Invitation Status')
                     ->state(function ($record) {
                         $sentEmailTypes = $record->communications()
                             ->where('type', 'email')
@@ -279,7 +286,7 @@ class RegistrationResource extends Resource
                     })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('invitationCategory.name')
-                    ->label('Invitation')
+                    ->label('Invitation Category')
                     ->badge()
                     ->color(fn (Registration $record) => match ($record->invitationCategory?->key) {
                         InvitationCategory::PhysicalEmail => 'info',
