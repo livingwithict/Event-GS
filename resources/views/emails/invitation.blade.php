@@ -19,7 +19,7 @@
 
     {{-- Header --}}
     <tr>
-        <td style="background-color:#ffffff; padding:36px 32px 30px; text-align:center;">
+        <td style="background-color:#ffffff; text-align:center;">
             @if($logo = $partnerLogo ?? $event->logoUrl())
                 <div style="display:inline-block; background-color:#ffffff; padding:10px 16px; border-radius:8px;">
                     <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:150px; margin-bottom:4px; display:block;">
@@ -33,7 +33,7 @@
     </tr>
 
     {{-- Accent bar --}}
-    <tr><td style="height:2px; background-color:#2e3192;"></td></tr>
+    <tr><td style="height:1px; background-color:#2e3192;"></td></tr>
 
     {{-- Greeting --}}
     <tr>

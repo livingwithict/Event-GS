@@ -32,7 +32,7 @@
                 <tr>
                     <td align="center" valign="middle">
                         @if($logo = $partnerLogo ?? $event->logoUrl())
-                            <div style="display:inline-block; background-color:#ffffff; padding:10px 16px; border-radius:8px;">
+                            <div style="display:inline-block; background-color:#ffffff; border-radius:8px;">
                                 <img src="{{ $logo }}" alt="{{ $event->name }}" class="event-logo" style="max-height:150px; display:block;">
                             </div>
                         @else
