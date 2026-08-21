@@ -21,19 +21,14 @@
     <tr>
         <td style="background-color:#ffffff; text-align:center;">
             @if($logo = $partnerLogo ?? $event->logoUrl())
-                <div style="display:inline-block; background-color:#ffffff; border-radius:8px;">
-                    <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:150px; display:block;">
-                </div>
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="width:100%; display:block;">
+            @else
+                <div style="padding:36px 32px 30px;"><span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span></div>
             @endif
-            <!-- <div style="color:#121652; font-size:22px; font-weight:700; line-height:1.3;">{{ $event->name }}</div>
-            <div style="display:inline-block; margin-top:12px; padding:4px 14px; background-color:#eb0000; border-radius:999px; color:#ffffff; font-size:12px; font-weight:600; letter-spacing:0.03em;">
-                {{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }}
-            </div> -->
         </td>
     </tr>
 
-    {{-- Accent bar --}}
-    <tr><td style="height:1px; background-color:#2e3192;"></td></tr>
+    <tr><td style="height:1px; background-color:#e2e8f0;"></td></tr>
 
     {{-- Greeting --}}
     <tr>
@@ -86,8 +81,23 @@
 
     {{-- Footer --}}
     <tr>
-        <td style="background-color:#f8fafc; padding:20px 32px; text-align:center; border-top:1px solid #e2e8f0;">
-            <p style="margin:0; color:#94a3b8; font-size:12px;">ICT Foundation Nepal</p>
+        <td style="background-color:#f8fafc; padding:24px 24px; border-top:1px solid #e2e8f0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td valign="middle" style="width:44px;">
+                        @if($logo = $event->logoUrl())
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:64px; display:block;">
+                        @endif
+                    </td>
+                    <td valign="middle">
+                        <p style="margin:0 12px 6px; color:#0f172b; font-size:13px;">We look forward to welcoming you! &#128591;</p>
+                        <p style="margin:0 12px; color:#64748b; font-size:12px;">
+                            Warm Regards,<br>
+                            ICT Foundation Nepal
+                        </p>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 

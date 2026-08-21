@@ -25,40 +25,14 @@
 <td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;">
 
-    {{-- Header: event logo + partner lockup --}}
+    {{-- Header --}}
     <tr>
-        <td class="header-cell" style="padding:24px 24px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td align="center" valign="middle">
-                        @if($logo = $partnerLogo ?? $event->logoUrl())
-                            <div style="display:inline-block; background-color:#ffffff; border-radius:8px;">
-                                <img src="{{ $logo }}" alt="{{ $event->name }}" class="event-logo" style="max-height:150px; display:block;">
-                            </div>
-                        @else
-                            <span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span>
-                        @endif
-                    </td>
-                    <!-- <td align="right" valign="middle">
-                        @if(!empty($partnerLogos))
-                            <table role="presentation" cellpadding="0" cellspacing="0" align="right">
-                                <tr>
-                                    <td align="center" style="padding-bottom:8px;">
-                                        <span style="display:inline-block; padding:3px 10px; background-color:#f3e8ff; color:#7e22ce; border-radius:999px; font-size:10px; font-weight:700; letter-spacing:0.04em;">IN ASSOCIATION WITH</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="center">
-                                        @foreach($partnerLogos as $partnerLogo)
-                                            <img src="{{ $partnerLogo }}" alt="Partner logo" class="partner-logo" style="max-height:64px; margin-left:10px; vertical-align:middle;">
-                                        @endforeach
-                                    </td>
-                                </tr>
-                            </table>
-                        @endif
-                    </td> -->
-                </tr>
-            </table>
+        <td style="background-color:#ffffff; text-align:center;">
+            @if($logo = $partnerLogo ?? $event->logoUrl())
+                <img src="{{ $logo }}" alt="{{ $event->name }}" style="width:100%; display:block;">
+            @else
+                <div style="padding:36px 32px 30px;"><span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span></div>
+            @endif
         </td>
     </tr>
 
@@ -116,9 +90,7 @@
                 <tr>
                     <td valign="middle" style="width:44px;">
                         @if($logo = $event->logoUrl())
-                            <div style="display:inline-block; padding:6px 8px; border-radius:6px;">
-                                <img src="{{ $logo }}" alt="{{ $event->name }}" class="footer-logo" style="max-height:64px; display:block;">
-                            </div>
+                            <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:64px; display:block;">
                         @endif
                     </td>
                     <td valign="middle">
