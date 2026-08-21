@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>{{ $event->name }}</title>
+<style>
+    [data-ogsc] body, [data-ogsc] table, [data-ogsc] td { background-color:#ffffff !important; }
+    [data-ogsc] p, [data-ogsc] span, [data-ogsc] div, [data-ogsc] a { color:inherit !important; }
+</style>
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:32px 16px;">
@@ -15,7 +21,9 @@
     <tr>
         <td style="background-color:#ffffff; padding:36px 32px 30px; text-align:center;">
             @if($logo = $partnerLogo ?? $event->logoUrl())
-                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:150px; margin-bottom:4px;">
+                <div style="display:inline-block; background-color:#ffffff; padding:10px 16px; border-radius:8px;">
+                    <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:150px; margin-bottom:4px; display:block;">
+                </div>
             @endif
             <!-- <div style="color:#121652; font-size:22px; font-weight:700; line-height:1.3;">{{ $event->name }}</div>
             <div style="display:inline-block; margin-top:12px; padding:4px 14px; background-color:#eb0000; border-radius:999px; color:#ffffff; font-size:12px; font-weight:600; letter-spacing:0.03em;">

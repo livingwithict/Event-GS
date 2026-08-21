@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>{{ $event->name }}</title>
 <!-- <style>
     @media only screen and (max-width: 480px) {
@@ -12,6 +14,10 @@
         .header-cell { padding: 16px !important; }
     }
 </style> -->
+<style>
+    [data-ogsc] body, [data-ogsc] table, [data-ogsc] td { background-color:#ffffff !important; }
+    [data-ogsc] p, [data-ogsc] span, [data-ogsc] div, [data-ogsc] a { color:inherit !important; }
+</style>
 </head>
 <body style="margin:0; padding:0; background-color:#f1f5f9; font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9; padding:32px 16px;">
@@ -26,7 +32,9 @@
                 <tr>
                     <td align="center" valign="middle">
                         @if($logo = $partnerLogo ?? $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" class="event-logo" style="max-height:150px; display:block;">
+                            <div style="display:inline-block; background-color:#ffffff; padding:10px 16px; border-radius:8px;">
+                                <img src="{{ $logo }}" alt="{{ $event->name }}" class="event-logo" style="max-height:150px; display:block;">
+                            </div>
                         @else
                             <span style="color:#121652; font-size:16px; font-weight:700;">{{ $event->name }}</span>
                         @endif
@@ -108,7 +116,9 @@
                 <tr>
                     <td valign="middle" style="width:44px;">
                         @if($logo = $event->logoUrl())
-                            <img src="{{ $logo }}" alt="{{ $event->name }}" class="footer-logo" style="max-height:64px; display:block;">
+                            <div style="display:inline-block; background-color:#ffffff; padding:6px 8px; border-radius:6px;">
+                                <img src="{{ $logo }}" alt="{{ $event->name }}" class="footer-logo" style="max-height:64px; display:block;">
+                            </div>
                         @endif
                     </td>
                     <td valign="middle">
