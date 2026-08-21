@@ -30,11 +30,19 @@ class PickAndDropService
      */
     public function getBranches(): array
     {
-        return Cache::remember('pickndrop.branches', now()->addHours(6), function () {
-            $response = $this->client()->get('/api/method/logi360.api.get_branches');
+        try {
+            return Cache::remember('pickndrop.branches', now()->addHours(6), function () {
+                $response = $this->client()->get('/api/method/logi360.api.get_branches');
 
-            return $response->json('message.data.branches') ?? [];
-        });
+                return $response->json('message.data.branches') ?? [];
+            });
+        } catch (\Throwable $e) {
+            // A dropdown of branches isn't worth crashing the whole registration
+            // form over — log it and let the field render empty instead.
+            logger()->error('PickAndDrop getBranches failed: '.$e->getMessage());
+
+            return Cache::get('pickndrop.branches', []);
+        }
     }
 
     /**
