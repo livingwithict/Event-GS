@@ -341,6 +341,28 @@ class RegistrationResource extends Resource
                         true: fn ($query) => $query->whereHas('scanLogs.actionType', fn ($q) => $q->where('action_code', 'CARD_DELIVERY')),
                         false: fn ($query) => $query->whereDoesntHave('scanLogs.actionType', fn ($q) => $q->where('action_code', 'CARD_DELIVERY')),
                     ),
+                Tables\Filters\SelectFilter::make('invitation_status')
+                    ->label('Invitation Status')
+                    ->options([
+                        'sent' => 'Invitation Sent',
+                        'pending' => 'Face Verification Sent',
+                        'none' => 'Not Sent',
+                    ])
+                    ->query(function ($query, array $data) {
+                        $state = $data['value'] ?? null;
+
+                        $sentQuery = fn ($q) => $q->where('type', 'email')->where('email_type', 'invitation')->where('status', 'sent');
+                        $faceQuery = fn ($q) => $q->where('type', 'email')->where('email_type', 'face_verification')->where('status', 'sent');
+
+                        return match ($state) {
+                            'sent' => $query->whereHas('communications', $sentQuery),
+                            'pending' => $query->whereDoesntHave('communications', $sentQuery)
+                                ->whereHas('communications', $faceQuery),
+                            'none' => $query->whereDoesntHave('communications', $sentQuery)
+                                ->whereDoesntHave('communications', $faceQuery),
+                            default => $query,
+                        };
+                    }),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultPaginationPageOption(20)
