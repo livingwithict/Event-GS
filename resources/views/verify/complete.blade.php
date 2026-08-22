@@ -1,9 +1,17 @@
+@php
+    // Hardcoded on purpose: this page must never break because of a missing/renamed
+    // event record or a bad query param. Update these four lines for the next event.
+    $eventName = 'Digital Nepal Conclave 2026';
+    $eventVenue = 'The Plaza';
+    $eventDate = '27 Aug 2026';
+    $eventContact = 'ICT Foundation Nepal';
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ $event?->name ?? 'Verification Complete' }}</title>
+<title>{{ $eventName }}</title>
 <style>
     @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
@@ -240,26 +248,23 @@
 <body>
     <div class="screen">
         <div class="header">
-            @php $contact = $event?->contact_info; @endphp
-            @if($contact)
-                @if(preg_match('/^[\d\s+()-]{6,}$/', $contact))
-                    <a class="contact-btn" href="tel:{{ preg_replace('/[^\d+]/', '', $contact) }}">
-                        Contact us
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    </a>
-                @else
-                    <span class="contact-btn" style="cursor:default;">{{ $contact }}</span>
-                @endif
+            @if(preg_match('/^[\d\s+()-]{6,}$/', $eventContact))
+                <a class="contact-btn" href="tel:{{ preg_replace('/[^\d+]/', '', $eventContact) }}">
+                    Contact us
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </a>
+            @else
+                <span class="contact-btn" style="cursor:default;">{{ $eventContact }}</span>
             @endif
         </div>
 
         <div class="logo-wrap">
-            <img src="{{ asset('dnc2026.png') }}" alt="{{ $event?->name ?? 'Digital Nepal Conclave' }}">
+            <img src="{{ asset('dnc2026.png') }}" alt="{{ $eventName }}">
         </div>
 
         <div class="intro">
             <p class="eyebrow">See you at</p>
-            <h1>{{ $event?->name ?? 'Your Event' }}</h1>
+            <h1>{{ $eventName }}</h1>
 
             <p class="desc">
                 @if($registration)
@@ -292,8 +297,8 @@
                 </div>
             </div>
             <div class="stub-right">
-                <p class="stub-date">{{ $event?->start_datetime?->format('d M Y') ?? $event?->event_date?->format('d M Y') ?? '' }}</p>
-                <p class="stub-venue">{{ $event?->venue ?? '' }}</p>
+                <p class="stub-date">{{ $eventDate }}</p>
+                <p class="stub-venue">{{ $eventVenue }}</p>
             </div>
         </div>
 
