@@ -35,7 +35,14 @@ if (app()->environment('local')) {
     })->name('dev.email-preview');
 }
 
-Route::get('/verify/complete', fn () => view('verify.complete'))->name('verification.complete');
+Route::get('/verify/complete', function (\Illuminate\Http\Request $request) {
+    $registration = \App\Models\Registration::with('event')->find($request->query('registration'));
+
+    return view('verify.complete', [
+        'registration' => $registration,
+        'event' => $registration?->event,
+    ]);
+})->name('verification.complete');
 
 Route::get('/ticket/{token}', [TicketController::class, 'show'])->name('ticket.show');
 Route::get('/ticket/{token}/download', [TicketController::class, 'download'])->name('ticket.download');
