@@ -58,7 +58,7 @@ class Registration extends Model
     }
 
     /** Titles offered in the registration forms. Add to this list, not to each form. */
-    public const SALUTATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Er.', 'Prof.', 'Prof. Dr.', 'Adv.', 'Hon.', 'CA.'];
+    public const SALUTATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Er.', 'Prof.', 'Prof. Dr.', 'Adv.', 'Hon.', 'CA.', 'H.E.'];
 
     /**
      * Nepali mobiles are ten digits starting 96/97/98, optionally written with

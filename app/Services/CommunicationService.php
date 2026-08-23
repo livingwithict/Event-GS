@@ -48,7 +48,11 @@ class CommunicationService
             $attachTicket = in_array($emailType, ['invitation', 'registration_confirmation', 'payment_success']);
 
             Mail::send($template, $data, function ($message) use ($registration, $subject, $attachTicket) {
-                $message->to($registration->email)
+                // Emails pasted from PDFs/docs often carry invisible unicode (zero-width
+                // spaces, BOM) that RFC 2822 addr-spec validation flatly rejects.
+                $email = trim(preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $registration->email));
+
+                $message->to($email)
                     ->subject($subject);
 
                 if ($replyTo = config('mail.reply_to.address')) {
