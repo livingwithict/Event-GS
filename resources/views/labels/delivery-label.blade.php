@@ -67,7 +67,7 @@
         <div class="meta">{{ $label['organization'] }}</div>
         @endif
         @if($label['phone'])
-        <div class="phone">{{ $label['phone'] }}</div>
+        <div class="phone">Phone - {{ $label['phone'] }}</div>
         @endif
         @if($label['address'])
         <div class="address">{{ $label['address'] }}</div>
