@@ -13,6 +13,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms;
 use Filament\Forms\Components\Placeholder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -153,6 +154,30 @@ class CommunicationResource extends Resource
                 Tables\Filters\SelectFilter::make('invitation_category')
                     ->label('Invitation Category')
                     ->relationship('registration.invitationCategory', 'name'),
+                Tables\Filters\Filter::make('sent_at')
+                    ->label('Sent Date')
+                    ->schema([
+                        Forms\Components\DatePicker::make('sent_from'),
+                        Forms\Components\DatePicker::make('sent_until'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['sent_from'] ?? null, fn ($q, $date) => $q->whereDate('sent_at', '>=', $date))
+                            ->when($data['sent_until'] ?? null, fn ($q, $date) => $q->whereDate('sent_at', '<=', $date));
+                    })
+                    ->indicateUsing(function (array $data) {
+                        $indicators = [];
+
+                        if ($data['sent_from'] ?? null) {
+                            $indicators[] = 'Sent from '.\Carbon\Carbon::parse($data['sent_from'])->format('M j, Y');
+                        }
+
+                        if ($data['sent_until'] ?? null) {
+                            $indicators[] = 'Sent until '.\Carbon\Carbon::parse($data['sent_until'])->format('M j, Y');
+                        }
+
+                        return $indicators;
+                    }),
             ])
             ->defaultSort('id', 'desc')
             ->defaultPaginationPageOption(20)
