@@ -28,7 +28,7 @@
             margin-bottom: 1.5mm;
         }
         .name {
-            font-size: {{ max(13, (int) round($template->height * 0.29)) }}px;
+            font-size: {{ max(12, (int) round($template->height * 0.24)) }}px;
             font-weight: 700;
             line-height: 1.1;
             margin-bottom: 1mm;
