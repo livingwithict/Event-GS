@@ -153,6 +153,11 @@ class RegistrationResource extends Resource
                             ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
                             ->default('not_printed')
                             ->required(),
+                        Forms\Components\Select::make('card_status')
+                            ->label('Card Status')
+                            ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'not_needed' => 'Not Needed'])
+                            ->default('not_ready')
+                            ->required(),
                         Forms\Components\Select::make('invitation_category_id')
                             ->label('Invitation Category')
                             ->relationship('invitationCategory', 'name')
@@ -263,6 +268,23 @@ class RegistrationResource extends Resource
                     ])
                     ->sortable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('card_status')
+                    ->label('Card Status')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        'ready' => 'Ready',
+                        'not_ready' => 'Not Ready',
+                        'not_needed' => 'Not Needed',
+                        default => $state,
+                    })
+                    ->color(fn (string $state) => match ($state) {
+                        'not_needed' => 'gray',
+                        'not_ready' => \Filament\Support\Colors\Color::Yellow,
+                        'ready' => 'success',
+                        default => 'gray',
+                    })
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('invitation_sent')
                     ->label('Invitation Status')
                     ->state(function ($record) {
@@ -329,6 +351,9 @@ class RegistrationResource extends Resource
                 Tables\Filters\SelectFilter::make('badge_status')
                     ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
                     ->label('Badge'),
+                Tables\Filters\SelectFilter::make('card_status')
+                    ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'not_needed' => 'Not Needed'])
+                    ->label('Card Status'),
                 Tables\Filters\TernaryFilter::make('label_printed')
                     ->label('Label Printed')
                     ->trueLabel('Printed')
@@ -500,12 +525,18 @@ class RegistrationResource extends Resource
                                 ->searchable()
                                 ->native(false)
                                 ->placeholder('Leave unchanged'),
+                            Forms\Components\Select::make('card_status')
+                                ->label('Card Status')
+                                ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'not_needed' => 'Not Needed'])
+                                ->native(false)
+                                ->placeholder('Leave unchanged'),
                         ])
                         ->action(function (Collection $records, array $data) {
                             $changes = array_filter([
                                 'salutation' => $data['salutation'] ?? null,
                                 'category_id' => $data['category_id'] ?? null,
                                 'invitation_category_id' => $data['invitation_category_id'] ?? null,
+                                'card_status' => $data['card_status'] ?? null,
                             ], fn ($value) => filled($value));
 
                             if (empty($changes)) {

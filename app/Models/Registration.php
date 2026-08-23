@@ -23,7 +23,7 @@ class Registration extends Model
         'payment_status', 'paid_at',
         'entry_time', 'lunch_used_at', 'dinner_used_at',
         'label_printed', 'label_printed_at', 'label_printed_by', 'label_collected_at',
-        'badge_status', 'approval_status',
+        'badge_status', 'approval_status', 'card_status',
         'invitation_category_id', 'destination_branch',
         'pickndrop_order_id', 'pickndrop_tracking_number', 'pickndrop_tracking_url',
         'group_id', 'companion_count',
@@ -43,6 +43,7 @@ class Registration extends Model
             'label_collected_at' => 'datetime',
             'thirdfactor_enrolled_at' => 'datetime',
             'badge_status' => 'string',
+            'card_status' => 'string',
             'companion_count' => 'integer',
         ];
     }
@@ -59,6 +60,14 @@ class Registration extends Model
 
     /** Titles offered in the registration forms. Add to this list, not to each form. */
     public const SALUTATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Er.', 'Prof.', 'Prof. Dr.', 'Adv.', 'Hon.', 'CA.', 'H.E.'];
+
+    public const CARD_READY = 'ready';
+
+    public const CARD_NOT_READY = 'not_ready';
+
+    public const CARD_NOT_NEEDED = 'not_needed';
+
+    public const CARD_STATUSES = [self::CARD_READY, self::CARD_NOT_READY, self::CARD_NOT_NEEDED];
 
     /**
      * Nepali mobiles are ten digits starting 96/97/98, optionally written with
@@ -103,6 +112,12 @@ class Registration extends Model
             }
             if (empty($reg->invitation_category_id)) {
                 $reg->invitation_category_id = InvitationCategory::where('key', InvitationCategory::EmailOnly)->value('id');
+            }
+            if (empty($reg->card_status)) {
+                $key = InvitationCategory::find($reg->invitation_category_id)?->key;
+                $reg->card_status = in_array($key, [InvitationCategory::EmailOnly, InvitationCategory::FaceVerification])
+                    ? self::CARD_NOT_NEEDED
+                    : self::CARD_NOT_READY;
             }
         });
     }
