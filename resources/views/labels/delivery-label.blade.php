@@ -58,7 +58,7 @@
 <body>
     @foreach($labels as $label)
     <div class="label">
-        <div class="header">Delivery Label</div>
+        <div class="header">Address Label</div>
         <div class="name">{{ $label['name'] }}</div>
         @if($label['designation'])
         <div class="meta">{{ $label['designation'] }}</div>

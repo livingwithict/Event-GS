@@ -43,7 +43,9 @@
             width: {{ $geo['infoW'] }}mm;
             height: {{ $geo['bodyH'] }}mm;
             overflow: hidden;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .name {
             font-size: {{ $geo['nameFont'] }}px;
