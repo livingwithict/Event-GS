@@ -43,6 +43,7 @@
             width: {{ $geo['infoW'] }}mm;
             height: {{ $geo['bodyH'] }}mm;
             overflow: hidden;
+            text-align: center;
         }
         .name {
             font-size: {{ $geo['nameFont'] }}px;

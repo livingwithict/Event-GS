@@ -87,6 +87,8 @@ class LabelService
         // Kept modest so long names/designations/organizations wrap without
         // clipping past the bottom of the sticker.
         $nameFont = max((int) $template->font_size_name, (int) round($h * 0.4));
+        // Helvetica bold is ~0.58em per character; keep the code inside the QR column.
+        $codeFont = max(7, (int) round(min($qr * 0.42, $qr * 2.835 / (11 * 0.58))));
 
         return [
             'pad' => $pad,
@@ -98,9 +100,9 @@ class LabelService
             'bodyH' => $bodyH,
             'infoW' => round($w - 2 * $pad - $qr - $gap, 1),
             'nameFont' => $nameFont,
-            'orgFont' => max(7, (int) round($nameFont * 0.5)),
-            // Helvetica bold is ~0.58em per character; keep the code inside the QR column.
-            'codeFont' => max(7, (int) round(min($qr * 0.42, $qr * 2.835 / (11 * 0.58)))),
+            // Same size as the guest code under the QR.
+            'orgFont' => $codeFont,
+            'codeFont' => $codeFont,
         ];
     }
 
