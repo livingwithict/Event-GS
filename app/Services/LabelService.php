@@ -79,12 +79,14 @@ class LabelService
         $bodyH = round($h - $bodyTop - $pad, 1);
 
         // QR is square: limited by the column width and by the height left under the title.
-        $qr = round(min($w * 0.35, $bodyH - $codeH), 1);
+        $qr = round(min($w * 0.28, $bodyH - $codeH), 1);
         // Centre the QR + code block in whatever height is left.
         $qrTop = round($bodyTop + max(0, ($bodyH - ($qr + $codeH)) / 2), 1);
 
         // Fonts scale with the sticker; the template value is a floor, not a cap.
-        $nameFont = max((int) $template->font_size_name, (int) round($h * 0.5));
+        // Kept modest so long names/designations/organizations wrap without
+        // clipping past the bottom of the sticker.
+        $nameFont = max((int) $template->font_size_name, (int) round($h * 0.4));
 
         return [
             'pad' => $pad,
@@ -96,7 +98,7 @@ class LabelService
             'bodyH' => $bodyH,
             'infoW' => round($w - 2 * $pad - $qr - $gap, 1),
             'nameFont' => $nameFont,
-            'orgFont' => max(8, (int) round($nameFont * 0.6)),
+            'orgFont' => max(7, (int) round($nameFont * 0.5)),
             // Helvetica bold is ~0.58em per character; keep the code inside the QR column.
             'codeFont' => max(7, (int) round(min($qr * 0.42, $qr * 2.835 / (11 * 0.58)))),
         ];
