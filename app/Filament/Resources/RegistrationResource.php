@@ -477,6 +477,52 @@ class RegistrationResource extends Resource
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
                     RestoreBulkAction::make()
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
+                    BulkAction::make('bulk_edit')
+                        ->label('Bulk Edit')
+                        ->icon('heroicon-o-pencil-square')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsEdit))
+                        ->schema([
+                            Forms\Components\Select::make('salutation')
+                                ->label('Title')
+                                ->options(array_combine(Registration::SALUTATIONS, Registration::SALUTATIONS))
+                                ->searchable()
+                                ->native(false)
+                                ->placeholder('Leave unchanged'),
+                            Forms\Components\Select::make('category_id')
+                                ->label('Guest Category')
+                                ->relationship('category', 'name')
+                                ->searchable()
+                                ->native(false)
+                                ->placeholder('Leave unchanged'),
+                            Forms\Components\Select::make('invitation_category_id')
+                                ->label('Invitation Category')
+                                ->relationship('invitationCategory', 'name')
+                                ->searchable()
+                                ->native(false)
+                                ->placeholder('Leave unchanged'),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $changes = array_filter([
+                                'salutation' => $data['salutation'] ?? null,
+                                'category_id' => $data['category_id'] ?? null,
+                                'invitation_category_id' => $data['invitation_category_id'] ?? null,
+                            ], fn ($value) => filled($value));
+
+                            if (empty($changes)) {
+                                Notification::make()->warning()
+                                    ->title('Nothing to update')
+                                    ->body('Pick at least one field to change.')
+                                    ->send();
+
+                                return;
+                            }
+
+                            $records->each(fn ($r) => $r->update($changes));
+
+                            Notification::make()->success()
+                                ->title("Updated {$records->count()} guests")
+                                ->send();
+                        }),
                     BulkAction::make('approve_registrations')
                         ->label('Approve')
                         ->icon('heroicon-o-check')
