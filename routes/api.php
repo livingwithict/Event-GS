@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\MealController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ScanActionController;
 use App\Http\Controllers\Api\ScanController;
+use App\Http\Controllers\Api\ThirdFactorCheckinController;
 use App\Http\Controllers\Api\ThirdFactorWebhookController;
 use App\Http\Controllers\ImportController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
 
 Route::post('/webhooks/thirdfactor', ThirdFactorWebhookController::class);
+Route::post('/thirdfactor/checkin', ThirdFactorCheckinController::class);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);

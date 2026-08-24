@@ -47,6 +47,8 @@ return [
         'webhook_secret' => env('THIRDFACTOR_WEBHOOK_SECRET'),
         'callback_url' => env('THIRDFACTOR_CALLBACK_URL'),
         'expires_in_hours' => env('THIRDFACTOR_EXPIRES_IN_HOURS', 24),
+        // Inbound: the key THEY send us on the checkin API, not the outbound api_key above.
+        'checkin_api_key' => env('THIRDFACTOR_CHECKIN_API_KEY'),
     ],
 
     'pickndrop' => [
