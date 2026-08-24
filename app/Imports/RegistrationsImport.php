@@ -41,12 +41,6 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                if (empty($email) && empty($phone)) {
-                    $this->recordError($rowNumber, $row, 'At least email or phone is required.');
-
-                    continue;
-                }
-
                 // Contact details are taken as typed: guest lists carry landlines,
                 // extensions, two addresses in one cell. Losing the guest over a
                 // format rule costs more than an address we cannot mail.
