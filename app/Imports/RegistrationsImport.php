@@ -67,17 +67,32 @@ class RegistrationsImport implements ToCollection, WithHeadingRow
 
                 // Colleagues share an organisation email/phone, so a duplicate is
                 // the same name on the same contact — not the contact alone.
+                // "Existing" means either an already-registered guest, or another
+                // row still pending review from this or an earlier CSV upload —
+                // otherwise two identical rows in the same file would both pass.
                 if ($this->skipDuplicates && (! empty($email) || ! empty($phone))) {
-                    $dupeQuery = Registration::where('event_id', $this->event->id)
-                        ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)]);
+                    $matchContact = function ($query) use ($email, $phone) {
+                        if (! empty($email)) {
+                            $query->where('email', $email);
+                        } elseif (! empty($phone)) {
+                            $query->where('phone', $phone);
+                        }
+                    };
 
-                    if (! empty($email)) {
-                        $dupeQuery->where('email', $email);
-                    } elseif (! empty($phone)) {
-                        $dupeQuery->where('phone', $phone);
+                    $isDuplicate = Registration::where('event_id', $this->event->id)
+                        ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+                        ->where($matchContact)
+                        ->exists();
+
+                    if (! $isDuplicate) {
+                        $isDuplicate = ImportStaging::where('event_id', $this->event->id)
+                            ->pending()
+                            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+                            ->where($matchContact)
+                            ->exists();
                     }
 
-                    if ($dupeQuery->exists()) {
+                    if ($isDuplicate) {
                         $this->recordError($rowNumber, $row, "{$name} is already registered ({$email}{$phone}).");
 
                         continue;

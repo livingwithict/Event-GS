@@ -117,7 +117,7 @@ class Registration extends Model
             }
             if (empty($reg->card_status)) {
                 $key = InvitationCategory::find($reg->invitation_category_id)?->key;
-                $reg->card_status = in_array($key, [InvitationCategory::EmailOnly, InvitationCategory::FaceVerification])
+                $reg->card_status = in_array($key, [InvitationCategory::EmailOnly, InvitationCategory::FaceVerification, InvitationCategory::CallEmail])
                     ? self::CARD_NOT_NEEDED
                     : self::CARD_NOT_READY;
             }

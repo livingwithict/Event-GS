@@ -17,6 +17,8 @@ class InvitationCategory extends Model
 
     public const FaceVerification = 'face_verification';
 
+    public const CallEmail = 'call_email';
+
     protected $fillable = ['key', 'name'];
 
     public function registrations(): HasMany
