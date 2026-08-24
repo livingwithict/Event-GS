@@ -155,7 +155,7 @@ class RegistrationResource extends Resource
                             ->required(),
                         Forms\Components\Select::make('card_status')
                             ->label('Card Status')
-                            ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'not_needed' => 'Not Needed'])
+                            ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'in_progress' => 'In Progress', 'not_needed' => 'Not Needed'])
                             ->default('not_ready')
                             ->required(),
                         Forms\Components\Select::make('invitation_category_id')
@@ -274,12 +274,14 @@ class RegistrationResource extends Resource
                     ->formatStateUsing(fn (string $state) => match ($state) {
                         'ready' => 'Ready',
                         'not_ready' => 'Not Ready',
+                        'in_progress' => 'In Progress',
                         'not_needed' => 'Not Needed',
                         default => $state,
                     })
                     ->color(fn (string $state) => match ($state) {
                         'not_needed' => 'gray',
-                        'not_ready' => \Filament\Support\Colors\Color::Yellow,
+                        'not_ready' => 'danger',
+                        'in_progress' => \Filament\Support\Colors\Color::Yellow,
                         'ready' => 'success',
                         default => 'gray',
                     })
@@ -352,7 +354,7 @@ class RegistrationResource extends Resource
                     ->options(['not_printed' => 'Not Printed', 'printed' => 'Printed', 'collected' => 'Collected'])
                     ->label('Badge'),
                 Tables\Filters\SelectFilter::make('card_status')
-                    ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'not_needed' => 'Not Needed'])
+                    ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'in_progress' => 'In Progress', 'not_needed' => 'Not Needed'])
                     ->label('Card Status'),
                 Tables\Filters\TernaryFilter::make('label_printed')
                     ->label('Label Printed')
@@ -527,7 +529,7 @@ class RegistrationResource extends Resource
                                 ->placeholder('Leave unchanged'),
                             Forms\Components\Select::make('card_status')
                                 ->label('Card Status')
-                                ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'not_needed' => 'Not Needed'])
+                                ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'in_progress' => 'In Progress', 'not_needed' => 'Not Needed'])
                                 ->native(false)
                                 ->placeholder('Leave unchanged'),
                         ])

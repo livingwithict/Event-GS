@@ -50,7 +50,9 @@ class DeliveryController extends Controller
 
         abort_if(empty($ids), 400, 'No registrations selected.');
 
-        $registrations = Registration::with('event')->whereIn('id', $ids)->orderBy('guest_number')->get();
+        $registrations = Registration::with('event')->whereIn('id', $ids)->get()
+            ->sortBy(fn ($r) => array_search($r->id, $ids))
+            ->values();
 
         abort_if($registrations->isEmpty(), 404, 'Registrations not found.');
         abort_if($registrations->pluck('event_id')->unique()->count() > 1, 422, 'Select registrations from a single event.');

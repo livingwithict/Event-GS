@@ -65,9 +65,11 @@ class Registration extends Model
 
     public const CARD_NOT_READY = 'not_ready';
 
+    public const CARD_IN_PROGRESS = 'in_progress';
+
     public const CARD_NOT_NEEDED = 'not_needed';
 
-    public const CARD_STATUSES = [self::CARD_READY, self::CARD_NOT_READY, self::CARD_NOT_NEEDED];
+    public const CARD_STATUSES = [self::CARD_READY, self::CARD_NOT_READY, self::CARD_IN_PROGRESS, self::CARD_NOT_NEEDED];
 
     /**
      * Nepali mobiles are ten digits starting 96/97/98, optionally written with
