@@ -627,12 +627,12 @@ class RegistrationResource extends Resource
                                     'urgent_update' => 'Urgent update',
                                     'post_event_thank_you' => 'Post-event thank you',
                                 ])
-                                ->default('invitation')
+                                ->default('invitation_face_verification')
                                 ->required()
                                 ->live(),
                             \Filament\Forms\Components\TextInput::make('subject')
                                 ->label('Subject line')
-                                ->default('Invitation')
+                                ->default('Invitation - DNC 2026')
                                 ->required()
                                 ->maxLength(150),
                         ])

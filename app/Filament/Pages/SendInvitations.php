@@ -51,8 +51,8 @@ class SendInvitations extends Page
     {
         $this->form->fill([
             'event_id' => session('active_event_id') ?: Event::published()->orderBy('start_datetime')->value('id'),
-            'email_type' => 'invitation',
-            'subject' => 'Invitation',
+            'email_type' => 'invitation_face_verification',
+            'subject' => 'Invitation - DNC 2026',
             'approved_only' => true,
             'skip_already_sent' => true,
         ]);

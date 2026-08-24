@@ -35,11 +35,12 @@
         <td style="padding:32px 32px 8px;">
             <p style="margin:0 0 8px; color:#0f172b; font-size:16px;">Dear {{ $registration->displayName() }},</p>
             <p style="margin:0; color:#475569; font-size:15px; line-height:1.6;">
-                You're invited to <strong style="color:#2e3192;">{{ $event->name }}</strong>. Your QR code is below and
-                your full ticket is attached to this email 
+                You're invited to <strong style="color:#2e3192;">{{ $event->name }}</strong>. Your invitation QR code is below and
+                your full ticket is attached to this email. Please note that this invitation is non-transferable and issued exclusively to you.
             </p>
+</br>
             <p style="margin:0; color:#475569; font-size:15px; line-height:1.6;">
-                Please also complete a quick face verification to confirm your RSVP.
+                Please also complete a quick face verification to confirm your RSVP. 
             </p>
         </td>
     </tr>
