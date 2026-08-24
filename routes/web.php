@@ -38,9 +38,19 @@ if (app()->environment('local')) {
 Route::get('/verify/complete', function (\Illuminate\Http\Request $request) {
     $registration = \App\Models\Registration::with('event')->find($request->query('registration'));
 
+    // "Invitation + Face Verification" already attaches the ticket before the guest
+    // ever verifies; plain "Face Verification" only sends it after this webhook fires.
+    // The confirmation copy needs to match whichever happened.
+    $ticketAlreadySent = $registration?->communications()
+        ->where('type', 'email')
+        ->whereIn('email_type', ['invitation', 'invitation_face_verification'])
+        ->where('status', 'sent')
+        ->exists() ?? false;
+
     return view('verify.complete', [
         'registration' => $registration,
         'event' => $registration?->event,
+        'ticketAlreadySent' => $ticketAlreadySent,
     ]);
 })->name('verification.complete');
 

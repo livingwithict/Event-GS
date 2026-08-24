@@ -292,11 +292,11 @@ class RegistrationResource extends Resource
                     ->state(function ($record) {
                         $sentEmailTypes = $record->communications()
                             ->where('type', 'email')
-                            ->whereIn('email_type', ['invitation', 'face_verification'])
+                            ->whereIn('email_type', ['invitation', 'face_verification', 'invitation_face_verification'])
                             ->where('status', 'sent')
                             ->pluck('email_type');
 
-                        if ($sentEmailTypes->contains('invitation')) {
+                        if ($sentEmailTypes->contains('invitation') || $sentEmailTypes->contains('invitation_face_verification')) {
                             return 'sent';
                         }
 
@@ -378,7 +378,7 @@ class RegistrationResource extends Resource
                     ->query(function ($query, array $data) {
                         $state = $data['value'] ?? null;
 
-                        $sentQuery = fn ($q) => $q->where('type', 'email')->where('email_type', 'invitation')->where('status', 'sent');
+                        $sentQuery = fn ($q) => $q->where('type', 'email')->whereIn('email_type', ['invitation', 'invitation_face_verification'])->where('status', 'sent');
                         $faceQuery = fn ($q) => $q->where('type', 'email')->where('email_type', 'face_verification')->where('status', 'sent');
 
                         return match ($state) {
@@ -621,6 +621,7 @@ class RegistrationResource extends Resource
                                 ->options([
                                     'invitation' => 'Invitation (attaches the ticket)',
                                     'face_verification' => 'Face verification (sends the enrollment link, ticket follows automatically after)',
+                                    'invitation_face_verification' => 'Invitation with face verification (QR, ticket, and verification link in one email)',
                                     'registration_confirmation' => 'Registration confirmation (attaches the ticket)',
                                     'event_reminder' => 'Event reminder',
                                     'urgent_update' => 'Urgent update',

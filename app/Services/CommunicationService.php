@@ -45,7 +45,7 @@ class CommunicationService
             $template = $this->getTemplateForType($emailType);
             $data = $this->getTemplateData($registration, $event, $emailType);
             // The invitation is the ticket: guests show it at the entrance.
-            $attachTicket = in_array($emailType, ['invitation', 'registration_confirmation', 'payment_success']);
+            $attachTicket = in_array($emailType, ['invitation', 'invitation_face_verification', 'registration_confirmation', 'payment_success']);
 
             Mail::send($template, $data, function ($message) use ($registration, $subject, $attachTicket) {
                 // Emails pasted from PDFs/docs often carry invisible unicode (zero-width
@@ -376,6 +376,7 @@ class CommunicationService
             'post_event_thank_you' => 'emails.post_event_thank_you',
             'urgent_update' => 'emails.urgent_update',
             'face_verification' => 'emails.face_verification',
+            'invitation_face_verification' => 'emails.invitation_face_verification',
             default => 'emails.invitation',
         };
     }
@@ -393,7 +394,7 @@ class CommunicationService
         }
 
 
-        if ($emailType === 'face_verification') {
+        if (in_array($emailType, ['face_verification', 'invitation_face_verification'])) {
             $thirdFactor = app(ThirdFactorService::class);
             if ($thirdFactor->enabled() && ! $registration->thirdfactor_verification_url) {
                 $thirdFactor->createEnrollmentSession($registration);

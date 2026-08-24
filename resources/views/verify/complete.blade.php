@@ -268,7 +268,12 @@
 
             <p class="desc">
                 @if($registration)
-                    Your identity has been verified, {{ $registration->displayName() }}. Your ticket is on its way to your inbox &mdash; see you there!
+                    Your identity has been verified, {{ $registration->displayName() }}.
+                    @if($ticketAlreadySent)
+                        Your ticket is already in your inbox &mdash; see you there!
+                    @else
+                        Your ticket is on its way to your inbox &mdash; see you there!
+                    @endif
                 @else
                     Your identity has been verified. Your ticket is on its way to your inbox &mdash; see you there!
                 @endif

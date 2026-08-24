@@ -47,8 +47,15 @@ class ThirdFactorWebhookController extends Controller
             'thirdfactor_enrolled_at' => $status === 'approved' ? now() : $registration->thirdfactor_enrolled_at,
         ]);
 
-        // First time this registration clears verification: send the ticket.
-        if ($status === 'approved' && ! $wasAlreadyApproved && $registration->email) {
+        // First time this registration clears verification: send the ticket —
+        // unless "Invitation + Face Verification" already attached it up front.
+        $ticketAlreadySent = $registration->communications()
+            ->where('type', 'email')
+            ->whereIn('email_type', ['invitation', 'invitation_face_verification'])
+            ->where('status', 'sent')
+            ->exists();
+
+        if ($status === 'approved' && ! $wasAlreadyApproved && $registration->email && ! $ticketAlreadySent) {
             SendBulkEmail::dispatch([$registration->id], $registration->event_id, 'Your Event Ticket', 'invitation');
         }
 
