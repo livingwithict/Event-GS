@@ -202,6 +202,7 @@ class ScanStation extends Page
             'Guest ID' => $reg->guest_number,
             'Category' => $reg->category?->name,
             'Invitation' => $reg->invitationCategory?->name,
+            'Face Verification' => $reg->faceVerificationLabel(),
         ]);
 
         if ($full) {

@@ -163,6 +163,21 @@ class RegistrationResource extends Resource
                             ->relationship('invitationCategory', 'name')
                             ->live()
                             ->required(),
+                        Forms\Components\Placeholder::make('thirdfactor_status')
+                            ->label('Face Verification Status')
+                            ->content(function (?Registration $record) {
+                                if (! $record) {
+                                    return 'Not sent';
+                                }
+
+                                $label = $record->faceVerificationLabel();
+
+                                if ($record->thirdfactor_status === 'approved' && $record->thirdfactor_enrolled_at) {
+                                    $label .= ' on '.$record->thirdfactor_enrolled_at->format('M j, Y H:i');
+                                }
+
+                                return $label;
+                            }),
                         Forms\Components\Select::make('destination_branch')
                             ->label('Delivery Branch')
                             ->options(fn () => collect(app(PickAndDropService::class)->getBranches())
@@ -315,6 +330,17 @@ class RegistrationResource extends Resource
                     ->color(fn (Registration $record) => match ($record->invitationCategory?->key) {
                         InvitationCategory::PhysicalEmail => 'info',
                         InvitationCategory::FaceVerification => 'warning',
+                        default => 'gray',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('thirdfactor_status')
+                    ->label('Face Verification')
+                    ->badge()
+                    ->formatStateUsing(fn (Registration $record) => $record->faceVerificationLabel())
+                    ->color(fn (?string $state) => match ($state) {
+                        'approved' => 'success',
+                        'declined' => 'danger',
+                        'review' => 'warning',
                         default => 'gray',
                     })
                     ->toggleable(isToggledHiddenByDefault: true),

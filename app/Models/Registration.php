@@ -100,6 +100,21 @@ class Registration extends Model
         return trim(($this->salutation ? $this->salutation.' ' : '').$this->name);
     }
 
+    /** Human label for thirdfactor_status — the single source so table/form/scan station stay in sync. */
+    public function faceVerificationLabel(): string
+    {
+        return match ($this->thirdfactor_status) {
+            null, '' => 'Not sent',
+            'not_started' => 'Not started',
+            'approved' => 'Verified',
+            'declined' => 'Declined',
+            'review' => 'In review',
+            'expired' => 'Expired',
+            'abandoned' => 'Abandoned',
+            default => ucfirst(str_replace('_', ' ', $this->thirdfactor_status)),
+        };
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Registration $reg) {
