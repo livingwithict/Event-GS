@@ -156,7 +156,7 @@ class RegistrationResource extends Resource
                         Forms\Components\Select::make('card_status')
                             ->label('Card Status')
                             ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'in_progress' => 'In Progress', 'not_needed' => 'Not Needed'])
-                            ->default('not_ready')
+                            ->default('not_needed')
                             ->required(),
                         Forms\Components\Select::make('invitation_category_id')
                             ->label('Invitation Category')
@@ -512,19 +512,16 @@ class RegistrationResource extends Resource
                             Forms\Components\Select::make('salutation')
                                 ->label('Title')
                                 ->options(array_combine(Registration::SALUTATIONS, Registration::SALUTATIONS))
-                                ->searchable()
                                 ->native(false)
                                 ->placeholder('Leave unchanged'),
                             Forms\Components\Select::make('category_id')
                                 ->label('Guest Category')
                                 ->relationship('category', 'name')
-                                ->searchable()
                                 ->native(false)
                                 ->placeholder('Leave unchanged'),
                             Forms\Components\Select::make('invitation_category_id')
                                 ->label('Invitation Category')
                                 ->relationship('invitationCategory', 'name')
-                                ->searchable()
                                 ->native(false)
                                 ->placeholder('Leave unchanged'),
                             Forms\Components\Select::make('card_status')
