@@ -71,11 +71,13 @@ class ScanStation extends Page
             return collect();
         }
 
-        return ScanActionType::where('event_id', $this->eventId)
-            ->active()
-            ->ordered()
-            ->pluck('action_name', 'id')
-            ->put(self::VIEW_STATUS, 'View Status (no changes)');
+        // View Status listed (and thus selected by default via ->keys()->first()) before the real actions.
+        return collect([self::VIEW_STATUS => 'View Status'])->union(
+            ScanActionType::where('event_id', $this->eventId)
+                ->active()
+                ->ordered()
+                ->pluck('action_name', 'id')
+        );
     }
 
     public function events()
