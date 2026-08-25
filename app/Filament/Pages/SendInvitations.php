@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\Ability;
+use App\Enums\Role;
 use App\Jobs\SendBulkEmail;
 use App\Models\Event;
 use App\Models\InvitationCategory;
@@ -39,7 +40,12 @@ class SendInvitations extends Page
 
     public static function canAccess(): bool
     {
-        return Auth::user()?->hasAbility(Ability::CommunicationsSend) ?? false;
+        $user = Auth::user();
+
+        // Invitation Staff send only through the Registration page's bulk action,
+        // not this standalone page — same underlying ability, narrower entry point.
+        return ($user?->hasAbility(Ability::CommunicationsSend) ?? false)
+            && $user?->roleEnum() !== Role::InvitationStaff;
     }
 
     public static function shouldRegisterNavigation(): bool
