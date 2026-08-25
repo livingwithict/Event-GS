@@ -110,6 +110,7 @@ enum Role: string
                 Ability::EventsView,
                 Ability::GuestsView, Ability::GuestsEdit, Ability::GuestsRegister,
                 Ability::CommunicationsView, Ability::CommunicationsSend,
+                Ability::LabelsPrint, Ability::TicketsView,
             ],
         };
     }
