@@ -334,6 +334,7 @@ class RegistrationResource extends Resource
                     $query->where('event_id', $eventId);
                 }
             })
+            ->defaultSort('id', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('event_id')
                     ->relationship('event', 'name')

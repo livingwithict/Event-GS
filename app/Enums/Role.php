@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * The six roles, and the one place that says what each may do.
+ * The seven roles, and the one place that says what each may do.
  *
  * Abilities are checked through the Gate (`$user->can('guests.edit')`), so
  * screens and endpoints ask about the action, never about the role name.
@@ -16,6 +16,7 @@ enum Role: string
     case ScannerStaff = 'scanner_staff';
     case Finance = 'finance';
     case Viewer = 'viewer';
+    case InvitationStaff = 'invitation_staff';
 
     public function label(): string
     {
@@ -26,6 +27,7 @@ enum Role: string
             self::ScannerStaff => 'Scanner Staff',
             self::Finance => 'Finance / Accounts',
             self::Viewer => 'Viewer (read only)',
+            self::InvitationStaff => 'Invitation Staff',
         };
     }
 
@@ -38,6 +40,7 @@ enum Role: string
             self::ScannerStaff => 'Scans guests in at the entrance, lunch and dinner. Sees nothing else.',
             self::Finance => 'Payments, invoices and revenue reports across their events.',
             self::Viewer => 'Reads guests, attendance and reports. Changes nothing, sees no payments.',
+            self::InvitationStaff => 'Manages guest records and sends invitations/communications. No scanning, payments or settings access.',
         };
     }
 
@@ -50,6 +53,7 @@ enum Role: string
             self::ScannerStaff => 'success',
             self::Finance => 'primary',
             self::Viewer => 'gray',
+            self::InvitationStaff => 'purple',
         };
     }
 
@@ -100,6 +104,12 @@ enum Role: string
                 Ability::EventsView,
                 Ability::GuestsView,
                 Ability::ReportsView,
+            ],
+
+            self::InvitationStaff => [
+                Ability::EventsView,
+                Ability::GuestsView, Ability::GuestsEdit, Ability::GuestsRegister,
+                Ability::CommunicationsView, Ability::CommunicationsSend,
             ],
         };
     }
