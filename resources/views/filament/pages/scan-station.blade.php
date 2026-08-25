@@ -64,6 +64,7 @@
                     'ok' => ['ring-success-600/30 bg-success-50 dark:bg-success-400/10', 'text-success-700 dark:text-success-400', 'success', 'Recorded'],
                     'warning' => ['ring-warning-600/30 bg-warning-50 dark:bg-warning-400/10', 'text-warning-700 dark:text-warning-400', 'warning', 'Check'],
                     'error' => ['ring-danger-600/30 bg-danger-50 dark:bg-danger-400/10', 'text-danger-700 dark:text-danger-400', 'danger', 'Rejected'],
+                    'view' => ['ring-gray-600/20 bg-gray-50 dark:bg-gray-400/10', 'text-gray-700 dark:text-gray-300', 'gray', 'Status'],
                     default => null,
                 };
             @endphp
@@ -127,6 +128,7 @@
                             'bg-success-500' => $row['status'] === 'ok',
                             'bg-warning-500' => $row['status'] === 'warning',
                             'bg-danger-500' => $row['status'] === 'error',
+                            'bg-gray-400' => $row['status'] === 'view',
                         ])></span>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ $row['name'] }}</p>

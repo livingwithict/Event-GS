@@ -25,9 +25,12 @@ class ScanStation extends Page
 
     protected string $view = 'filament.pages.scan-station';
 
+    /** Sentinel for the "View Status" option — not a real ScanActionType row, so no data ever changes. */
+    private const VIEW_STATUS = 'VIEW_STATUS';
+
     public ?int $eventId = null;
 
-    public ?int $actionTypeId = null;
+    public int|string|null $actionTypeId = null;
 
     public string $code = '';
 
@@ -71,7 +74,8 @@ class ScanStation extends Page
         return ScanActionType::where('event_id', $this->eventId)
             ->active()
             ->ordered()
-            ->pluck('action_name', 'id');
+            ->pluck('action_name', 'id')
+            ->put(self::VIEW_STATUS, 'View Status (no changes)');
     }
 
     public function events()
@@ -93,6 +97,12 @@ class ScanStation extends Page
         $this->result = null;
 
         if ($code === '') {
+            return;
+        }
+
+        if ($this->actionTypeId === self::VIEW_STATUS) {
+            $this->showStatus($code);
+
             return;
         }
 
@@ -154,6 +164,26 @@ class ScanStation extends Page
         );
     }
 
+    /** Look up and display a guest — never records anything. */
+    private function showStatus(string $code): void
+    {
+        $reg = app(QRCodeService::class)->resolve($code);
+
+        if (! $reg) {
+            $this->fail('Not found', ["No guest matches \"{$code}\"."]);
+
+            return;
+        }
+
+        if ($reg->event_id !== $this->eventId) {
+            $this->fail($reg->displayName(), ['This guest belongs to a different event.'], $reg);
+
+            return;
+        }
+
+        $this->push('view', $reg->displayName(), [], $reg);
+    }
+
     private function alreadyRecordedAt(Registration $reg, ScanActionType $action)
     {
         if ($action->column_mapping && $reg->{$action->column_mapping}) {
@@ -164,13 +194,21 @@ class ScanStation extends Page
     }
 
     /** Label => value pairs shown in the details box, in order. */
-    private function guestDetails(Registration $reg): array
+    private function guestDetails(Registration $reg, bool $full = false): array
     {
-        return array_filter([
+        $details = array_filter([
             'Guest ID' => $reg->guest_number,
             'Category' => $reg->category?->name,
             'Invitation' => $reg->invitationCategory?->name,
         ]);
+
+        if ($full) {
+            $details['Entrance'] = $reg->entry_time?->format('M j, H:i') ?? 'Not yet';
+            $details['Lunch'] = $reg->lunch_used_at?->format('M j, H:i') ?? 'Not yet';
+            $details['Dinner'] = $reg->dinner_used_at?->format('M j, H:i') ?? 'Not yet';
+        }
+
+        return $details;
     }
 
     private function fail(string $title, array $lines, ?Registration $reg = null): void
@@ -180,17 +218,18 @@ class ScanStation extends Page
 
     private function push(string $status, string $title, array $lines, ?Registration $reg = null): void
     {
-        $action = ScanActionType::find($this->actionTypeId);
+        $isViewOnly = $this->actionTypeId === self::VIEW_STATUS;
+        $action = $isViewOnly ? null : ScanActionType::find($this->actionTypeId);
 
         $this->result = [
             'status' => $status,
             'title' => $title,
             'lines' => array_values($lines),
-            'details' => $reg ? $this->guestDetails($reg) : [],
+            'details' => $reg ? $this->guestDetails($reg, $isViewOnly) : [],
             'registration_id' => $reg?->id,
             'can_print_label' => $status !== 'error'
                 && $reg
-                && $action?->action_code === 'CHECKIN'
+                && ($isViewOnly || $action?->action_code === 'CHECKIN')
                 && Auth::user()?->hasAbility(Ability::LabelsPrint)
                 && $reg->event->settingEnabled('enable_label_printing'),
         ];
@@ -199,7 +238,7 @@ class ScanStation extends Page
             'status' => $status,
             'name' => $reg?->displayName() ?? $title,
             'code' => $reg?->guest_number ?? '',
-            'action' => ScanActionType::find($this->actionTypeId)?->action_name ?? '',
+            'action' => $isViewOnly ? 'View Status' : ($action?->action_name ?? ''),
             'at' => now()->format('H:i:s'),
         ]);
 
