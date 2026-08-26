@@ -420,7 +420,7 @@ class RegistrationResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultPaginationPageOption(20)
-            ->paginationPageOptions([10, 20, 50])
+            ->paginationPageOptions([10, 20, 50, 100, 200, 500])
             ->emptyStateHeading('No registrations yet')
             ->emptyStateDescription('Add your first registration or import from CSV.')
             ->recordActions([
