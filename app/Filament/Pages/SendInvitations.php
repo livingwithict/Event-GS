@@ -111,7 +111,10 @@ class SendInvitations extends Page
                                 'post_event_thank_you' => 'Post-event thank you',
                             ])
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(fn ($state, callable $set) => $state === 'urgent_update'
+                                ? $set('subject', 'IMPORTANT NOTICE: DIGITAL NEPAL CONCLAVE 2026 POSTPONED')
+                                : null),
                         TextInput::make('subject')
                             ->label('Subject line')
                             ->required()

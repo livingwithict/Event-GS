@@ -653,7 +653,10 @@ class RegistrationResource extends Resource
                                 ])
                                 ->default('invitation_face_verification')
                                 ->required()
-                                ->live(),
+                                ->live()
+                                ->afterStateUpdated(fn ($state, callable $set) => $state === 'urgent_update'
+                                    ? $set('subject', 'IMPORTANT NOTICE: DIGITAL NEPAL CONCLAVE 2026 POSTPONED')
+                                    : null),
                             \Filament\Forms\Components\TextInput::make('subject')
                                 ->label('Subject line')
                                 ->default('Invitation - DNC 2026')

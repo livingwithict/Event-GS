@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Registration;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use App\Services\ThirdFactorService;
 
 class CommunicationService
@@ -47,13 +48,27 @@ class CommunicationService
             // The invitation is the ticket: guests show it at the entrance.
             $attachTicket = in_array($emailType, ['invitation', 'invitation_face_verification', 'registration_confirmation', 'payment_success']);
 
-            Mail::send($template, $data, function ($message) use ($registration, $subject, $attachTicket) {
+            Mail::send($template, $data, function ($message) use ($registration, $subject, $attachTicket, $emailType, $event) {
                 // Emails pasted from PDFs/docs often carry invisible unicode (zero-width
                 // spaces, BOM) that RFC 2822 addr-spec validation flatly rejects.
                 $email = trim(preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $registration->email));
 
                 $message->to($email)
                     ->subject($subject);
+
+                // Urgent notices (e.g. postponement) go out under a distinct address so
+                // they read as an official notice, separate from routine invitation mail.
+                if ($emailType === 'urgent_update') {
+                    $message->from('notice@digitalconclave.org', config('mail.from.name'));
+
+                    if ($event->banner_path && Storage::disk('public')->exists($event->banner_path)) {
+                        $message->attachData(
+                            Storage::disk('public')->get($event->banner_path),
+                            'Notice.png',
+                            ['mime' => 'image/png'],
+                        );
+                    }
+                }
 
                 if ($replyTo = config('mail.reply_to.address')) {
                     $message->replyTo($replyTo, config('mail.reply_to.name'));
