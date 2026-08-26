@@ -27,7 +27,7 @@ class CommunicationService
             ->where('type', 'email')
             ->where('email_type', $emailType)
             ->where('status', 'sent')
-            ->where('sent_at', '>=', now()->subMinutes(30))
+            ->where('sent_at', '>=', now()->subMinutes(60))
             ->first();
 
         if ($recent) {
