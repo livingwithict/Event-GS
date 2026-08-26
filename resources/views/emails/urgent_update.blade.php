@@ -61,8 +61,7 @@
             </p>
 
             <p style="margin:0; color:#475569; font-size:15px; line-height:1.6;">
-                Should you have any queries or require further assistance, please feel free to contact us at
-                {{ $event->contact_info ?? '+977 9801263604' }}.
+                Should you have any queries or require further assistance, please feel free to contact us at +977 9801263604.
             </p>
         </td>
     </tr>
