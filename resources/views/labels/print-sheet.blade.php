@@ -20,9 +20,9 @@
 
         .title {
             position: absolute;
-            top: {{ $geo['pad'] }}mm;
-            left: {{ $geo['pad'] }}mm;
-            width: {{ $template->width - 2 * $geo['pad'] }}mm;
+            top: {{ $geo['padY'] }}mm;
+            left: {{ $geo['padX'] }}mm;
+            width: {{ $template->width - 2 * $geo['padX'] }}mm;
             height: {{ $geo['titleH'] }}mm;
             line-height: {{ $geo['titleH'] }}mm;
             font-size: {{ max(7, (int) round($geo['titleH'] * 2.4)) }}px;
@@ -39,7 +39,7 @@
         .info {
             position: absolute;
             top: {{ $geo['bodyTop'] }}mm;
-            left: {{ $geo['pad'] }}mm;
+            left: {{ $geo['padX'] }}mm;
             width: {{ $geo['infoW'] }}mm;
             height: {{ $geo['bodyH'] }}mm;
             overflow: hidden;
@@ -63,7 +63,7 @@
         .qr {
             position: absolute;
             top: {{ $geo['qrTop'] }}mm;
-            right: {{ $geo['pad'] }}mm;
+            right: 0mm;
             width: {{ $geo['qr'] }}mm;
             text-align: center;
         }

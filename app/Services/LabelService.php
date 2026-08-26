@@ -62,21 +62,26 @@ class LabelService
         $w = (float) $template->width;
         $h = (float) $template->height;
 
-        $pad = max(0, min(
+        // Horizontal and vertical padding are independent so top/bottom can be
+        // zeroed (full-height, vertically centred content) while left/right
+        // stay put.
+        $padX = max(0, min(
             (float) ($template->margin_left ?? 2),
             (float) ($template->margin_right ?? 2),
+            $w / 4,
+        ));
+        $padY = max(0, min(
             (float) ($template->margin_top ?? 2),
             (float) ($template->margin_bottom ?? 2),
-            $w / 10,
-            $h / 10,
+            $h / 4,
         ));
 
         $titleH = $template->show_category_color ? round($h * 0.14, 1) : 0.0;
         $codeH = 3.8;
         $gap = 2.0;
 
-        $bodyTop = round($pad + $titleH + ($titleH > 0 ? 1.0 : 0), 1);
-        $bodyH = round($h - $bodyTop - $pad, 1);
+        $bodyTop = round($padY + $titleH + ($titleH > 0 ? 1.0 : 0), 1);
+        $bodyH = round($h - $bodyTop - $padY, 1);
 
         // QR is square: limited by the column width and by the height left under the title.
         $qr = round(min($w * 0.28, $bodyH - $codeH), 1);
@@ -91,17 +96,19 @@ class LabelService
         $codeFont = max(7, (int) round(min($qr * 0.42, $qr * 2.835 / (11 * 0.58))));
 
         return [
-            'pad' => $pad,
+            'padX' => $padX,
+            'padY' => $padY,
             'titleH' => $titleH,
             'codeH' => $codeH,
             'qr' => $qr,
             'qrTop' => $qrTop,
             'bodyTop' => $bodyTop,
             'bodyH' => $bodyH,
-            'infoW' => round($w - 2 * $pad - $qr - $gap, 1),
+            // QR hugs the right edge (no right-side pad), so info only loses the left pad.
+            'infoW' => round($w - $padX - $qr - $gap, 1),
             'nameFont' => $nameFont,
-            // Same size as the guest code under the QR.
-            'orgFont' => $codeFont,
+            // A bit larger than the guest code under the QR, for readability.
+            'orgFont' => $codeFont + 2,
             'codeFont' => $codeFont,
         ];
     }
