@@ -201,7 +201,6 @@ class ScanStation extends Page
         $details = array_filter([
             'Guest ID' => $reg->guest_number,
             'Category' => $reg->category?->name,
-            'Invitation' => $reg->invitationCategory?->name,
             'Face Verification' => $reg->faceVerificationLabel(),
         ]);
 
