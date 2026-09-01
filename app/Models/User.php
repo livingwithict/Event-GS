@@ -21,7 +21,7 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<UserFactory> */
     use CausesActivity, HasApiTokens, HasFactory, LogsActivity, Notifiable;
 
-    protected $fillable = ['name', 'email', 'password', 'role'];
+    protected $fillable = ['name', 'email', 'password', 'role', 'column_preferences'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -30,6 +30,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'column_preferences' => 'array',
         ];
     }
 

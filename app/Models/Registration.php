@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -24,7 +25,7 @@ class Registration extends Model
         'entry_time', 'lunch_used_at', 'dinner_used_at',
         'label_printed', 'label_printed_at', 'label_printed_by', 'label_collected_at',
         'badge_status', 'approval_status', 'card_status',
-        'invitation_category_id', 'destination_branch',
+        'invitation_category_id', 'destination_branch', 'destination_area',
         'pickndrop_order_id', 'pickndrop_tracking_number', 'pickndrop_tracking_url',
         'group_id', 'companion_count',
         'thirdfactor_session_id', 'thirdfactor_verification_url', 'thirdfactor_status', 'thirdfactor_enrolled_at',
@@ -173,6 +174,11 @@ class Registration extends Model
     public function invitationCategory(): BelongsTo
     {
         return $this->belongsTo(InvitationCategory::class);
+    }
+
+    public function sectors(): BelongsToMany
+    {
+        return $this->belongsToMany(Sector::class);
     }
 
     public function promoCode(): BelongsTo

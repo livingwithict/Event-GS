@@ -3,12 +3,14 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Ability;
+use App\Filament\Resources\Concerns\GuestBulkActions;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\RegistrationResource\Pages;
 use App\Models\InvitationCategory;
 use App\Models\LabelTemplate;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
+use App\Models\Sector;
 use App\Services\CommunicationService;
 use App\Services\LabelService;
 use App\Services\PickAndDropService;
@@ -133,6 +135,15 @@ class RegistrationResource extends Resource
                                 ->active()
                                 ->ordered()
                                 ->pluck('name', 'id')),
+                        Forms\Components\Select::make('sectors')
+                            ->relationship('sectors', 'name')
+                            ->label('Sectors')
+                            ->multiple()
+                            ->visible(fn (callable $get) => filled($get('event_id')))
+                            ->options(fn (callable $get) => Sector::where('event_id', $get('event_id'))
+                                ->active()
+                                ->ordered()
+                                ->pluck('name', 'id')),
                         Forms\Components\FileUpload::make('photo_path')
                             ->label('Photo')
                             ->image()
@@ -183,7 +194,19 @@ class RegistrationResource extends Resource
                             ->options(fn () => collect(app(PickAndDropService::class)->getBranches())
                                 ->pluck('branch_name', 'name'))
                             ->searchable()
-                            ->visible(fn (callable $get) => InvitationCategory::find($get('invitation_category_id'))?->key === InvitationCategory::PhysicalEmail)
+                            ->live()
+                            ->nullable(),
+                        Forms\Components\Select::make('destination_area')
+                            ->label('Delivery Area')
+                            ->options(function (callable $get) {
+                                $branch = collect(app(PickAndDropService::class)->getBranches())
+                                    ->firstWhere('name', $get('destination_branch'));
+
+                                return collect($branch['area'] ?? [])->mapWithKeys(fn ($area) => [$area => $area]);
+                            })
+                            ->searchable()
+                            ->visible(fn (callable $get) => filled($get('destination_branch')))
+                            ->helperText('Required by PickAndDrop to create a courier order.')
                             ->nullable(),
                     ])
                     ->columnSpan(1),
@@ -212,6 +235,12 @@ class RegistrationResource extends Resource
                     ->color(fn ($record) => $record->category?->badge_color ?? 'gray')
                     ->searchable()
                     ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('sectors.name')
+                    ->label('Sectors')
+                    ->badge()
+                    ->separator(',')
+                    ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('email')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('phone')->searchable()->toggleable(),
@@ -368,6 +397,10 @@ class RegistrationResource extends Resource
                 Tables\Filters\SelectFilter::make('category_id')
                     ->relationship('category', 'name')
                     ->label('Category'),
+                Tables\Filters\SelectFilter::make('sectors')
+                    ->relationship('sectors', 'name')
+                    ->multiple()
+                    ->label('Sector'),
                 Tables\Filters\SelectFilter::make('invitation_category_id')
                     ->relationship('invitationCategory', 'name')
                     ->label('Invitation Category'),
@@ -420,7 +453,7 @@ class RegistrationResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultPaginationPageOption(20)
-            ->paginationPageOptions([10, 20, 50, 100, 200, 500])
+            ->paginationPageOptions([10, 20, 50, 100])
             ->emptyStateHeading('No registrations yet')
             ->emptyStateDescription('Add your first registration or import from CSV.')
             ->recordActions([
@@ -531,55 +564,7 @@ class RegistrationResource extends Resource
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
                     RestoreBulkAction::make()
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::EventsManage)),
-                    BulkAction::make('bulk_edit')
-                        ->label('Bulk Edit')
-                        ->icon('heroicon-o-pencil-square')
-                        ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsEdit))
-                        ->schema([
-                            Forms\Components\Select::make('salutation')
-                                ->label('Title')
-                                ->options(array_combine(Registration::SALUTATIONS, Registration::SALUTATIONS))
-                                ->native(false)
-                                ->placeholder('Leave unchanged'),
-                            Forms\Components\Select::make('category_id')
-                                ->label('Guest Category')
-                                ->relationship('category', 'name')
-                                ->native(false)
-                                ->placeholder('Leave unchanged'),
-                            Forms\Components\Select::make('invitation_category_id')
-                                ->label('Invitation Category')
-                                ->relationship('invitationCategory', 'name')
-                                ->native(false)
-                                ->placeholder('Leave unchanged'),
-                            Forms\Components\Select::make('card_status')
-                                ->label('Card Status')
-                                ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'in_progress' => 'In Progress', 'not_needed' => 'Not Needed'])
-                                ->native(false)
-                                ->placeholder('Leave unchanged'),
-                        ])
-                        ->action(function (Collection $records, array $data) {
-                            $changes = array_filter([
-                                'salutation' => $data['salutation'] ?? null,
-                                'category_id' => $data['category_id'] ?? null,
-                                'invitation_category_id' => $data['invitation_category_id'] ?? null,
-                                'card_status' => $data['card_status'] ?? null,
-                            ], fn ($value) => filled($value));
-
-                            if (empty($changes)) {
-                                Notification::make()->warning()
-                                    ->title('Nothing to update')
-                                    ->body('Pick at least one field to change.')
-                                    ->send();
-
-                                return;
-                            }
-
-                            $records->each(fn ($r) => $r->update($changes));
-
-                            Notification::make()->success()
-                                ->title("Updated {$records->count()} guests")
-                                ->send();
-                        }),
+                    GuestBulkActions::bulkEdit(),
                     BulkAction::make('approve_registrations')
                         ->label('Approve')
                         ->icon('heroicon-o-check')
@@ -696,64 +681,6 @@ class RegistrationResource extends Resource
                         ->action(fn (Collection $records) => redirect()->route('labels.print-now', [
                             'registrations' => $records->pluck('id')->implode(','),
                         ])),
-                    BulkAction::make('set_destination_branch')
-                        ->label('Set Delivery Branch')
-                        ->icon('heroicon-o-map-pin')
-                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
-                        ->schema([
-                            Forms\Components\Select::make('destination_branch')
-                                ->label('Branch')
-                                ->options(fn () => collect(app(PickAndDropService::class)->getBranches())
-                                    ->pluck('branch_name', 'name'))
-                                ->searchable()
-                                ->required(),
-                        ])
-                        ->action(function (Collection $records, array $data) {
-                            $records->each(fn ($r) => $r->update(['destination_branch' => $data['destination_branch']]));
-
-                            Notification::make()->success()
-                                ->title("Delivery branch set for {$records->count()} guests")
-                                ->send();
-                        }),
-                    BulkAction::make('create_delivery_orders')
-                        ->label('Create Delivery Orders')
-                        ->icon('heroicon-o-truck')
-                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
-                        ->requiresConfirmation()
-                        ->action(function (Collection $records) {
-                            $service = app(PickAndDropService::class);
-                            $created = 0;
-                            $failed = 0;
-
-                            foreach ($records as $record) {
-                                if ($record->invitationCategory?->key !== InvitationCategory::PhysicalEmail || $record->pickndrop_order_id) {
-                                    continue;
-                                }
-                                if (! $record->destination_branch || ! $record->phone) {
-                                    $failed++;
-
-                                    continue;
-                                }
-
-                                try {
-                                    $data = $service->createOrder($record);
-                                    $record->update([
-                                        'pickndrop_order_id' => $data['orderID'] ?? null,
-                                        'pickndrop_tracking_number' => $data['vendor_tracking_number'] ?? null,
-                                        'pickndrop_tracking_url' => $data['tracking_url'] ?? null,
-                                    ]);
-                                    $created++;
-                                } catch (\Throwable $e) {
-                                    logger()->error('PickAndDrop createOrder failed: '.$e->getMessage(), ['registration_id' => $record->id]);
-                                    $failed++;
-                                }
-                            }
-
-                            Notification::make()
-                                ->success()
-                                ->title("Created {$created} delivery orders".($failed ? ", {$failed} failed" : ''))
-                                ->send();
-                        }),
                     BulkAction::make('print_delivery_labels')
                         ->label('Print Delivery Labels')
                         ->icon('heroicon-o-tag')
@@ -761,32 +688,6 @@ class RegistrationResource extends Resource
                         ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
                             'registrations' => $records->pluck('id')->implode(','),
                         ])),
-                    BulkAction::make('request_pickup')
-                        ->label('Request Pickup')
-                        ->icon('heroicon-o-truck')
-                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
-                        ->schema([
-                            Forms\Components\TextInput::make('vendor_address')
-                                ->label('Pickup Address')
-                                ->required()
-                                ->helperText('Your business address on file with PickAndDrop.'),
-                        ])
-                        ->action(function (array $data) {
-                            try {
-                                app(PickAndDropService::class)->createPickupRequest($data['vendor_address']);
-
-                                Notification::make()->success()
-                                    ->title('Pickup requested')
-                                    ->send();
-                            } catch (\Throwable $e) {
-                                logger()->error('PickAndDrop pickup request failed: '.$e->getMessage());
-
-                                Notification::make()->danger()
-                                    ->title('Pickup request failed')
-                                    ->body($e->getMessage())
-                                    ->send();
-                            }
-                        }),
                 ]),
             ]);
     }

@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Filament\Resources\ParticipantCategoryResource\Pages;
+namespace App\Filament\Resources\SectorResource\Pages;
 
 use App\Filament\Resources\Concerns\PersistsColumnManagerPerUser;
-use App\Filament\Resources\ParticipantCategoryResource;
+use App\Filament\Resources\SectorResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListParticipantCategories extends ListRecords
+class ListSectors extends ListRecords
 {
     use PersistsColumnManagerPerUser;
 
-    protected static string $resource = ParticipantCategoryResource::class;
+    protected static string $resource = SectorResource::class;
 
     protected function getHeaderActions(): array
     {

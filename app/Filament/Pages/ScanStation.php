@@ -6,6 +6,7 @@ use App\Enums\Ability;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Models\ScanActionType;
+use App\Services\PickAndDropService;
 use App\Services\QRCodeService;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +41,12 @@ class ScanStation extends Page
     /** Ten most recent scans this session, newest first. */
     public array $recent = [];
 
+    /** Live name search, View Status only — separate from the exact-match code field. */
+    public string $nameQuery = '';
+
+    /** Guests matching nameQuery: ['id', 'label', 'code']. */
+    public array $nameResults = [];
+
     public static function canAccess(): bool
     {
         return Auth::user()?->hasAbility(Ability::Scan) ?? false;
@@ -61,7 +68,37 @@ class ScanStation extends Page
         session(['active_event_id' => $this->eventId]);
         $this->actionTypeId = $this->actionTypes()->keys()->first();
         $this->result = null;
+        $this->nameQuery = '';
+        $this->nameResults = [];
         $this->recent = [];
+    }
+
+    public function isViewStatus(): bool
+    {
+        return $this->actionTypeId === self::VIEW_STATUS;
+    }
+
+    /** Fires on every keystroke (wire:model.live) — cheap LIKE search, not the code field's exact match. */
+    public function updatedNameQuery(): void
+    {
+        $query = trim($this->nameQuery);
+
+        if (mb_strlen($query) < 2) {
+            $this->nameResults = [];
+
+            return;
+        }
+
+        $this->nameResults = Registration::where('event_id', $this->eventId)
+            ->whereRaw('UPPER(name) LIKE ?', ['%'.mb_strtoupper($query).'%'])
+            ->orderBy('name')
+            ->limit(8)
+            ->get()
+            ->map(fn (Registration $r) => [
+                'id' => $r->id,
+                'label' => $r->displayName(),
+                'code' => $r->guest_number,
+            ])->all();
     }
 
     /** @return \Illuminate\Support\Collection<int, string> id => name */
@@ -186,6 +223,31 @@ class ScanStation extends Page
         $this->push('view', $reg->displayName(), [], $reg);
     }
 
+    /** Staff picked one guest off the live name-search results. */
+    public function selectNameResult(int $id): void
+    {
+        $this->nameQuery = '';
+        $this->nameResults = [];
+
+        $reg = Registration::where('event_id', $this->eventId)->find($id);
+
+        if (! $reg) {
+            $this->fail('Not found', ['That guest no longer exists.']);
+
+            return;
+        }
+
+        $this->push('view', $reg->displayName(), [], $reg);
+    }
+
+    /** Live courier status for one order, human-readable — or null if the API call fails. */
+    private function deliveryStatusLabel(string $orderId): ?string
+    {
+        $status = app(PickAndDropService::class)->getOrderDetails($orderId)['status'] ?? null;
+
+        return $status ? ucwords(str_replace('_', ' ', $status)) : null;
+    }
+
     private function alreadyRecordedAt(Registration $reg, ScanActionType $action)
     {
         if ($action->column_mapping && $reg->{$action->column_mapping}) {
@@ -202,6 +264,9 @@ class ScanStation extends Page
             'Guest ID' => $reg->guest_number,
             'Category' => $reg->category?->name,
             'Face Verification' => $reg->faceVerificationLabel(),
+            'Delivery Status' => $reg->pickndrop_order_id
+                ? $this->deliveryStatusLabel($reg->pickndrop_order_id)
+                : null,
         ]);
 
         if ($full) {

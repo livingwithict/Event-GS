@@ -56,13 +56,21 @@ class PickAndDropService
             'customerName' => $registration->displayName(),
             'primaryMobileNo' => $registration->phone,
             'destinationBranch' => $registration->destination_branch,
+            'destinationCityArea' => $registration->destination_area,
             'codAmount' => 0,
             'orderDescription' => 'Event invitation',
             'landmark' => $registration->address,
             'ref' => (string) $registration->id,
         ]);
 
-        return $response->json('message.data');
+        // v2 endpoints wrap the payload in "data", not "message" like the v1 endpoints do.
+        $data = $response->json('data');
+
+        if (($data['status'] ?? null) !== 'success') {
+            throw new \RuntimeException($data['message'] ?? 'PickAndDrop order creation failed.');
+        }
+
+        return $data['data'];
     }
 
     /** Tells PickAndDrop a batch is ready for their courier to collect. */
@@ -73,5 +81,25 @@ class PickAndDropService
         ]);
 
         return $response->json('message.data');
+    }
+
+    /**
+     * Live status + history for one order. No local status sync exists (see
+     * class docblock), so callers poll this on demand instead — e.g. Scan
+     * Station looking up a guest's delivery status at the moment of scan.
+     */
+    public function getOrderDetails(string $orderId): ?array
+    {
+        try {
+            $response = $this->client()->get('/api/method/logi360.api.get_order_details', [
+                'order_id' => $orderId,
+            ]);
+
+            return $response->json('message.data.0');
+        } catch (\Throwable $e) {
+            logger()->error('PickAndDrop getOrderDetails failed: '.$e->getMessage(), ['order_id' => $orderId]);
+
+            return null;
+        }
     }
 }

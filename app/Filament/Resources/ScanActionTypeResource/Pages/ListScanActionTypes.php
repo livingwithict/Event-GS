@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\ScanActionTypeResource\Pages;
 
+use App\Filament\Resources\Concerns\PersistsColumnManagerPerUser;
 use App\Filament\Resources\ScanActionTypeResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListScanActionTypes extends ListRecords
 {
+    use PersistsColumnManagerPerUser;
+
     protected static string $resource = ScanActionTypeResource::class;
 
     protected function getHeaderActions(): array

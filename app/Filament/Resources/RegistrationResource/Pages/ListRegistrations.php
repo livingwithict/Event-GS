@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RegistrationResource\Pages;
 
+use App\Filament\Resources\Concerns\PersistsColumnManagerPerUser;
 use App\Filament\Resources\RegistrationResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ListRegistrations extends ListRecords
 {
+    use PersistsColumnManagerPerUser;
+
     protected static string $resource = RegistrationResource::class;
 
     protected function getHeaderActions(): array

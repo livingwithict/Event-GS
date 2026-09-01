@@ -62,10 +62,9 @@ Route::get('/ticket/{token}/qr.png', [RegistrationQrController::class, 'image'])
 Route::middleware('auth')->group(function () {
     Route::get('/labels/{registration}/print', [LabelController::class, 'printSingle'])->name('labels.print-single');
     Route::post('/labels/print', [LabelController::class, 'printBulk'])->name('labels.print');
-    // Auto-print: a wrapper page that loads the PDF and fires the print dialog.
+    // Auto-print: a wrapper page that loads the HTML sheet and fires the print dialog.
     Route::get('/labels/print-now', [LabelController::class, 'printNow'])->name('labels.print-now');
     Route::get('/labels/sheet', [LabelController::class, 'sheet'])->name('labels.sheet');
-    Route::get('/labels/pdf', [LabelController::class, 'pdf'])->name('labels.pdf');
 
     Route::get('/delivery/labels', [DeliveryController::class, 'labels'])->name('delivery.labels');
     Route::get('/delivery/labels/sheet', [DeliveryController::class, 'sheet'])->name('delivery.labels.sheet');

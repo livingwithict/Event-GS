@@ -37,6 +37,44 @@
                     </div>
                 </div>
 
+                @if ($this->isViewStatus())
+                    <div class="mt-4">
+                        <label for="scan-name" class="fi-fo-field-wrp-label inline-flex items-center gap-x-3 text-sm font-medium leading-6 text-gray-950 dark:text-white">
+                            Search by name
+                        </label>
+                        <div class="relative mt-2">
+                            <x-filament::input.wrapper>
+                                <x-filament::input
+                                    id="scan-name"
+                                    type="text"
+                                    wire:model.live.debounce.300ms="nameQuery"
+                                    autocomplete="off"
+                                    placeholder="Start typing a guest's name…"
+                                />
+                            </x-filament::input.wrapper>
+
+                            @if (!empty($nameResults))
+                                <div class="absolute inset-x-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-white/10 dark:bg-gray-800">
+                                    <ul role="list" class="divide-y divide-gray-100 dark:divide-white/10">
+                                        @foreach ($nameResults as $match)
+                                            <li>
+                                                <button
+                                                    type="button"
+                                                    wire:click="selectNameResult({{ $match['id'] }})"
+                                                    class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-white/5"
+                                                >
+                                                    <span class="text-sm font-medium text-gray-950 dark:text-white">{{ $match['label'] }}</span>
+                                                    <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ $match['code'] }}</span>
+                                                </button>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 <form wire:submit="scan" class="mt-4">
                     <label for="scan-code" class="fi-fo-field-wrp-label inline-flex items-center gap-x-3 text-sm font-medium leading-6 text-gray-950 dark:text-white">
                         Invitation code
@@ -144,13 +182,18 @@
         </x-filament::section>
     </div>
 
-    {{-- Keep the cursor in the code box: barcode wedges type wherever focus is. --}}
+    {{-- Keep the cursor in the code box: barcode wedges type wherever focus is.
+         Skipped while the name search box has focus, or every keystroke there
+         would get its focus ripped away by the live-search re-render. --}}
     <script>
         document.addEventListener('livewire:initialized', () => {
-            const focus = () => document.getElementById('scan-code')?.focus();
-            Livewire.hook('morphed', focus);
+            const focusCode = () => document.getElementById('scan-code')?.focus();
+            Livewire.hook('morphed', () => {
+                if (document.activeElement?.id === 'scan-name') return;
+                focusCode();
+            });
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('select, a, button')) focus();
+                if (!e.target.closest('select, a, button, #scan-name')) focusCode();
             });
         });
     </script>

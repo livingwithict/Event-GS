@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureFilamentAccess;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
@@ -41,6 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2.25rem')
             ->favicon('/favicon.jpg')
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->defaultThemeMode(ThemeMode::Light)
             ->colors([
                 'primary' => Color::Indigo,
                 'success' => Color::Emerald,
@@ -56,6 +58,9 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Attendees')
                     ->icon(Heroicon::OutlinedUsers),
+                NavigationGroup::make()
+                    ->label('Logistics')
+                    ->icon(Heroicon::OutlinedTruck),
                 NavigationGroup::make()
                     ->label('Finance')
                     ->icon(Heroicon::OutlinedCreditCard),
@@ -77,6 +82,7 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
+            ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\Filament\Clusters')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,

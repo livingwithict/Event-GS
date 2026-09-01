@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\Ability;
+use App\Filament\Clusters\Category;
 use App\Filament\Resources\Concerns\HasRoleBasedVisibility;
 use App\Filament\Resources\ParticipantCategoryResource\Pages;
 use App\Models\ParticipantCategory;
@@ -26,7 +27,6 @@ use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use UnitEnum;
 
 class ParticipantCategoryResource extends Resource
 {
@@ -41,9 +41,9 @@ class ParticipantCategoryResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-tag';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Events';
+    protected static ?string $cluster = Category::class;
 
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationLabel = 'Participant Category';
 
     public static function getGloballySearchableAttributes(): array
     {

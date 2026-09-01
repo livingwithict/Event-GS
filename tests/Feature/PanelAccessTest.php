@@ -55,6 +55,8 @@ class PanelAccessTest extends TestCase
             \App\Filament\Resources\ImportBatchResource::class,
             \App\Filament\Resources\UserResource::class,
             \App\Filament\Resources\ParticipantCategoryResource::class,
+            \App\Filament\Resources\SectorResource::class,
+            \App\Filament\Resources\LogisticsResource::class,
             \App\Filament\Resources\LabelTemplateResource::class,
             \App\Filament\Resources\PromoCodeResource::class,
             \App\Filament\Resources\ScanActionTypeResource::class,

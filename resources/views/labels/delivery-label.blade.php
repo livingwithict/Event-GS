@@ -53,6 +53,13 @@
             letter-spacing: 0.3px;
             margin-top: 1.5mm;
         }
+        .order-qr {
+            position: absolute;
+            right: {{ round($pad * 0.4, 1) }}mm;
+            bottom: {{ round($pad * 0.4, 1) }}mm;
+            width: {{ round($template->height * 0.34, 1) }}mm;
+            height: {{ round($template->height * 0.34, 1) }}mm;
+        }
     </style>
 </head>
 <body>
@@ -74,6 +81,9 @@
         @endif
         @if($label['tracking_number'])
         <div class="tracking">{{ $label['tracking_number'] }}</div>
+        @endif
+        @if($label['order_qr'])
+        <img class="order-qr" src="data:image/png;base64,{{ $label['order_qr'] }}" alt="Order QR">
         @endif
     </div>
     @endforeach

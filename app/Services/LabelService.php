@@ -6,6 +6,7 @@ use App\Models\LabelTemplate;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Collection;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class LabelService
 {
@@ -115,9 +116,11 @@ class LabelService
 
     /**
      * Shipping label for the envelope, handed to PickAndDrop with the batch.
-     * Same sticker size as the ID label (same printer), but no QR or guest
-     * code: it's pasted on the outside of the envelope, and the
-     * entry/lunch/dinner QR must never be exposed there.
+     * Same sticker size as the ID label (same printer). Never carries the
+     * guest's entry/lunch/dinner QR — that must not leave the building on an
+     * envelope. A courier order gets its own small QR (the PickAndDrop order
+     * id) in the corner instead, for the courier to scan; self-delivered
+     * labels (no order created) get no QR at all.
      */
     public function generateDeliveryLabelPdf(Collection $registrations, LabelTemplate $template): string
     {
@@ -144,6 +147,9 @@ class LabelService
             'phone' => $registration->phone,
             'address' => $registration->address,
             'tracking_number' => $registration->pickndrop_tracking_number,
+            'order_qr' => $registration->pickndrop_order_id
+                ? base64_encode(QrCode::format('png')->size(200)->margin(0)->generate($registration->pickndrop_order_id))
+                : null,
         ])->toArray();
 
         $pad = max(0, min(

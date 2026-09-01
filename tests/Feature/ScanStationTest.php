@@ -135,6 +135,57 @@ class ScanStationTest extends TestCase
         $this->assertNull($other->fresh()->entry_time);
     }
 
+    public function test_typing_a_name_live_searches_within_the_event(): void
+    {
+        Registration::factory()->create(['event_id' => $this->event->id, 'name' => 'Sita Rai']);
+        $other = Registration::factory()->create(['name' => 'Sita Gurung']); // different event
+
+        $station = $this->station()
+            ->set('actionTypeId', 'VIEW_STATUS')
+            ->set('nameQuery', 'sita');
+
+        $this->assertCount(1, $station->get('nameResults'));
+        $this->assertSame('Sita Rai', $station->get('nameResults')[0]['label']);
+        $this->assertNotSame($other->id, $station->get('nameResults')[0]['id']);
+    }
+
+    public function test_short_name_query_returns_no_results(): void
+    {
+        Registration::factory()->create(['event_id' => $this->event->id, 'name' => 'Sita Rai']);
+
+        $station = $this->station()
+            ->set('actionTypeId', 'VIEW_STATUS')
+            ->set('nameQuery', 's');
+
+        $this->assertSame([], $station->get('nameResults'));
+    }
+
+    public function test_selecting_a_name_result_shows_that_guests_status(): void
+    {
+        $reg = Registration::factory()->create(['event_id' => $this->event->id, 'name' => 'Sita Rai']);
+        Registration::factory()->create(['event_id' => $this->event->id, 'name' => 'Sita Gurung']);
+
+        $this->station()
+            ->set('actionTypeId', 'VIEW_STATUS')
+            ->set('nameQuery', 'sita')
+            ->call('selectNameResult', $reg->id)
+            ->assertSet('result.status', 'view')
+            ->assertSet('result.title', 'Sita Rai')
+            ->assertSet('nameQuery', '')
+            ->assertSet('nameResults', []);
+    }
+
+    public function test_the_code_field_still_requires_an_exact_match(): void
+    {
+        Registration::factory()->create(['event_id' => $this->event->id, 'name' => 'Sita Rai']);
+
+        $this->station()
+            ->set('actionTypeId', 'VIEW_STATUS')
+            ->set('code', 'sita')
+            ->call('scan')
+            ->assertSet('result.status', 'error');
+    }
+
     public function test_category_permissions_block_a_disallowed_action(): void
     {
         $category = ParticipantCategory::factory()->create([
