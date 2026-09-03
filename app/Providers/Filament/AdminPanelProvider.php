@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\LogisticsResource\Pages\ListLogistics;
 use App\Http\Controllers\EventSwitcherController;
 use App\Http\Middleware\AdminSessionTimeout;
 use App\Http\Middleware\EnsureFilamentAccess;
@@ -16,6 +17,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\View\TablesRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -43,6 +45,11 @@ class AdminPanelProvider extends PanelProvider
             ->favicon('/favicon.jpg')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->defaultThemeMode(ThemeMode::Light)
+            ->renderHook(
+                TablesRenderHook::TOOLBAR_SEARCH_BEFORE,
+                fn () => view('filament.logistics.refresh-statuses-button'),
+                scopes: ListLogistics::class,
+            )
             ->colors([
                 'primary' => Color::Indigo,
                 'success' => Color::Emerald,
