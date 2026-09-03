@@ -11,6 +11,7 @@ use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use UnitEnum;
 
 class Tracking extends Page
@@ -212,6 +213,35 @@ class Tracking extends Page
             ->get()
             ->map(fn (Registration $r) => ['id' => $r->id, 'label' => $r->displayName(), 'code' => $r->guest_number])
             ->all();
+    }
+
+    /** CSV of every guest currently assigned to the selected lookup means. */
+    public function exportMeanGuests(): ?StreamedResponse
+    {
+        $mean = $this->lookupMeanId ? DeliveryMean::find($this->lookupMeanId) : null;
+
+        if (! $mean) {
+            return null;
+        }
+
+        $csv = "Delivery Means,Guest Name,Address,Phone,Designation,Organization,Sector\n";
+
+        foreach ($mean->registrations()->with('sectors')->orderBy('name')->get() as $registration) {
+            $csv .= sprintf(
+                "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                str_replace('"', '""', $mean->name),
+                str_replace('"', '""', $registration->name ?? ''),
+                str_replace('"', '""', str_replace(["\r", "\n"], ' ', $registration->address ?? '')),
+                str_replace('"', '""', $registration->phone ?? ''),
+                str_replace('"', '""', $registration->designation ?? ''),
+                str_replace('"', '""', $registration->organization ?? ''),
+                str_replace('"', '""', $registration->sectors->pluck('name')->implode(', ')),
+            );
+        }
+
+        return response()->streamDownload(function () use ($csv) {
+            echo $csv;
+        }, "{$mean->name}-guests.csv", ['Content-Type' => 'text/csv']);
     }
 
     private function resetManageState(): void

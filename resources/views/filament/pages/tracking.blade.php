@@ -76,6 +76,46 @@
                 </div>
             @endif
 
+            {{-- Means lookup --}}
+            <x-filament::section>
+                <x-slot name="heading">Delivery means lookup</x-slot>
+                <x-slot name="description">Pick a delivery means to see its description and who has been assigned to it.</x-slot>
+
+                @if ($lookupMeanId)
+                    <x-slot name="afterHeader">
+                        <x-filament::button wire:click="exportMeanGuests" icon="heroicon-o-arrow-down-tray" color="gray" size="sm">
+                            Export CSV
+                        </x-filament::button>
+                    </x-slot>
+                @endif
+
+                <x-filament::input.wrapper>
+                    <x-filament::input.select wire:model.live="lookupMeanId">
+                        <option value="">Select a delivery means…</option>
+                        @foreach ($this->deliveryMeans() as $id => $name)
+                            <option value="{{ $id }}">{{ $name }}</option>
+                        @endforeach
+                    </x-filament::input.select>
+                </x-filament::input.wrapper>
+
+                @if ($lookupMeanId)
+                    @if ($lookupMeanDescription)
+                        <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">{{ $lookupMeanDescription }}</p>
+                    @endif
+
+                    <ul role="list" class="mt-3 divide-y divide-gray-100 dark:divide-white/10 rounded-lg border border-gray-200 dark:border-white/10">
+                        @forelse ($lookupMeanGuests as $guest)
+                            <li class="px-4 py-2.5">
+                                <span class="text-sm font-medium text-gray-950 dark:text-white">{{ $guest['label'] }}</span>
+                                <span class="ml-2 font-mono text-xs text-gray-500 dark:text-gray-400">{{ $guest['code'] }}</span>
+                            </li>
+                        @empty
+                            <li class="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">No guests assigned yet.</li>
+                        @endforelse
+                    </ul>
+                @endif
+            </x-filament::section>
+
             {{-- Guest search --}}
             <x-filament::section>
                 <x-slot name="heading">Find a guest</x-slot>
@@ -109,38 +149,6 @@
                         </ul>
                     @endif
                 </div>
-            </x-filament::section>
-
-            {{-- Means lookup --}}
-            <x-filament::section>
-                <x-slot name="heading">Delivery means lookup</x-slot>
-                <x-slot name="description">Pick a delivery means to see its description and who has been assigned to it.</x-slot>
-
-                <x-filament::input.wrapper>
-                    <x-filament::input.select wire:model.live="lookupMeanId">
-                        <option value="">Select a delivery means…</option>
-                        @foreach ($this->deliveryMeans() as $id => $name)
-                            <option value="{{ $id }}">{{ $name }}</option>
-                        @endforeach
-                    </x-filament::input.select>
-                </x-filament::input.wrapper>
-
-                @if ($lookupMeanId)
-                    @if ($lookupMeanDescription)
-                        <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">{{ $lookupMeanDescription }}</p>
-                    @endif
-
-                    <ul role="list" class="mt-3 divide-y divide-gray-100 dark:divide-white/10 rounded-lg border border-gray-200 dark:border-white/10">
-                        @forelse ($lookupMeanGuests as $guest)
-                            <li class="px-4 py-2.5">
-                                <span class="text-sm font-medium text-gray-950 dark:text-white">{{ $guest['label'] }}</span>
-                                <span class="ml-2 font-mono text-xs text-gray-500 dark:text-gray-400">{{ $guest['code'] }}</span>
-                            </li>
-                        @empty
-                            <li class="px-4 py-2.5 text-sm text-gray-500 dark:text-gray-400">No guests assigned yet.</li>
-                        @endforelse
-                    </ul>
-                @endif
             </x-filament::section>
         </div>
 

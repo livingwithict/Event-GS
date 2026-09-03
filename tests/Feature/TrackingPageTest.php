@@ -6,6 +6,7 @@ use App\Filament\Pages\Tracking;
 use App\Models\DeliveryMean;
 use App\Models\Event;
 use App\Models\Registration;
+use App\Models\Sector;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
@@ -190,5 +191,33 @@ class TrackingPageTest extends TestCase
 
         $this->assertDatabaseMissing('delivery_means', ['id' => $mean->id]);
         $this->assertNull($reg->fresh()->delivery_mean_id);
+    }
+
+    public function test_exporting_the_lookup_means_guest_list_downloads_a_csv(): void
+    {
+        $mean = DeliveryMean::factory()->create(['event_id' => $this->event->id, 'name' => 'Courier X']);
+        $sector = Sector::create(['event_id' => $this->event->id, 'name' => 'IT']);
+        $reg = Registration::factory()->create([
+            'event_id' => $this->event->id,
+            'name' => 'Alpha',
+            'address' => '123 Street',
+            'phone' => '9800000000',
+            'designation' => 'Manager',
+            'organization' => 'Acme',
+            'delivery_mean_id' => $mean->id,
+        ]);
+        $reg->sectors()->attach($sector);
+
+        $this->page()
+            ->set('lookupMeanId', $mean->id)
+            ->call('exportMeanGuests')
+            ->assertFileDownloaded('Courier X-guests.csv');
+    }
+
+    public function test_exporting_without_a_selected_means_downloads_nothing(): void
+    {
+        $this->page()
+            ->call('exportMeanGuests')
+            ->assertNoFileDownloaded();
     }
 }
