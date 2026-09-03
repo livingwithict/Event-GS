@@ -55,6 +55,13 @@ class LogisticsResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
                     ->placeholder('Not set'),
+                Tables\Columns\TextColumn::make('address')
+                    ->label('Address')
+                    ->placeholder('Not set')
+                    ->limit(40)
+                    ->tooltip(fn (Registration $record) => $record->address)
+                    ->searchable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Category')
                     ->badge()
@@ -111,6 +118,19 @@ class LogisticsResource extends Resource
                     ->placeholder('—')
                     ->copyable()
                     ->url(fn (Registration $record) => $record->pickndrop_tracking_url, shouldOpenInNewTab: true),
+                Tables\Columns\TextColumn::make('pickndrop_status')
+                    ->label('Status')
+                    ->badge()
+                    ->placeholder('Not checked')
+                    ->color(fn (?string $state) => match (true) {
+                        $state === null => 'gray',
+                        str_contains(strtolower($state), 'deliver') => 'success',
+                        str_contains(strtolower($state), 'cancel'), str_contains(strtolower($state), 'fail') => 'danger',
+                        default => 'warning',
+                    })
+                    ->description(fn (Registration $record) => $record->pickndrop_status_checked_at
+                        ? 'Checked '.$record->pickndrop_status_checked_at->diffForHumans()
+                        : null),
             ])
             ->modifyQueryUsing(function ($query) {
                 $eventId = session('active_event_id');
@@ -153,8 +173,8 @@ class LogisticsResource extends Resource
                     ->label('Edit')
                     ->icon('heroicon-o-pencil-square')
                     ->url(fn (Registration $record) => RegistrationResource::getUrl('edit', ['record' => $record])),
-                Action::make('check_status')
-                    ->label('Check Status')
+                Action::make('refresh_status')
+                    ->label('Refresh Status')
                     ->icon('heroicon-o-arrow-path')
                     ->visible(fn (Registration $record) => filled($record->pickndrop_order_id))
                     ->action(function (Registration $record) {
@@ -168,9 +188,14 @@ class LogisticsResource extends Resource
                             return;
                         }
 
-                        Notification::make()->info()
-                            ->title('Order '.$record->pickndrop_order_id)
-                            ->body('Status: '.($details['status'] ?? 'Unknown'))
+                        $record->update([
+                            'pickndrop_status' => $details['status'] ?? 'Unknown',
+                            'pickndrop_status_checked_at' => now(),
+                        ]);
+
+                        Notification::make()->success()
+                            ->title('Status updated')
+                            ->body($details['status'] ?? 'Unknown')
                             ->send();
                     }),
             ])
@@ -181,22 +206,24 @@ class LogisticsResource extends Resource
                         ->label('Export CSV')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records) {
-                            $csv = "Name,Guest #,Category,Invitation Category,Sectors,Phone,Delivery Branch,Delivery Area,Order Created,Order ID,Tracking Number,Tracking URL\n";
+                            $csv = "Name,Guest #,Category,Invitation Category,Sectors,Phone,Address,Delivery Branch,Delivery Area,Order Created,Order ID,Tracking Number,Tracking URL,Status\n";
                             foreach ($records as $registration) {
                                 $csv .= sprintf(
-                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
                                     str_replace('"', '""', $registration->name ?? ''),
                                     str_replace('"', '""', $registration->guest_number ?? ''),
                                     str_replace('"', '""', $registration->category?->name ?? ''),
                                     str_replace('"', '""', $registration->invitationCategory?->name ?? ''),
                                     str_replace('"', '""', $registration->sectors->pluck('name')->implode(', ')),
                                     str_replace('"', '""', $registration->phone ?? ''),
+                                    str_replace('"', '""', str_replace(["\r", "\n"], ' ', $registration->address ?? '')),
                                     str_replace('"', '""', $registration->destination_branch ?? 'Not set'),
                                     str_replace('"', '""', $registration->destination_area ?? 'Not set'),
                                     $registration->pickndrop_order_id ? 'Yes' : 'No',
                                     str_replace('"', '""', $registration->pickndrop_order_id ?? ''),
                                     str_replace('"', '""', $registration->pickndrop_tracking_number ?? ''),
-                                    str_replace('"', '""', $registration->pickndrop_tracking_url ?? '')
+                                    str_replace('"', '""', $registration->pickndrop_tracking_url ?? ''),
+                                    str_replace('"', '""', $registration->pickndrop_status ?? 'Not checked')
                                 );
                             }
 
@@ -205,7 +232,7 @@ class LogisticsResource extends Resource
                             }, 'deliveries.csv', ['Content-Type' => 'text/csv']);
                         }),
                     BulkAction::make('set_destination_branch')
-                        ->label('Set Delivery Branch')
+                        ->label('Set Delivery Branch & Area')
                         ->icon('heroicon-o-map-pin')
                         ->schema([
                             Forms\Components\Select::make('destination_branch')
@@ -213,10 +240,26 @@ class LogisticsResource extends Resource
                                 ->options(fn () => collect(app(PickAndDropService::class)->getBranches())
                                     ->pluck('branch_name', 'name'))
                                 ->searchable()
+                                ->live()
+                                ->required(),
+                            Forms\Components\Select::make('destination_area')
+                                ->label('Area')
+                                ->options(function (callable $get) {
+                                    $branch = collect(app(PickAndDropService::class)->getBranches())
+                                        ->firstWhere('name', $get('destination_branch'));
+
+                                    return collect($branch['area'] ?? [])->mapWithKeys(fn ($area) => [$area => $area]);
+                                })
+                                ->searchable()
+                                ->visible(fn (callable $get) => filled($get('destination_branch')))
+                                ->helperText('Required by PickAndDrop to create a courier order.')
                                 ->required(),
                         ])
                         ->action(function (Collection $records, array $data) {
-                            $records->each(fn ($r) => $r->update(['destination_branch' => $data['destination_branch']]));
+                            $records->each(fn ($r) => $r->update([
+                                'destination_branch' => $data['destination_branch'],
+                                'destination_area' => $data['destination_area'] ?? null,
+                            ]));
 
                             Notification::make()->success()
                                 ->title("Delivery branch set for {$records->count()} guests")
