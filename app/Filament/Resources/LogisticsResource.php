@@ -15,6 +15,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,6 +37,8 @@ class LogisticsResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Logistics';
 
     protected static ?string $navigationLabel = 'Deliveries';
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $modelLabel = 'Delivery';
 
@@ -82,6 +85,12 @@ class LogisticsResource extends Resource
                     ->badge()
                     ->separator(',')
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('deliveryMean.name')
+                    ->label('Delivery Means')
+                    ->placeholder('Unassigned')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('destination_branch')
                     ->label('Delivery Branch')
                     ->placeholder('Not set')
@@ -108,7 +117,7 @@ class LogisticsResource extends Resource
                     ->color(fn (string $state) => match ($state) {
                         'not_needed' => 'gray',
                         'not_ready' => 'danger',
-                        'in_progress' => \Filament\Support\Colors\Color::Yellow,
+                        'in_progress' => Color::Yellow,
                         'ready' => 'success',
                         default => 'gray',
                     })
@@ -154,6 +163,9 @@ class LogisticsResource extends Resource
                     ->relationship('sectors', 'name')
                     ->multiple()
                     ->label('Sector'),
+                Tables\Filters\SelectFilter::make('delivery_mean_id')
+                    ->relationship('deliveryMean', 'name')
+                    ->label('Delivery Means'),
                 Tables\Filters\SelectFilter::make('card_status')
                     ->options(['ready' => 'Ready', 'not_ready' => 'Not Ready', 'in_progress' => 'In Progress', 'not_needed' => 'Not Needed'])
                     ->label('Card Status'),

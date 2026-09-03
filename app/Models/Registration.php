@@ -27,7 +27,7 @@ class Registration extends Model
         'badge_status', 'approval_status', 'card_status',
         'invitation_category_id', 'destination_branch', 'destination_area',
         'pickndrop_order_id', 'pickndrop_tracking_number', 'pickndrop_tracking_url',
-        'pickndrop_status', 'pickndrop_status_checked_at',
+        'pickndrop_status', 'pickndrop_status_checked_at', 'delivery_mean_id',
         'group_id', 'companion_count',
         'thirdfactor_session_id', 'thirdfactor_verification_url', 'thirdfactor_status', 'thirdfactor_enrolled_at',
     ];
@@ -181,6 +181,11 @@ class Registration extends Model
     public function sectors(): BelongsToMany
     {
         return $this->belongsToMany(Sector::class);
+    }
+
+    public function deliveryMean(): BelongsTo
+    {
+        return $this->belongsTo(DeliveryMean::class);
     }
 
     public function promoCode(): BelongsTo

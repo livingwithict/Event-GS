@@ -3,9 +3,26 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Filament\Pages\ImportPreview;
+use App\Filament\Pages\ScanStation;
+use App\Filament\Pages\SendInvitations;
+use App\Filament\Pages\Tracking;
+use App\Filament\Resources\CommunicationResource;
+use App\Filament\Resources\EventResource;
+use App\Filament\Resources\ImportBatchResource;
+use App\Filament\Resources\LabelTemplateResource;
+use App\Filament\Resources\LogisticsResource;
+use App\Filament\Resources\ParticipantCategoryResource;
+use App\Filament\Resources\PaymentResource;
+use App\Filament\Resources\PromoCodeResource;
+use App\Filament\Resources\RegistrationResource;
+use App\Filament\Resources\ScanActionTypeResource;
+use App\Filament\Resources\SectorResource;
+use App\Filament\Resources\UserResource;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -22,7 +39,7 @@ class PanelAccessTest extends TestCase
         return array_map(fn (Role $role) => [$role], Role::cases());
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('roles')]
+    #[DataProvider('roles')]
     public function test_each_role_can_load_the_dashboard(Role $role): void
     {
         $event = Event::factory()->create(['status' => 'published']);
@@ -37,7 +54,7 @@ class PanelAccessTest extends TestCase
             ->assertSuccessful();
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('roles')]
+    #[DataProvider('roles')]
     public function test_each_role_can_load_every_screen_it_is_allowed(Role $role): void
     {
         $event = Event::factory()->create(['status' => 'published']);
@@ -48,18 +65,18 @@ class PanelAccessTest extends TestCase
         }
 
         $screens = [
-            \App\Filament\Resources\EventResource::class,
-            \App\Filament\Resources\RegistrationResource::class,
-            \App\Filament\Resources\PaymentResource::class,
-            \App\Filament\Resources\CommunicationResource::class,
-            \App\Filament\Resources\ImportBatchResource::class,
-            \App\Filament\Resources\UserResource::class,
-            \App\Filament\Resources\ParticipantCategoryResource::class,
-            \App\Filament\Resources\SectorResource::class,
-            \App\Filament\Resources\LogisticsResource::class,
-            \App\Filament\Resources\LabelTemplateResource::class,
-            \App\Filament\Resources\PromoCodeResource::class,
-            \App\Filament\Resources\ScanActionTypeResource::class,
+            EventResource::class,
+            RegistrationResource::class,
+            PaymentResource::class,
+            CommunicationResource::class,
+            ImportBatchResource::class,
+            UserResource::class,
+            ParticipantCategoryResource::class,
+            SectorResource::class,
+            LogisticsResource::class,
+            LabelTemplateResource::class,
+            PromoCodeResource::class,
+            ScanActionTypeResource::class,
         ];
 
         $this->actingAs($user);
@@ -73,7 +90,7 @@ class PanelAccessTest extends TestCase
                 ->assertSuccessful();
         }
 
-        foreach ([\App\Filament\Pages\ScanStation::class, \App\Filament\Pages\SendInvitations::class, \App\Filament\Pages\ImportPreview::class] as $page) {
+        foreach ([ScanStation::class, SendInvitations::class, ImportPreview::class, Tracking::class] as $page) {
             if (! $page::canAccess()) {
                 continue;
             }
