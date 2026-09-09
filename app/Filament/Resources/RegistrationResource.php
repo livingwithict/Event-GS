@@ -398,7 +398,8 @@ class RegistrationResource extends Resource
                     ->relationship('category', 'name')
                     ->label('Category'),
                 Tables\Filters\SelectFilter::make('sectors')
-                    ->relationship('sectors', 'name')
+                    ->relationship('sectors', 'name', hasEmptyOption: true)
+                    ->emptyRelationshipOptionLabel('No Sector')
                     ->multiple()
                     ->label('Sector'),
                 Tables\Filters\SelectFilter::make('invitation_category_id')

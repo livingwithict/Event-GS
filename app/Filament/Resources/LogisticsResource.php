@@ -160,7 +160,8 @@ class LogisticsResource extends Resource
                     ->relationship('invitationCategory', 'name')
                     ->label('Invitation Category'),
                 Tables\Filters\SelectFilter::make('sectors')
-                    ->relationship('sectors', 'name')
+                    ->relationship('sectors', 'name', hasEmptyOption: true)
+                    ->emptyRelationshipOptionLabel('No Sector')
                     ->multiple()
                     ->label('Sector'),
                 Tables\Filters\SelectFilter::make('delivery_mean_id')
