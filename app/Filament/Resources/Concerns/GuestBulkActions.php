@@ -48,7 +48,10 @@ final class GuestBulkActions
                     ->relationship('sectors', 'name')
                     ->bulkToggleable()
                     ->columns(2)
-                    ->helperText('Selected sectors are added to each guest\'s existing sectors.'),
+                    ->helperText('Selected sectors are added to each guest\'s existing sectors.')
+                    // relationship() defaults CheckboxList to dehydrated(false), expecting
+                    // Filament's own saveRelationships lifecycle — this action syncs manually instead.
+                    ->dehydrated(),
             ])
             ->action(function (Collection $records, array $data) {
                 $changes = array_filter([
