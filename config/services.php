@@ -51,6 +51,11 @@ return [
         'checkin_api_key' => env('THIRDFACTOR_CHECKIN_API_KEY'),
     ],
 
+    'google_sheets' => [
+        'client_email' => env('GOOGLE_SHEETS_CLIENT_EMAIL'),
+        'private_key' => env('GOOGLE_SHEETS_PRIVATE_KEY'),
+    ],
+
     'pickndrop' => [
         'base_url' => env('PICKNDROP_BASE_URL', 'https://app-t.pickndropnepal.com'),
         'api_key' => env('PICKNDROP_API_KEY'),
