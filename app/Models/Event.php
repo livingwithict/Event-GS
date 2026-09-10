@@ -27,6 +27,7 @@ class Event extends Model
         'venue', 'contact_info',
         'meal_types', 'max_capacity',
         'settings', 'status', 'created_by',
+        'google_sheet_id',
     ];
 
     protected function casts(): array
@@ -126,6 +127,26 @@ class Event extends Model
         $mime = Storage::disk('public')->mimeType($path) ?: 'image/png';
 
         return 'data:'.$mime.';base64,'.base64_encode(Storage::disk('public')->get($path));
+    }
+
+    /**
+     * Accepts either a bare spreadsheet ID or a full Google Sheets URL
+     * (https://docs.google.com/spreadsheets/d/{id}/edit#gid=0) and returns
+     * just the ID, so the Event form field can take whatever a person pastes.
+     */
+    public static function extractGoogleSheetId(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/', $value, $matches)) {
+            return $matches[1];
+        }
+
+        return $value;
     }
 
     public function getActivitylogOptions(): LogOptions

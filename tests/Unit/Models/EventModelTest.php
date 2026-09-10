@@ -40,4 +40,21 @@ class EventModelTest extends TestCase
         $this->assertEquals(13, $stats['total_registrations']);
         $this->assertEquals(3, $stats['total_entries']);
     }
+
+    public function test_extract_google_sheet_id_from_full_url(): void
+    {
+        $url = 'https://docs.google.com/spreadsheets/d/1AbC-dEf_23XYZ/edit#gid=0';
+        $this->assertEquals('1AbC-dEf_23XYZ', Event::extractGoogleSheetId($url));
+    }
+
+    public function test_extract_google_sheet_id_from_bare_id(): void
+    {
+        $this->assertEquals('1AbC-dEf_23XYZ', Event::extractGoogleSheetId('1AbC-dEf_23XYZ'));
+    }
+
+    public function test_extract_google_sheet_id_returns_null_for_blank_input(): void
+    {
+        $this->assertNull(Event::extractGoogleSheetId(''));
+        $this->assertNull(Event::extractGoogleSheetId(null));
+    }
 }

@@ -44,6 +44,7 @@ class Registration extends Model
             'label_printed_at' => 'datetime',
             'label_collected_at' => 'datetime',
             'thirdfactor_enrolled_at' => 'datetime',
+            'sheet_synced_at' => 'datetime',
             'pickndrop_status_checked_at' => 'datetime',
             'badge_status' => 'string',
             'card_status' => 'string',
