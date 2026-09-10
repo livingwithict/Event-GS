@@ -41,7 +41,7 @@
         .order-qr {
             position: absolute;
             right: {{ $padX }}mm;
-            bottom: {{ $padY }}mm;
+            bottom: {{ $padY + 1.5 }}mm;
             width: {{ round($template->height * 0.34, 1) }}mm;
             height: {{ round($template->height * 0.34, 1) }}mm;
         }
