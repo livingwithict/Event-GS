@@ -15,6 +15,7 @@ use App\Services\CommunicationService;
 use App\Services\LabelService;
 use App\Services\PickAndDropService;
 use App\Services\QRCodeService;
+use App\Services\TicketService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -674,6 +675,45 @@ class RegistrationResource extends Resource
                                 ->title("Queued for {$queued} guests")
                                 ->body('Sending runs in the background. Track it in Communications.')
                                 ->send();
+                        }),
+                    BulkAction::make('download_tickets')
+                        ->label('Download Tickets')
+                        ->icon('heroicon-o-ticket')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::TicketsView))
+                        ->action(function (Collection $records) {
+                            $ticketService = app(TicketService::class);
+
+                            $ticketName = fn (Registration $registration) => trim(preg_replace('/[\/\\\\:*?"<>|]+/', '', $registration->displayName())) ?: $registration->guest_number;
+
+                            if ($records->count() === 1) {
+                                $registration = $records->first();
+
+                                return response()->streamDownload(function () use ($ticketService, $registration) {
+                                    echo $ticketService->generatePdf($registration);
+                                }, $ticketName($registration).'.pdf', ['Content-Type' => 'application/pdf']);
+                            }
+
+                            $zipPath = tempnam(sys_get_temp_dir(), 'tickets').'.zip';
+
+                            $zip = new \ZipArchive;
+                            $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+                            $usedNames = [];
+                            foreach ($records as $registration) {
+                                $baseName = $ticketName($registration);
+
+                                $filename = $baseName;
+                                for ($suffix = 2; in_array(mb_strtolower($filename), $usedNames, true); $suffix++) {
+                                    $filename = "{$baseName} ({$suffix})";
+                                }
+                                $usedNames[] = mb_strtolower($filename);
+
+                                $zip->addFromString("{$filename}.pdf", $ticketService->generatePdf($registration));
+                            }
+
+                            $zip->close();
+
+                            return response()->download($zipPath, 'tickets.zip')->deleteFileAfterSend(true);
                         }),
                     BulkAction::make('print_labels')
                         ->label('Print ID Labels')

@@ -10,6 +10,7 @@ use App\Models\ImportStaging;
 use App\Models\InvitationCategory;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
+use App\Models\Sector;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\FileUpload;
@@ -123,6 +124,12 @@ class ImportPreview extends Page implements HasTable
                     ->badge()
                     ->color('gray')
                     ->placeholder('Email Only')
+                    ->toggleable(),
+                TextColumn::make('raw_data.sector')
+                    ->label('Sector')
+                    ->badge()
+                    ->color('gray')
+                    ->placeholder('Unassigned')
                     ->toggleable(),
                 TextColumn::make('status')
                     ->badge()
@@ -238,6 +245,19 @@ class ImportPreview extends Page implements HasTable
             'notes' => trim($raw['notes'] ?? '') ?: null,
             'consented_at' => now(),
         ]);
+
+        $sectorNames = array_filter(array_map('trim', explode(',', $raw['sector'] ?? '')));
+        if (! empty($sectorNames)) {
+            $sectorIds = Sector::where('event_id', $event->id)
+                ->where(function ($query) use ($sectorNames) {
+                    foreach ($sectorNames as $sectorName) {
+                        $query->orWhere('name', 'like', $sectorName);
+                    }
+                })
+                ->pluck('id');
+
+            $reg->sectors()->sync($sectorIds);
+        }
 
         $staging->update([
             'status' => 'registered',
