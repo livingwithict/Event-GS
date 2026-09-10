@@ -19,6 +19,7 @@ use Filament\Support\Colors\Color;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class LogisticsResource extends Resource
@@ -295,6 +296,13 @@ class LogisticsResource extends Resource
                         ->label('Print Delivery Labels')
                         ->icon('heroicon-o-tag')
                         ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
+                            'registrations' => $records->pluck('id')->implode(','),
+                        ])),
+                    BulkAction::make('print_labels')
+                        ->label('Print ID Labels')
+                        ->icon('heroicon-o-printer')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::LabelsPrint))
+                        ->action(fn (Collection $records) => redirect()->route('labels.print-now', [
                             'registrations' => $records->pluck('id')->implode(','),
                         ])),
                     BulkAction::make('request_pickup')
