@@ -2,12 +2,17 @@
 
 namespace App\Filament\Resources\RegistrationResource\Pages;
 
+use App\Enums\Ability;
 use App\Filament\Resources\Concerns\PersistsColumnManagerPerUser;
 use App\Filament\Resources\RegistrationResource;
+use App\Models\Event;
+use App\Services\GoogleSheetsService;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class ListRegistrations extends ListRecords
 {
@@ -18,6 +23,39 @@ class ListRegistrations extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('update_spreadsheet')
+                ->label('Update Spreadsheet')
+                ->icon('heroicon-o-table-cells')
+                ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsEdit))
+                ->action(function () {
+                    $event = Event::find(session('active_event_id'));
+
+                    if (! $event) {
+                        Notification::make()
+                            ->warning()
+                            ->title('No active event selected')
+                            ->send();
+
+                        return;
+                    }
+
+                    try {
+                        $count = app(GoogleSheetsService::class)->syncEvent($event);
+                    } catch (\RuntimeException $e) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Spreadsheet sync failed')
+                            ->body($e->getMessage())
+                            ->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title($count > 0 ? "Appended {$count} new registrant(s)" : 'Nothing new to sync')
+                        ->send();
+                }),
             Actions\CreateAction::make(),
         ];
     }
