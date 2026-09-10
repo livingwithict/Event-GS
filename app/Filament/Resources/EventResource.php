@@ -108,6 +108,12 @@ class EventResource extends Resource
                         TextInput::make('contact_info')
                             ->label('Contact Info / Main Organizer')
                             ->maxLength(255),
+                        TextInput::make('google_sheet_id')
+                            ->label('Google Sheet URL')
+                            ->maxLength(255)
+                            ->dehydrateStateUsing(fn (?string $state) => Event::extractGoogleSheetId($state))
+                            ->helperText(fn () => 'Paste the sheet URL, then share it as an Editor with: '
+                                .(config('services.google_sheets.client_email') ?: '(service account email not configured)')),
                     ])->columns(2)
                     ->columnSpan(1),
 
