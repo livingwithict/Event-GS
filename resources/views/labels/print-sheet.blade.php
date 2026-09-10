@@ -63,7 +63,7 @@
         .qr {
             position: absolute;
             top: {{ $geo['qrTop'] }}mm;
-            right: 0mm;
+            right: {{ $geo['padX'] }}mm;
             width: {{ $geo['qr'] }}mm;
             text-align: center;
         }

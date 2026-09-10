@@ -12,7 +12,7 @@
             position: relative;
             width: {{ $template->width }}mm;
             height: {{ $template->height }}mm;
-            padding: {{ round($pad * 0.4, 1) }}mm;
+            padding: {{ $padY }}mm {{ $padX }}mm;
             overflow: hidden;
             page-break-after: always;
         }
@@ -55,8 +55,8 @@
         }
         .order-qr {
             position: absolute;
-            right: {{ round($pad * 0.4, 1) }}mm;
-            bottom: {{ round($pad * 0.4, 1) }}mm;
+            right: {{ $padX }}mm;
+            bottom: {{ $padY }}mm;
             width: {{ round($template->height * 0.34, 1) }}mm;
             height: {{ round($template->height * 0.34, 1) }}mm;
         }

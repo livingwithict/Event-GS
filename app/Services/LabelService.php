@@ -105,8 +105,8 @@ class LabelService
             'qrTop' => $qrTop,
             'bodyTop' => $bodyTop,
             'bodyH' => $bodyH,
-            // QR hugs the right edge (no right-side pad), so info only loses the left pad.
-            'infoW' => round($w - $padX - $qr - $gap, 1),
+            // QR keeps the same right-side pad as everything else, so all 4 sticker edges match.
+            'infoW' => round($w - 2 * $padX - $qr - $gap, 1),
             'nameFont' => $nameFont,
             // A bit larger than the guest code under the QR, for readability.
             'orgFont' => $codeFont + 2,
@@ -152,17 +152,28 @@ class LabelService
                 : null,
         ])->toArray();
 
-        $pad = max(0, min(
+        $w = (float) $template->width;
+        $h = (float) $template->height;
+
+        // Same per-axis clamp as the ID label: horizontal and vertical pads are
+        // independent, each capped at a quarter of the sticker so they can't eat
+        // the whole label, but otherwise using the template's real margins.
+        $padX = max(0, min(
             (float) ($template->margin_left ?? 2),
             (float) ($template->margin_right ?? 2),
+            $w / 4,
+        ));
+        $padY = max(0, min(
             (float) ($template->margin_top ?? 2),
             (float) ($template->margin_bottom ?? 2),
+            $h / 4,
         ));
 
         return view('labels.delivery-label', [
             'labels' => $labels,
             'template' => $template,
-            'pad' => $pad,
+            'padX' => $padX,
+            'padY' => $padY,
         ])->render();
     }
 
