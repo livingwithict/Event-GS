@@ -18,15 +18,6 @@
         }
         .label:last-child { page-break-after: auto; }
 
-        .header {
-            font-size: {{ max(9, (int) round($template->height * 0.16)) }}px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 1mm;
-            margin-bottom: 1.5mm;
-        }
         .name {
             font-size: {{ max(12, (int) round($template->height * 0.24)) }}px;
             font-weight: 700;
@@ -59,7 +50,6 @@
 <body>
     @foreach($labels as $label)
     <div class="label">
-        <div class="header">Address Label</div>
         <div class="name">{{ $label['name'] }}</div>
         @if($label['designation'])
         <div class="meta">{{ $label['designation'] }}</div>
