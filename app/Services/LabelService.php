@@ -146,7 +146,6 @@ class LabelService
             'organization' => $template->show_organization ? $registration->organization : null,
             'phone' => $registration->phone,
             'address' => $registration->address,
-            'tracking_number' => $registration->pickndrop_tracking_number,
             'order_qr' => $registration->pickndrop_order_id
                 ? base64_encode(QrCode::format('png')->size(200)->margin(0)->generate($registration->pickndrop_order_id))
                 : null,

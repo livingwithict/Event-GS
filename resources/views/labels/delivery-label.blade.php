@@ -47,12 +47,6 @@
             font-size: {{ max(10, (int) round($template->height * 0.18)) }}px;
             line-height: 1.3;
         }
-        .tracking {
-            font-size: {{ max(9, (int) round($template->height * 0.16)) }}px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
-            margin-top: 1.5mm;
-        }
         .order-qr {
             position: absolute;
             right: {{ $padX }}mm;
@@ -78,9 +72,6 @@
         @endif
         @if($label['address'])
         <div class="address">{{ $label['address'] }}</div>
-        @endif
-        @if($label['tracking_number'])
-        <div class="tracking">{{ $label['tracking_number'] }}</div>
         @endif
         @if($label['order_qr'])
         <img class="order-qr" src="data:image/png;base64,{{ $label['order_qr'] }}" alt="Order QR">
