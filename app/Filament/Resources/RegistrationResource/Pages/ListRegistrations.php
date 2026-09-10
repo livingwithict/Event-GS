@@ -25,7 +25,6 @@ class ListRegistrations extends ListRecords
         return [
             Actions\Action::make('update_spreadsheet')
                 ->label('Update Spreadsheet')
-                ->icon('heroicon-o-table-cells')
                 ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsEdit))
                 ->action(function () {
                     $event = Event::find(session('active_event_id'));
