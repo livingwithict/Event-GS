@@ -3,7 +3,7 @@
     // event record or a bad query param. Update these four lines for the next event.
     $eventName = 'Digital Nepal Conclave 2026';
     $eventVenue = 'The Plaza';
-    $eventDate = '27 Aug 2026';
+    $eventDate = '20 Sep 2026';
     $eventContact = 'ICT Foundation Nepal';
 @endphp
 <!DOCTYPE html>
