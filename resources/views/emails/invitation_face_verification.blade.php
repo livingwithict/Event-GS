@@ -56,7 +56,10 @@
             </p>
 </br>
             <p style="margin:0; color:#475569; font-size:15px; line-height:1.6;">
-                Please also complete a quick face verification to confirm your RSVP. 
+                Please also complete a quick face verification to confirm your RSVP.
+            </p>
+            <p style="margin:6px 0 0; color:#94a3b8; font-size:13px; line-height:1.5; font-style:italic;">
+                Already RSVP'd / verified previously? You can skip this step.
             </p>
         </td>
     </tr>
