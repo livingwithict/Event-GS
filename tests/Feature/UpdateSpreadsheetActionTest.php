@@ -31,7 +31,11 @@ class UpdateSpreadsheetActionTest extends TestCase
                 return Http::response(['access_token' => 'fake-token']);
             }
 
-            if ($request->method() === 'GET' && Str::contains($request->url(), 'A1%3AJ1')) {
+            if ($request->method() === 'GET' && ! Str::contains($request->url(), '/values/')) {
+                return Http::response(['sheets' => [['properties' => ['sheetId' => 0, 'title' => 'Sheet1']]]]);
+            }
+
+            if ($request->method() === 'GET' && Str::contains($request->url(), '/values/')) {
                 return Http::response(['values' => [['Title', 'Name']]]);
             }
 

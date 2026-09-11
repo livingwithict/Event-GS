@@ -25,22 +25,36 @@ class GoogleSheetsServiceTest extends TestCase
         config()->set('services.google_sheets.private_key', $privateKeyPem);
     }
 
-    private function fakeGoogle(?callable $onAppend = null): void
+    /**
+     * @param  array<int, array{sheetId: int, title: string}>  $sheets  the spreadsheet's current tabs
+     */
+    private function fakeGoogle(array $sheets = [['sheetId' => 0, 'title' => 'Sheet1']], ?callable $onWrite = null): void
     {
-        Http::fake(function ($request) use ($onAppend) {
-            if (Str::contains($request->url(), 'oauth2.googleapis.com')) {
+        Http::fake(function ($request) use ($sheets, $onWrite) {
+            $url = $request->url();
+
+            if (Str::contains($url, 'oauth2.googleapis.com')) {
                 return Http::response(['access_token' => 'fake-token']);
             }
 
-            if ($request->method() === 'GET' && Str::contains($request->url(), 'A1%3AJ1')) {
+            // Metadata call (gid -> tab name resolution): no /values/ segment.
+            if ($request->method() === 'GET' && ! Str::contains($url, '/values/')) {
+                return Http::response(['sheets' => array_map(fn ($s) => ['properties' => $s], $sheets)]);
+            }
+
+            if ($request->method() === 'GET' && Str::contains($url, '/values/')) {
+                if ($onWrite) {
+                    $onWrite($request);
+                }
+
                 return Http::response(['values' => [
                     ['Title', 'Name', 'Guest #', 'Category', 'Email', 'Phone', 'Address', 'Designation', 'Organization', 'Sector'],
                 ]]);
             }
 
-            if (Str::contains($request->url(), ':append')) {
-                if ($onAppend) {
-                    $onAppend($request);
+            if (Str::contains($url, ':append')) {
+                if ($onWrite) {
+                    $onWrite($request);
                 }
 
                 return Http::response(['updates' => ['updatedRows' => count($request->data()['values'] ?? [])]]);
@@ -67,8 +81,10 @@ class GoogleSheetsServiceTest extends TestCase
         ]);
 
         $appendedPayload = null;
-        $this->fakeGoogle(function ($request) use (&$appendedPayload) {
-            $appendedPayload = $request->data();
+        $this->fakeGoogle(onWrite: function ($request) use (&$appendedPayload) {
+            if (Str::contains($request->url(), ':append')) {
+                $appendedPayload = $request->data();
+            }
         });
 
         $count = app(GoogleSheetsService::class)->syncEvent($event);
@@ -116,6 +132,85 @@ class GoogleSheetsServiceTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessageMatches('/Share it with test@test\.iam\.gserviceaccount\.com/');
+
+        app(GoogleSheetsService::class)->syncEvent($event);
+    }
+
+    public function test_sync_writes_to_the_tab_matching_the_configured_gid(): void
+    {
+        $event = Event::factory()->create(['google_sheet_id' => 'sheet-123', 'google_sheet_tab_gid' => '999']);
+        Registration::factory()->create(['event_id' => $event->id, 'sheet_synced_at' => null]);
+
+        $writeUrls = [];
+        $this->fakeGoogle(
+            sheets: [
+                ['sheetId' => 0, 'title' => 'Sheet1'],
+                ['sheetId' => 999, 'title' => 'DNC Guests'],
+            ],
+            onWrite: function ($request) use (&$writeUrls) {
+                $writeUrls[] = $request->url();
+            },
+        );
+
+        app(GoogleSheetsService::class)->syncEvent($event);
+
+        $this->assertNotEmpty($writeUrls);
+        foreach ($writeUrls as $url) {
+            $this->assertStringContainsString(rawurlencode("'DNC Guests'"), $url);
+        }
+    }
+
+    public function test_sync_still_finds_the_tab_by_gid_after_it_was_renamed(): void
+    {
+        // Simulates: the tab was "Old Name" when first linked, later renamed to
+        // "New Name" in Google Sheets. gid is the same all along.
+        $event = Event::factory()->create(['google_sheet_id' => 'sheet-123', 'google_sheet_tab_gid' => '999']);
+        Registration::factory()->create(['event_id' => $event->id, 'sheet_synced_at' => null]);
+
+        $writeUrls = [];
+        $this->fakeGoogle(
+            sheets: [['sheetId' => 999, 'title' => 'New Name']],
+            onWrite: function ($request) use (&$writeUrls) {
+                $writeUrls[] = $request->url();
+            },
+        );
+
+        $count = app(GoogleSheetsService::class)->syncEvent($event);
+
+        $this->assertSame(1, $count);
+        $this->assertStringContainsString(rawurlencode("'New Name'"), $writeUrls[0]);
+    }
+
+    public function test_sync_falls_back_to_the_first_tab_when_no_gid_is_configured(): void
+    {
+        $event = Event::factory()->create(['google_sheet_id' => 'sheet-123', 'google_sheet_tab_gid' => null]);
+        Registration::factory()->create(['event_id' => $event->id, 'sheet_synced_at' => null]);
+
+        $writeUrls = [];
+        $this->fakeGoogle(
+            sheets: [
+                ['sheetId' => 111, 'title' => 'First Tab'],
+                ['sheetId' => 222, 'title' => 'Second Tab'],
+            ],
+            onWrite: function ($request) use (&$writeUrls) {
+                $writeUrls[] = $request->url();
+            },
+        );
+
+        app(GoogleSheetsService::class)->syncEvent($event);
+
+        $this->assertStringContainsString(rawurlencode("'First Tab'"), $writeUrls[0]);
+    }
+
+    public function test_sync_throws_a_clear_error_when_the_configured_tab_no_longer_exists(): void
+    {
+        $event = Event::factory()->create(['google_sheet_id' => 'sheet-123', 'google_sheet_tab_gid' => '999']);
+        Registration::factory()->create(['event_id' => $event->id, 'sheet_synced_at' => null]);
+
+        $this->fakeGoogle(sheets: [['sheetId' => 0, 'title' => 'Sheet1']]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/could not be found/');
 
         app(GoogleSheetsService::class)->syncEvent($event);
     }

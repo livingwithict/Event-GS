@@ -37,8 +37,9 @@ class GoogleSheetsService
         }
 
         try {
-            $this->ensureHeaderRow($event->google_sheet_id);
-            $this->appendRows($event->google_sheet_id, $registrations);
+            $tabTitle = $this->resolveTabTitle($event->google_sheet_id, $event->google_sheet_tab_gid);
+            $this->ensureHeaderRow($event->google_sheet_id, $tabTitle);
+            $this->appendRows($event->google_sheet_id, $tabTitle, $registrations);
         } catch (RequestException $e) {
             logger()->error('Google Sheets sync failed: '.$e->getMessage());
 
@@ -57,20 +58,53 @@ class GoogleSheetsService
         return $registrations->count();
     }
 
-    private function ensureHeaderRow(string $sheetId): void
+    /**
+     * The values API addresses tabs by their current name, not their stable
+     * gid — so every sync re-resolves gid -> name fresh. That's what makes
+     * renaming the tab later safe: the gid never changes, only the lookup.
+     */
+    private function resolveTabTitle(string $sheetId, ?string $tabGid): string
     {
-        $response = $this->client()->get($this->valuesUrl($sheetId, 'Sheet1!A1:J1'))->throw();
+        $response = $this->client()
+            ->get("https://sheets.googleapis.com/v4/spreadsheets/{$sheetId}", [
+                'fields' => 'sheets.properties(sheetId,title)',
+            ])
+            ->throw();
+
+        $sheets = $response->json('sheets') ?? [];
+
+        if (empty($sheets)) {
+            throw new \RuntimeException('The linked Google Sheet has no tabs.');
+        }
+
+        if ($tabGid === null) {
+            return $sheets[0]['properties']['title'];
+        }
+
+        foreach ($sheets as $sheet) {
+            if ((string) ($sheet['properties']['sheetId'] ?? '') === (string) $tabGid) {
+                return $sheet['properties']['title'];
+            }
+        }
+
+        throw new \RuntimeException('The linked tab could not be found — it may have been deleted. Re-paste the sheet link on the Event edit page.');
+    }
+
+    private function ensureHeaderRow(string $sheetId, string $tabTitle): void
+    {
+        $range = $this->quotedSheetName($tabTitle).'!A1:J1';
+        $response = $this->client()->get($this->valuesUrl($sheetId, $range))->throw();
 
         if (empty($response->json('values'))) {
             $this->client()
-                ->put($this->valuesUrl($sheetId, 'Sheet1!A1:J1').'?valueInputOption=RAW', [
+                ->put($this->valuesUrl($sheetId, $range).'?valueInputOption=RAW', [
                     'values' => [self::HEADER],
                 ])
                 ->throw();
         }
     }
 
-    private function appendRows(string $sheetId, Collection $registrations): void
+    private function appendRows(string $sheetId, string $tabTitle, Collection $registrations): void
     {
         $rows = $registrations->map(fn (Registration $r) => [
             $r->salutation,
@@ -85,8 +119,10 @@ class GoogleSheetsService
             $r->sectors->pluck('name')->join(', '),
         ])->all();
 
+        $range = $this->quotedSheetName($tabTitle).'!A:J';
+
         $this->client()
-            ->post($this->valuesUrl($sheetId, 'Sheet1!A:J').':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS', [
+            ->post($this->valuesUrl($sheetId, $range).':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS', [
                 'values' => $rows,
             ])
             ->throw();
@@ -95,6 +131,12 @@ class GoogleSheetsService
     private function valuesUrl(string $sheetId, string $range): string
     {
         return "https://sheets.googleapis.com/v4/spreadsheets/{$sheetId}/values/".rawurlencode($range);
+    }
+
+    /** A1 notation requires single-quoted sheet names; any literal quote in the name doubles up. */
+    private function quotedSheetName(string $title): string
+    {
+        return "'".str_replace("'", "''", $title)."'";
     }
 
     private function client(): PendingRequest

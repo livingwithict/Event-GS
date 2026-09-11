@@ -21,6 +21,7 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -111,9 +112,12 @@ class EventResource extends Resource
                         TextInput::make('google_sheet_id')
                             ->label('Google Sheet URL')
                             ->maxLength(255)
+                            ->live(onBlur: true)
                             ->dehydrateStateUsing(fn (?string $state) => Event::extractGoogleSheetId($state))
-                            ->helperText(fn () => 'Paste the sheet URL, then share it as an Editor with: '
+                            ->afterStateUpdated(fn (?string $state, Set $set) => $set('google_sheet_tab_gid', Event::extractGoogleSheetTabGid($state)))
+                            ->helperText(fn () => 'Paste the sheet URL (including the tab you want — the "gid" in the link), then share it as an Editor with: '
                                 .(config('services.google_sheets.client_email') ?: '(service account email not configured)')),
+                        Hidden::make('google_sheet_tab_gid'),
                     ])->columns(2)
                     ->columnSpan(1),
 

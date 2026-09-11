@@ -27,7 +27,7 @@ class Event extends Model
         'venue', 'contact_info',
         'meal_types', 'max_capacity',
         'settings', 'status', 'created_by',
-        'google_sheet_id',
+        'google_sheet_id', 'google_sheet_tab_gid',
     ];
 
     protected function casts(): array
@@ -60,11 +60,11 @@ class Event extends Model
             }
         });
 
-        // Pointing an event at a different (or new) sheet means every registration
-        // is "new" relative to that sheet — sheet_synced_at tracked progress against
-        // the old one, so it can't carry over.
+        // Pointing an event at a different (or new) sheet — or a different tab in
+        // the same sheet — means every registration is "new" relative to that
+        // target; sheet_synced_at tracked progress against the old one.
         static::updated(function (Event $event) {
-            if ($event->wasChanged('google_sheet_id')) {
+            if ($event->wasChanged('google_sheet_id') || $event->wasChanged('google_sheet_tab_gid')) {
                 $event->registrations()->whereNotNull('sheet_synced_at')->update(['sheet_synced_at' => null]);
             }
         });
@@ -156,6 +156,23 @@ class Event extends Model
         }
 
         return $value;
+    }
+
+    /**
+     * Pulls the tab id (gid) out of a pasted Google Sheets URL, e.g.
+     * ".../edit?gid=1651722043#gid=1651722043" -> "1651722043". Null if the
+     * pasted value has no gid (a bare spreadsheet ID, or a link to the first
+     * tab) — the sync falls back to the spreadsheet's first tab in that case.
+     */
+    public static function extractGoogleSheetTabGid(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value !== '' && preg_match('/[?#&]gid=(\d+)/', $value, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
     }
 
     public function getActivitylogOptions(): LogOptions
