@@ -36,9 +36,8 @@
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2ff; border:1px solid #c7d2fe; border-radius:8px;">
                 <tr>
                     <td style="padding:14px 18px;">
-                        <p style="margin:0 0 4px; color:#2e3192; font-size:13px; font-weight:700; letter-spacing:0.02em;">New Date Confirmed</p>
                         <p style="margin:0; color:#3730a3; font-size:14px; line-height:1.6;">
-                            Join us on the new date &mdash; <strong>Sunday, 20 September 2026</strong>. DNC 2026 was postponed from 27 August 2026 due to the flash floods in Bhotekoshi, Rasuwa. Thank you for your patience!
+                            We'd love to have you join us on our new date, <strong>Sunday, 20 September 2026</strong> &mdash; DNC 2026 was postponed from 27 August due to the Bhotekoshi flash floods.
                         </p>
                     </td>
                 </tr>
