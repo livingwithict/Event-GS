@@ -37,7 +37,7 @@
                 <tr>
                     <td style="padding:14px 18px;">
                         <p style="margin:0; color:#3730a3; font-size:14px; line-height:1.6;">
-                            We'd love to have you join us on our new date, <strong>Sunday, 20 September 2026</strong> &mdash; DNC 2026 was postponed from 27 August due to the Bhotekoshi flash floods.
+                            We'd love to have you join us on our new date, <strong>Sunday, 20 September 2026</strong> &mdash; DNC 2026 was postponed from 27 August due to the Bhotekoshi flash floods. Apologies for the inconvenience caused, and thank you for your patience.
                         </p>
                     </td>
                 </tr>
