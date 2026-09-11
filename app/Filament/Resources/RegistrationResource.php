@@ -48,6 +48,11 @@ class RegistrationResource extends Resource
         return Ability::GuestsView;
     }
 
+    public static function canCreate(): bool
+    {
+        return Auth::user()?->hasAbility(Ability::GuestsRegister) ?? false;
+    }
+
     protected static ?string $model = Registration::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';

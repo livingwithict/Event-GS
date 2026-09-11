@@ -40,7 +40,7 @@ enum Role: string
             self::ScannerStaff => 'Scans guests in at the entrance, lunch and dinner. Sees nothing else.',
             self::Finance => 'Payments, invoices and revenue reports across their events.',
             self::Viewer => 'Reads guests, attendance and reports. Changes nothing, sees no payments.',
-            self::InvitationStaff => 'Manages guest records and sends invitations/communications. No scanning, payments or settings access.',
+            self::InvitationStaff => 'Manages existing guest records and sends invitations/communications. Cannot register new guests, scan, handle payments, or change settings.',
         };
     }
 
@@ -108,7 +108,7 @@ enum Role: string
 
             self::InvitationStaff => [
                 Ability::EventsView,
-                Ability::GuestsView, Ability::GuestsEdit, Ability::GuestsRegister,
+                Ability::GuestsView, Ability::GuestsEdit,
                 Ability::CommunicationsView, Ability::CommunicationsSend,
                 Ability::LabelsPrint, Ability::TicketsView,
             ],

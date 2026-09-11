@@ -129,6 +129,16 @@ class RolePermissionTest extends TestCase
         $this->assertFalse(auth()->user()->can(Ability::UsersManage));
     }
 
+    /** Invitation staff manage and message existing guests but never add new ones. */
+    public function test_invitation_staff_cannot_register_new_guests(): void
+    {
+        $user = $this->user(Role::InvitationStaff);
+
+        $this->assertFalse($user->hasAbility(Ability::GuestsRegister));
+        $this->assertTrue($user->hasAbility(Ability::GuestsEdit));
+        $this->assertTrue($user->hasAbility(Ability::CommunicationsSend));
+    }
+
     public function test_an_unknown_role_gets_nothing(): void
     {
         $user = User::factory()->create(['role' => 'legacy_manager']);

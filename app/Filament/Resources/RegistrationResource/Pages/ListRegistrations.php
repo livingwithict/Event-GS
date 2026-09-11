@@ -55,7 +55,8 @@ class ListRegistrations extends ListRecords
                         ->title($count > 0 ? "Appended {$count} new registrant(s)" : 'Nothing new to sync')
                         ->send();
                 }),
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->visible(fn () => Auth::user()?->hasAbility(Ability::GuestsRegister)),
         ];
     }
 
