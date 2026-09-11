@@ -102,8 +102,6 @@ class SendInvitations extends Page
                         Select::make('email_type')
                             ->label('Email')
                             ->options([
-                                'invitation' => 'Invitation (attaches the ticket)',
-                                'face_verification' => 'Face verification (sends the enrollment link, ticket follows automatically after)',
                                 'invitation_face_verification' => 'Invitation with face verification (QR, ticket, and verification link in one email)',
                                 'registration_confirmation' => 'Registration confirmation (attaches the ticket)',
                                 'event_reminder' => 'Event reminder',
