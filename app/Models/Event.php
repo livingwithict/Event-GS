@@ -59,6 +59,15 @@ class Event extends Model
                 $event->event_date = $event->start_datetime->toDateString();
             }
         });
+
+        // Pointing an event at a different (or new) sheet means every registration
+        // is "new" relative to that sheet — sheet_synced_at tracked progress against
+        // the old one, so it can't carry over.
+        static::updated(function (Event $event) {
+            if ($event->wasChanged('google_sheet_id')) {
+                $event->registrations()->whereNotNull('sheet_synced_at')->update(['sheet_synced_at' => null]);
+            }
+        });
     }
 
     /** Absolute URL for the logo — emails and public pages need the full host. */

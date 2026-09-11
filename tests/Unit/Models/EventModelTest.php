@@ -57,4 +57,31 @@ class EventModelTest extends TestCase
         $this->assertNull(Event::extractGoogleSheetId(''));
         $this->assertNull(Event::extractGoogleSheetId(null));
     }
+
+    public function test_changing_the_google_sheet_resets_sync_progress_for_its_registrations(): void
+    {
+        $event = Event::factory()->create(['google_sheet_id' => 'sheet-old']);
+        $registration = Registration::factory()->create([
+            'event_id' => $event->id,
+            'sheet_synced_at' => now(),
+        ]);
+
+        $event->update(['google_sheet_id' => 'sheet-new']);
+
+        $this->assertNull($registration->fresh()->sheet_synced_at);
+    }
+
+    public function test_unrelated_event_updates_do_not_reset_sync_progress(): void
+    {
+        $event = Event::factory()->create(['google_sheet_id' => 'sheet-123']);
+        $syncedAt = now();
+        $registration = Registration::factory()->create([
+            'event_id' => $event->id,
+            'sheet_synced_at' => $syncedAt,
+        ]);
+
+        $event->update(['venue' => 'A different venue']);
+
+        $this->assertNotNull($registration->fresh()->sheet_synced_at);
+    }
 }
