@@ -30,15 +30,15 @@
 
     <tr><td style="height:1px; background-color:#e2e8f0;"></td></tr>
 
-    {{-- Postponement notice --}}
+    {{-- New date notice --}}
     <tr>
         <td style="padding:20px 32px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef2ff; border:1px solid #c7d2fe; border-radius:8px;">
                 <tr>
                     <td style="padding:14px 18px;">
-                        <p style="margin:0 0 4px; color:#92400e; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.02em;">Event Postponed</p>
-                        <p style="margin:0; color:#78350f; font-size:14px; line-height:1.6;">
-                            Following the postponement of DNC 2026, originally scheduled for 27 August 2026, due to the flash floods in Bhotekoshi, Rasuwa, the event has been rescheduled to <strong>Sunday, 20 September 2026</strong>. We apologize for any inconvenience and look forward to welcoming you on the new date.
+                        <p style="margin:0 0 4px; color:#2e3192; font-size:13px; font-weight:700; letter-spacing:0.02em;">New Date Confirmed</p>
+                        <p style="margin:0; color:#3730a3; font-size:14px; line-height:1.6;">
+                            You're warmly invited to join us on the new date &mdash; <strong>Sunday, 20 September 2026</strong>. DNC 2026 was originally scheduled for 27 August 2026 but was postponed due to the flash floods in Bhotekoshi, Rasuwa. We appreciate your patience and can't wait to welcome you.
                         </p>
                     </td>
                 </tr>
