@@ -30,6 +30,22 @@
 
     <tr><td style="height:1px; background-color:#e2e8f0;"></td></tr>
 
+    {{-- Postponement notice --}}
+    <tr>
+        <td style="padding:20px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:8px;">
+                <tr>
+                    <td style="padding:14px 18px;">
+                        <p style="margin:0 0 4px; color:#92400e; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.02em;">Event Postponed</p>
+                        <p style="margin:0; color:#78350f; font-size:14px; line-height:1.6;">
+                            Following the postponement of DNC 2026, originally scheduled for 27 August 2026, due to the flash floods in Bhotekoshi, Rasuwa, the event has been rescheduled to <strong>Sunday, 20 September 2026</strong>. We apologize for any inconvenience and look forward to welcoming you on the new date.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
     {{-- Greeting --}}
     <tr>
         <td style="padding:32px 32px 8px;">
