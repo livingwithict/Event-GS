@@ -51,9 +51,11 @@ class CommunicationService
             Mail::send($template, $data, function ($message) use ($registration, $subject, $attachTicket, $emailType, $event) {
                 // Emails pasted from PDFs/docs often carry invisible unicode (zero-width
                 // spaces, BOM) that RFC 2822 addr-spec validation flatly rejects.
-                $email = trim(preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $registration->email));
+                $sanitized = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', (string) $registration->email);
+                // A guest may list more than one address, comma-separated — send to all of them.
+                $emails = Registration::splitMultiValue($sanitized);
 
-                $message->to($email)
+                $message->to($emails)
                     ->subject($subject);
 
                 // Urgent notices (e.g. postponement) go out under a distinct address so
@@ -114,7 +116,7 @@ class CommunicationService
                 return $comm;
             }
 
-            $response = $this->sendSmsRequest([$registration->phone], $message);
+            $response = $this->sendSmsRequest($registration->phones(), $message);
 
             if ($response['success']) {
                 $comm->markSent((string) ($response['data']['ntc'] ?? ''));
@@ -139,7 +141,8 @@ class CommunicationService
             if (is_int($registration)) {
                 $registration = Registration::find($registration);
             }
-            if (! $registration || ! $registration->phone) {
+            $regPhones = $registration?->phones() ?? [];
+            if (! $registration || empty($regPhones)) {
                 continue;
             }
 
@@ -151,7 +154,8 @@ class CommunicationService
                 'status' => 'pending',
             ]);
 
-            $phones[] = $registration->phone;
+            // A guest may list more than one number, comma-separated — send to all of them.
+            array_push($phones, ...$regPhones);
         }
 
         if (empty($phones)) {
@@ -179,7 +183,7 @@ class CommunicationService
                 $invalidNumbers = $response['data']['invalid_number'] ?? [];
                 foreach ($comms as $comm) {
                     $reg = Registration::find($comm->registration_id);
-                    if (in_array($reg->phone, $invalidNumbers)) {
+                    if (array_intersect($reg->phones(), $invalidNumbers)) {
                         $comm->markFailed(['invalid_number' => true, 'response' => $response['data']]);
                     } else {
                         $comm->markSent();

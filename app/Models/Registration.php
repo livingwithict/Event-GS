@@ -80,9 +80,16 @@ class Registration extends Model
      * +977 or a leading 0. Landlines and extensions cannot receive SMS, and
      * phone is free text, so both end up in the same column.
      */
+    /** True if any of the guest's (possibly comma-separated) phone numbers is a sendable mobile. */
     public function hasMobileNumber(): bool
     {
-        return self::isMobileNumber((string) $this->phone);
+        foreach ($this->phones() as $phone) {
+            if (self::isMobileNumber($phone)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function isMobileNumber(?string $phone): bool
@@ -96,6 +103,24 @@ class Registration extends Model
         $digits = ltrim($digits, '0');
 
         return (bool) preg_match('/^9[678]\d{8}$/', $digits);
+    }
+
+    /** Splits a comma-separated multi-value field (phone or email) into trimmed, non-empty parts. */
+    public static function splitMultiValue(?string $value): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', (string) $value)), fn ($v) => $v !== ''));
+    }
+
+    /** A guest may list more than one phone number, comma-separated. */
+    public function phones(): array
+    {
+        return self::splitMultiValue($this->phone);
+    }
+
+    /** A guest may list more than one email address, comma-separated. */
+    public function emails(): array
+    {
+        return self::splitMultiValue($this->email);
     }
 
     /** Name as it should be printed and read out: "Dr. Sita Rai". */

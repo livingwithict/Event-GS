@@ -73,4 +73,37 @@ class RegistrationModelTest extends TestCase
         $this->assertFalse($second);
         $this->assertNotNull($reg->fresh()->lunch_used_at);
     }
+
+    public function test_phones_and_emails_split_on_comma_and_trim(): void
+    {
+        $reg = Registration::factory()->create([
+            'phone' => ' 9841234567 , 9851234567',
+            'email' => 'a@example.com, b@example.com ,,',
+        ]);
+
+        $this->assertSame(['9841234567', '9851234567'], $reg->phones());
+        $this->assertSame(['a@example.com', 'b@example.com'], $reg->emails());
+    }
+
+    public function test_phones_and_emails_handle_single_value_and_empty(): void
+    {
+        $reg = Registration::factory()->create(['phone' => '9841234567', 'email' => null]);
+
+        $this->assertSame(['9841234567'], $reg->phones());
+        $this->assertSame([], $reg->emails());
+    }
+
+    public function test_has_mobile_number_matches_any_comma_separated_phone(): void
+    {
+        $reg = Registration::factory()->create(['phone' => '021-555000, 9841234567']);
+
+        $this->assertTrue($reg->hasMobileNumber());
+    }
+
+    public function test_has_mobile_number_false_when_no_part_is_mobile(): void
+    {
+        $reg = Registration::factory()->create(['phone' => '021-555000, 021-555001']);
+
+        $this->assertFalse($reg->hasMobileNumber());
+    }
 }

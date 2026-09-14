@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\AuthorizesEventAccess;
 use App\Models\Event;
 use App\Models\ParticipantCategory;
 use App\Models\Registration;
+use App\Rules\MultiEmail;
 use App\Services\Payment\PaymentRedirector;
 use Illuminate\Http\Request;
 
@@ -33,7 +34,7 @@ class OnsiteRegistrationController extends Controller
         $validated = $request->validate([
             'salutation' => 'nullable|string|max:20',
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
+            'email' => ['nullable', 'max:255', new MultiEmail],
             'phone' => ['nullable', 'string', 'max:50'],
             'category_id' => 'nullable|exists:participant_categories,id',
             'organization' => 'nullable|string|max:255',

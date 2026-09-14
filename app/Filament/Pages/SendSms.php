@@ -166,14 +166,14 @@ class SendSms extends Page
         }
 
         $phones = $this->recipients()->pluck('phone');
-        $reachable = $phones->filter(fn ($p) => Registration::isMobileNumber($p))->count();
+        $reachable = count($this->targetIds());
 
         $noPhone = Registration::where('event_id', $this->data['event_id'])
             ->where(fn ($q) => $q->whereNull('phone')->orWhere('phone', ''))
             ->count();
 
         return [
-            'reachable' => count($this->targetIds()),
+            'reachable' => $reachable,
             'unreachable' => ($phones->count() - $reachable) + $noPhone,
         ];
     }

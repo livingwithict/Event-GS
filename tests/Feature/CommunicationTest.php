@@ -133,6 +133,39 @@ class CommunicationTest extends TestCase
         $this->assertDatabaseCount('communications', 3);
     }
 
+    public function test_send_sms_sends_to_all_comma_separated_numbers(): void
+    {
+        Config::set('services.sparrow.driver', 'sparrow');
+        Config::set('services.sparrow.token', 'test-token');
+        Config::set('services.sparrow.base_url', 'https://sms.example.test');
+        \Illuminate\Support\Facades\Http::fake([
+            'sms.example.test/*' => \Illuminate\Support\Facades\Http::response(['message' => 'Success'], 200),
+        ]);
+
+        $event = Event::factory()->create();
+        $reg = Registration::factory()->create(['event_id' => $event->id, 'phone' => '9841234567, 9851234567']);
+
+        app(CommunicationService::class)->sendSms($reg, 'Hi there');
+
+        \Illuminate\Support\Facades\Http::assertSent(function ($request) {
+            return str_contains($request['mobile'], '9841234567') && str_contains($request['mobile'], '9851234567');
+        });
+    }
+
+    public function test_send_batch_sms_treats_one_multi_number_guest_as_a_single_record(): void
+    {
+        Config::set('services.sparrow.driver', 'log');
+
+        $event = Event::factory()->create();
+        $reg = Registration::factory()->create(['event_id' => $event->id, 'phone' => '9841234567, 9851234567']);
+
+        $service = app(CommunicationService::class);
+        $comms = $service->sendBatchSms([$reg->id], 'Batch SMS', 'event_reminder');
+
+        $this->assertCount(1, $comms);
+        $this->assertDatabaseCount('communications', 1);
+    }
+
     public function test_bulk_sms_job_with_batch_size_1_sends_individually(): void
     {
         Config::set('services.sparrow.driver', 'log');

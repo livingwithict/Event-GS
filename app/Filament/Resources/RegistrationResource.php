@@ -90,8 +90,9 @@ class RegistrationResource extends Resource
                             ->dehydrated(false)
                             ->placeholder('Auto-generated on creation'),
                         Forms\Components\TextInput::make('email')
-                            ->email()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->rule(new \App\Rules\MultiEmail)
+                            ->helperText('One email, or several separated by commas.'),
                         Forms\Components\TextInput::make('phone')
                             ->tel()
                             ->maxLength(50)
