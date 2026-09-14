@@ -275,11 +275,6 @@ class LogisticsResource extends Resource
                                 if ($record->pickndrop_order_id) {
                                     continue;
                                 }
-                                if (! $record->destination_branch || ! $record->destination_area || ! $record->phone) {
-                                    $failed++;
-
-                                    continue;
-                                }
 
                                 try {
                                     $data = $service->createOrder($record);

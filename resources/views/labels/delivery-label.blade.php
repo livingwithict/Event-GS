@@ -59,19 +59,22 @@
 <body>
     @foreach($labels as $label)
     <div class="label">
-        <div class="name">{{ $label['name'] }}</div>
-        @if($label['designation'])
-        <div class="meta">{{ $label['designation'] }}</div>
-        @endif
-        @if($label['organization'])
-        <div class="meta">{{ $label['organization'] }}</div>
-        @endif
-        @if($label['phone'])
-        <div class="phone">Phone - {{ $label['phone'] }}</div>
-        @endif
-        @if($label['address'])
-        <div class="address">{{ $label['address'] }}</div>
-        @endif
+        {{-- Reserve the QR's own column on the right so address/organization wrap instead of running under it. --}}
+        <div @if($label['order_qr']) style="padding-right: {{ round($template->height * 0.34, 1) + 2 }}mm;" @endif>
+            <div class="name">{{ $label['name'] }}</div>
+            @if($label['designation'])
+            <div class="meta">{{ $label['designation'] }}</div>
+            @endif
+            @if($label['organization'])
+            <div class="meta">{{ $label['organization'] }}</div>
+            @endif
+            @if($label['phone'])
+            <div class="phone">Phone - {{ $label['phone'] }}</div>
+            @endif
+            @if($label['address'])
+            <div class="address">{{ $label['address'] }}</div>
+            @endif
+        </div>
         @if($label['order_qr'])
         <div class="qr-label">{{ $qrLabel }}</div>
         <img class="order-qr" src="data:image/png;base64,{{ $label['order_qr'] }}" alt="Order QR">
