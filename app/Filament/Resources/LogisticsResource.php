@@ -123,6 +123,10 @@ class LogisticsResource extends Resource
                         default => 'gray',
                     })
                     ->sortable(),
+                Tables\Columns\TextColumn::make('delivery_id')
+                    ->label('Delivery ID')
+                    ->searchable()
+                    ->copyable(),
                 Tables\Columns\TextColumn::make('pickndrop_tracking_number')
                     ->label('Tracking #')
                     ->placeholder('—')
@@ -292,11 +296,19 @@ class LogisticsResource extends Resource
                                 ->title("Created {$created} delivery orders".($failed ? ", {$failed} failed" : ''))
                                 ->send();
                         }),
-                    BulkAction::make('print_delivery_labels')
-                        ->label('Print Delivery Labels')
+                    BulkAction::make('print_delivery_labels_team')
+                        ->label('Delivery Label (Team)')
                         ->icon('heroicon-o-tag')
                         ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
                             'registrations' => $records->pluck('id')->implode(','),
+                            'type' => 'team',
+                        ])),
+                    BulkAction::make('print_delivery_labels_pnd')
+                        ->label('Delivery Label (P&D)')
+                        ->icon('heroicon-o-tag')
+                        ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
+                            'registrations' => $records->pluck('id')->implode(','),
+                            'type' => 'pnd',
                         ])),
                     BulkAction::make('print_labels')
                         ->label('Print ID Labels')

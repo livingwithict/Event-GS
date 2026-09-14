@@ -725,12 +725,21 @@ class RegistrationResource extends Resource
                         ->action(fn (Collection $records) => redirect()->route('labels.print-now', [
                             'registrations' => $records->pluck('id')->implode(','),
                         ])),
-                    BulkAction::make('print_delivery_labels')
-                        ->label('Print Delivery Labels')
+                    BulkAction::make('print_delivery_labels_team')
+                        ->label('Delivery Label (Team)')
                         ->icon('heroicon-o-tag')
                         ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
                         ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
                             'registrations' => $records->pluck('id')->implode(','),
+                            'type' => 'team',
+                        ])),
+                    BulkAction::make('print_delivery_labels_pnd')
+                        ->label('Delivery Label (P&D)')
+                        ->icon('heroicon-o-tag')
+                        ->visible(fn () => Auth::user()?->hasAbility(Ability::DeliveryManage))
+                        ->action(fn (Collection $records) => redirect()->route('delivery.labels', [
+                            'registrations' => $records->pluck('id')->implode(','),
+                            'type' => 'pnd',
                         ])),
                 ]),
             ]);

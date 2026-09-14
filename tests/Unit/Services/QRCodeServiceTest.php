@@ -72,4 +72,24 @@ class QRCodeServiceTest extends TestCase
 
         $this->assertNull($found);
     }
+
+    public function test_resolve_delivery_id_returns_registration(): void
+    {
+        $reg = Registration::factory()->create();
+
+        $found = $this->service->resolve($reg->delivery_id);
+
+        $this->assertNotNull($found);
+        $this->assertEquals($reg->id, $found->id);
+    }
+
+    public function test_resolve_pickndrop_order_id_returns_registration(): void
+    {
+        $reg = Registration::factory()->create(['pickndrop_order_id' => 'PND-12345']);
+
+        $found = $this->service->resolve('PND-12345');
+
+        $this->assertNotNull($found);
+        $this->assertEquals($reg->id, $found->id);
+    }
 }

@@ -17,9 +17,13 @@ class DeliveryController extends Controller
     public function labels(Request $request)
     {
         $registrations = $this->resolveRegistrations($request);
+        $type = $this->resolveType($request);
 
         return view('labels.print-now', [
-            'sheetUrl' => route('delivery.labels.sheet', ['registrations' => $registrations->pluck('id')->implode(',')]),
+            'sheetUrl' => route('delivery.labels.sheet', [
+                'registrations' => $registrations->pluck('id')->implode(','),
+                'type' => $type,
+            ]),
             'count' => $registrations->count(),
         ]);
     }
@@ -28,6 +32,7 @@ class DeliveryController extends Controller
     public function sheet(Request $request)
     {
         $registrations = $this->resolveRegistrations($request);
+        $type = $this->resolveType($request);
 
         $event = $registrations->first()->event;
         $template = LabelTemplate::where('event_id', $event->id)->first() ?? new LabelTemplate([
@@ -39,9 +44,16 @@ class DeliveryController extends Controller
             'margin_bottom' => 2,
         ]);
 
-        $html = app(LabelService::class)->generateDeliverySheetHtml($registrations, $template);
+        $html = app(LabelService::class)->generateDeliverySheetHtml($registrations, $template, $type);
 
         return response($html, 200, ['Content-Type' => 'text/html']);
+    }
+
+    private function resolveType(Request $request): string
+    {
+        $type = (string) $request->query('type', 'team');
+
+        return in_array($type, ['team', 'pnd'], true) ? $type : 'team';
     }
 
     private function resolveRegistrations(Request $request): \Illuminate\Database\Eloquent\Collection

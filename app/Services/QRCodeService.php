@@ -52,6 +52,9 @@ class QRCodeService
         // Codes are uppercase, but a scanner may read an old lowercase payload
         // or a human may type one in, so match case-insensitively.
         return Registration::whereRaw('UPPER(guest_number) = ?', [strtoupper($code)])->first()
+            ?? Registration::whereRaw('UPPER(delivery_id) = ?', [strtoupper($code)])->first()
+            // Courier order ids come back from PickAndDrop's own API, in whatever case/format they use.
+            ?? Registration::where('pickndrop_order_id', $code)->first()
             ?? $this->resolveFromToken($code);
     }
 

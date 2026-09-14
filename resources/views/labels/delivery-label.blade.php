@@ -45,6 +45,15 @@
             width: {{ round($template->height * 0.34, 1) }}mm;
             height: {{ round($template->height * 0.34, 1) }}mm;
         }
+        .qr-label {
+            position: absolute;
+            right: {{ $padX }}mm;
+            bottom: {{ $padY + 1.5 + round($template->height * 0.34, 1) }}mm;
+            font-size: {{ max(8, (int) round($template->height * 0.12)) }}px;
+            font-weight: 700;
+            white-space: nowrap;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -64,6 +73,7 @@
         <div class="address">{{ $label['address'] }}</div>
         @endif
         @if($label['order_qr'])
+        <div class="qr-label">{{ $qrLabel }}</div>
         <img class="order-qr" src="data:image/png;base64,{{ $label['order_qr'] }}" alt="Order QR">
         @endif
     </div>

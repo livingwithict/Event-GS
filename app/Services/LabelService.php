@@ -115,14 +115,14 @@ class LabelService
     }
 
     /**
-     * Shipping label for the envelope, handed to PickAndDrop with the batch.
+     * Shipping label for the envelope, handed to PickAndDrop or the internal team with the batch.
      * Same sticker size as the ID label (same printer). Never carries the
      * guest's entry/lunch/dinner QR — that must not leave the building on an
-     * envelope. A courier order gets its own small QR (the PickAndDrop order
-     * id) in the corner instead, for the courier to scan; self-delivered
-     * labels (no order created) get no QR at all.
+     * envelope. Team labels QR our own delivery_id (scannable at the Tracking
+     * station); P&D labels QR the courier's order id instead, for the courier
+     * to scan, falling back to delivery_id if no order was created yet.
      */
-    public function generateDeliveryLabelPdf(Collection $registrations, LabelTemplate $template): string
+    public function generateDeliveryLabelPdf(Collection $registrations, LabelTemplate $template, string $type = 'team'): string
     {
         $dompdf = new Dompdf((new Options)->set([
             'isHtml5ParserEnabled' => true,
@@ -132,24 +132,30 @@ class LabelService
         $mmToPt = 72 / 25.4;
         $dompdf->setPaper([0, 0, $template->width * $mmToPt, $template->height * $mmToPt]);
 
-        $dompdf->loadHtml($this->generateDeliverySheetHtml($registrations, $template));
+        $dompdf->loadHtml($this->generateDeliverySheetHtml($registrations, $template, $type));
         $dompdf->render();
 
         return $dompdf->output();
     }
 
-    public function generateDeliverySheetHtml(Collection $registrations, LabelTemplate $template): string
+    public function generateDeliverySheetHtml(Collection $registrations, LabelTemplate $template, string $type = 'team'): string
     {
-        $labels = $registrations->map(fn ($registration) => [
-            'name' => $registration->displayName(),
-            'designation' => $template->show_designation ? $registration->designation : null,
-            'organization' => $template->show_organization ? $registration->organization : null,
-            'phone' => $registration->phone,
-            'address' => $registration->address,
-            'order_qr' => $registration->pickndrop_order_id
-                ? base64_encode(QrCode::format('png')->size(200)->margin(0)->generate($registration->pickndrop_order_id))
-                : null,
-        ])->toArray();
+        $labels = $registrations->map(function ($registration) use ($template, $type) {
+            $qrPayload = $type === 'pnd'
+                ? ($registration->pickndrop_order_id ?: $registration->delivery_id)
+                : $registration->delivery_id;
+
+            return [
+                'name' => $registration->displayName(),
+                'designation' => $template->show_designation ? $registration->designation : null,
+                'organization' => $template->show_organization ? $registration->organization : null,
+                'phone' => $registration->phone,
+                'address' => $registration->address,
+                'order_qr' => $qrPayload
+                    ? base64_encode(QrCode::format('png')->size(200)->margin(0)->generate($qrPayload))
+                    : null,
+            ];
+        })->toArray();
 
         $w = (float) $template->width;
         $h = (float) $template->height;
@@ -173,6 +179,7 @@ class LabelService
             'template' => $template,
             'padX' => $padX,
             'padY' => $padY,
+            'qrLabel' => $type === 'pnd' ? 'PicknDrop' : 'DNC 2026',
         ])->render();
     }
 

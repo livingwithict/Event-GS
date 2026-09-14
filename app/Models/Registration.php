@@ -18,7 +18,7 @@ class Registration extends Model
     use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'event_id', 'category_id', 'promo_code_id', 'registration_source', 'unique_code', 'guest_number', 'qr_hash', 'salutation', 'name', 'email', 'phone',
+        'event_id', 'category_id', 'promo_code_id', 'registration_source', 'unique_code', 'guest_number', 'delivery_id', 'qr_hash', 'salutation', 'name', 'email', 'phone',
         'organization', 'designation', 'address', 'website',
         'photo_path', 'meal_preference', 'special_assistance', 'notes', 'pan_vat', 'gender', 'consented_at',
         'payment_status', 'paid_at',
@@ -131,6 +131,9 @@ class Registration extends Model
             if (empty($reg->guest_number) && $reg->event_id) {
                 $reg->guest_number = self::generateGuestNumber($reg->event_id);
             }
+            if (empty($reg->delivery_id)) {
+                $reg->delivery_id = self::generateDeliveryId();
+            }
             if (empty($reg->invitation_category_id)) {
                 $reg->invitation_category_id = InvitationCategory::where('key', InvitationCategory::EmailOnly)->value('id');
             }
@@ -162,6 +165,18 @@ class Registration extends Model
         } while (self::where('event_id', $eventId)->where('guest_number', $guestNumber)->exists());
 
         return $guestNumber;
+    }
+
+    /** Delivery envelope code: distinct from guest_number so a shipping label never carries the entry QR payload. */
+    public static function generateDeliveryId(): string
+    {
+        $chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+        do {
+            $random = substr(str_shuffle($chars), 0, 5);
+            $deliveryId = "DLV-{$random}";
+        } while (self::where('delivery_id', $deliveryId)->exists());
+
+        return $deliveryId;
     }
 
     public function event(): BelongsTo

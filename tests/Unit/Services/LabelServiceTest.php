@@ -64,6 +64,48 @@ class LabelServiceTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $pdf);
     }
 
+    /** Pulls the base64 QR payload out of rendered label HTML, so tests can compare just the encoded image. */
+    private function qrSrc(string $html): ?string
+    {
+        preg_match('/class="order-qr" src="([^"]+)"/', $html, $matches);
+
+        return $matches[1] ?? null;
+    }
+
+    public function test_team_delivery_label_qr_encodes_delivery_id_not_pickndrop_order(): void
+    {
+        $event = Event::factory()->create();
+        $template = $this->sevenBySeventyTemplate($event);
+        $registration = Registration::factory()->create([
+            'event_id' => $event->id,
+            'pickndrop_order_id' => 'ORD-12345',
+        ]);
+
+        $teamHtml = app(LabelService::class)->generateDeliverySheetHtml(collect([$registration]), $template, 'team');
+        $pndHtml = app(LabelService::class)->generateDeliverySheetHtml(collect([$registration]), $template, 'pnd');
+
+        $this->assertStringContainsString('DNC 2026', $teamHtml);
+        $this->assertStringContainsString('PicknDrop', $pndHtml);
+        // Different QR payloads (delivery_id vs pickndrop_order_id) render different images.
+        $this->assertNotSame($this->qrSrc($teamHtml), $this->qrSrc($pndHtml));
+    }
+
+    public function test_pnd_delivery_label_falls_back_to_delivery_id_without_an_order(): void
+    {
+        $event = Event::factory()->create();
+        $template = $this->sevenBySeventyTemplate($event);
+        $registration = Registration::factory()->create([
+            'event_id' => $event->id,
+            'pickndrop_order_id' => null,
+        ]);
+
+        $teamHtml = app(LabelService::class)->generateDeliverySheetHtml(collect([$registration]), $template, 'team');
+        $pndHtml = app(LabelService::class)->generateDeliverySheetHtml(collect([$registration]), $template, 'pnd');
+
+        // No courier order yet, so both label types fall back to the same delivery_id QR, only the caption differs.
+        $this->assertSame($this->qrSrc($teamHtml), $this->qrSrc($pndHtml));
+    }
+
     public function test_id_label_qr_keeps_the_same_margin_as_the_configured_right_margin(): void
     {
         $event = Event::factory()->create();
