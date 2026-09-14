@@ -252,7 +252,7 @@ class RegistrationResource extends Resource
                 Tables\Columns\TextColumn::make('email')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('phone')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('designation')->searchable()->toggleable(),
-                Tables\Columns\TextColumn::make('organization')->searchable()->toggleable(),
+                Tables\Columns\TextColumn::make('organization')->searchable()->sortable()->toggleable(),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
                     ->limit(30)

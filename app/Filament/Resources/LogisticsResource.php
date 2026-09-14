@@ -56,6 +56,10 @@ class LogisticsResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('organization')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
                     ->placeholder('Not set'),
