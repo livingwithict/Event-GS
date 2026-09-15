@@ -127,6 +127,12 @@
                     <td style="padding:6px 0; color:#0f172b; font-size:13px; font-weight:600;">{{ $event->venue }}</td>
                 </tr>
                 @endif
+                <tr>
+                    <td style="padding:6px 0; color:#64748b; font-size:13px;">Agenda</td>
+                    <td style="padding:6px 0; font-size:13px; font-weight:600;">
+                        <a href="https://digitalconclave.org/agenda" style="color:#2e3192; text-decoration:none;">View the event agenda &rarr;</a>
+                    </td>
+                </tr>
             </table>
         </td>
     </tr>
