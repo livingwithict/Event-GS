@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Registration;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -52,16 +53,28 @@ class PickAndDropService
      */
     public function createOrder(Registration $registration): array
     {
-        $response = $this->client()->post('/api/v2/method/logi360.api.create_order', [
-            'customerName' => $registration->displayName(),
-            'primaryMobileNo' => $registration->phone,
-            'destinationBranch' => $registration->destination_branch,
-            'destinationCityArea' => $registration->destination_area,
-            'codAmount' => 0,
-            'orderDescription' => 'Event invitation',
-            'landmark' => $registration->address,
-            'ref' => (string) $registration->id,
-        ]);
+        try {
+            $response = $this->client()->post('/api/v2/method/logi360.api.create_order', [
+                'customerName' => $registration->displayName(),
+                'primaryMobileNo' => $registration->phone,
+                'destinationBranch' => $registration->destination_branch,
+                'destinationCityArea' => $registration->destination_area,
+                'codAmount' => 0,
+                'orderDescription' => 'Event invitation',
+                'landmark' => $registration->address,
+                'ref' => (string) $registration->id,
+            ]);
+        } catch (RequestException $e) {
+            // ->throw() fires before we ever see the response body, so the default
+            // exception message is just "status code 422" — pull PickAndDrop's own
+            // reason (e.g. "phone number required") out of the response instead.
+            $message = $e->response->json('message')
+                ?? $e->response->json('exception')
+                ?? $e->response->body()
+                ?: $e->getMessage();
+
+            throw new \RuntimeException(is_string($message) ? $message : json_encode($message));
+        }
 
         // v2 endpoints wrap the payload in "data", not "message" like the v1 endpoints do.
         $data = $response->json('data');

@@ -269,7 +269,7 @@ class LogisticsResource extends Resource
                         ->action(function (Collection $records) {
                             $service = app(PickAndDropService::class);
                             $created = 0;
-                            $failed = 0;
+                            $failures = [];
 
                             foreach ($records as $record) {
                                 if ($record->pickndrop_order_id) {
@@ -286,14 +286,22 @@ class LogisticsResource extends Resource
                                     $created++;
                                 } catch (\Throwable $e) {
                                     logger()->error('PickAndDrop createOrder failed: '.$e->getMessage(), ['registration_id' => $record->id]);
-                                    $failed++;
+                                    $failures[] = "{$record->displayName()}: {$e->getMessage()}";
                                 }
                             }
 
-                            Notification::make()
-                                ->success()
-                                ->title("Created {$created} delivery orders".($failed ? ", {$failed} failed" : ''))
-                                ->send();
+                            $notification = Notification::make()
+                                ->title("Created {$created} delivery orders".($failures ? ', '.count($failures).' failed' : ''));
+
+                            if ($failures) {
+                                // Show PickAndDrop's own rejection reason, not just a count — usually
+                                // a missing/invalid phone or destination branch/area on their end.
+                                $notification->warning()->body(implode("\n", array_slice($failures, 0, 5)));
+                            } else {
+                                $notification->success();
+                            }
+
+                            $notification->send();
                         }),
                     BulkAction::make('print_delivery_labels_team')
                         ->label('Delivery Label (Team)')

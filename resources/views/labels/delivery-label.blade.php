@@ -41,14 +41,14 @@
         .order-qr {
             position: absolute;
             right: {{ $padX }}mm;
-            bottom: {{ $padY + 1.5 }}mm;
+            top: {{ $padY + 3 }}mm;
             width: {{ round($template->height * 0.34, 1) }}mm;
             height: {{ round($template->height * 0.34, 1) }}mm;
         }
         .qr-label {
             position: absolute;
             right: {{ $padX }}mm;
-            bottom: {{ $padY + 1.5 + round($template->height * 0.34, 1) }}mm;
+            top: {{ $padY }}mm;
             font-size: {{ max(8, (int) round($template->height * 0.12)) }}px;
             font-weight: 700;
             white-space: nowrap;
@@ -59,7 +59,7 @@
 <body>
     @foreach($labels as $label)
     <div class="label">
-        {{-- Reserve the QR's own column on the right so address/organization wrap instead of running under it. --}}
+        {{-- Reserve the QR's own column on the right (it now sits top-right) so name/org/phone wrap instead of running under it. --}}
         <div @if($label['order_qr']) style="padding-right: {{ round($template->height * 0.34, 1) + 2 }}mm;" @endif>
             <div class="name">{{ $label['name'] }}</div>
             @if($label['designation'])
@@ -71,10 +71,11 @@
             @if($label['phone'])
             <div class="phone">Phone - {{ $label['phone'] }}</div>
             @endif
-            @if($label['address'])
-            <div class="address">{{ $label['address'] }}</div>
-            @endif
         </div>
+        {{-- Address runs the full label width — by this point we're below the QR, so nothing to clip for. --}}
+        @if($label['address'])
+        <div class="address">{{ $label['address'] }}</div>
+        @endif
         @if($label['order_qr'])
         <div class="qr-label">{{ $qrLabel }}</div>
         <img class="order-qr" src="data:image/png;base64,{{ $label['order_qr'] }}" alt="Order QR">
