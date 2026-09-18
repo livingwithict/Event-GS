@@ -650,7 +650,7 @@ class RegistrationResource extends Resource
                                     : null),
                             \Filament\Forms\Components\TextInput::make('subject')
                                 ->label('Subject line')
-                                ->default('Invitation - DNC 2026')
+                                ->default('Invitation - Digital Nepal Conclave | 20th September, 2026')
                                 ->required()
                                 ->maxLength(150),
                         ])
