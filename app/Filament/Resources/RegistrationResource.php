@@ -31,6 +31,7 @@ use Filament\Forms;
 use App\Jobs\SendBulkEmail;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -93,38 +94,41 @@ class RegistrationResource extends Resource
                             ->maxLength(255)
                             ->rule(new \App\Rules\MultiEmail)
                             ->helperText('One email, or several separated by commas.'),
-                        Forms\Components\TextInput::make('phone')
-                            ->tel()
-                            ->maxLength(50)
-                            ->helperText('Mobile, landline or extension — any format.'),
-                        Forms\Components\TextInput::make('designation')
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('organization')
-                            ->maxLength(255),
-                        Forms\Components\Textarea::make('address')
-                            ->maxLength(65535)
-                            ->columnSpanFull(),
-                        Forms\Components\TextInput::make('website')
-                            ->url()
-                            ->maxLength(255),
-                        Forms\Components\Select::make('gender')
-                            ->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])
-                            ->nullable(),
-                        Forms\Components\Select::make('meal_preference')
-                            ->options(['veg' => 'Vegetarian', 'non-veg' => 'Non-Vegetarian', 'vegan' => 'Vegan', 'halal' => 'Halal'])
-                            ->nullable(),
-                        Forms\Components\TextInput::make('pan_vat')
-                            ->label('PAN/VAT')
-                            ->maxLength(50)
-                            ->nullable(),
-                        Forms\Components\Textarea::make('special_assistance')
-                            ->maxLength(500)
-                            ->hint(fn ($state) => ($state ? strlen($state) : 0).'/500')
-                            ->nullable(),
-                        Forms\Components\Textarea::make('notes')
-                            ->maxLength(1000)
-                            ->columnSpanFull()
-                            ->nullable(),
+                        Group::make([
+                            Forms\Components\TextInput::make('phone')
+                                ->tel()
+                                ->maxLength(50)
+                                ->helperText('Mobile, landline or extension — any format.'),
+                            Forms\Components\Textarea::make('address')
+                                ->maxLength(65535),
+                        ])->columns(2)->columnSpanFull(),
+                        Group::make([
+                            Forms\Components\TextInput::make('designation')
+                                ->maxLength(255),
+                            Forms\Components\TextInput::make('organization')
+                                ->maxLength(255),
+                        ])->columns(2)->columnSpanFull(),
+                        // Forms\Components\TextInput::make('website')
+                        //     ->url()
+                        //     ->maxLength(255),
+                        // Forms\Components\Select::make('gender')
+                        //     ->options(['male' => 'Male', 'female' => 'Female', 'other' => 'Other'])
+                        //     ->nullable(),
+                        // Forms\Components\Select::make('meal_preference')
+                        //     ->options(['veg' => 'Vegetarian', 'non-veg' => 'Non-Vegetarian', 'vegan' => 'Vegan', 'halal' => 'Halal'])
+                        //     ->nullable(),
+                        // Forms\Components\TextInput::make('pan_vat')
+                        //     ->label('PAN/VAT')
+                        //     ->maxLength(50)
+                        //     ->nullable(),
+                        // Forms\Components\Textarea::make('special_assistance')
+                        //     ->maxLength(500)
+                        //     ->hint(fn ($state) => ($state ? strlen($state) : 0).'/500')
+                        //     ->nullable(),
+                        // Forms\Components\Textarea::make('notes')
+                        //     ->maxLength(1000)
+                        //     ->columnSpanFull()
+                        //     ->nullable(),
                     ])->columns(2)
                     ->columnSpan(1),
 
@@ -132,6 +136,7 @@ class RegistrationResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('event_id')
                             ->relationship('event', 'name')
+                            ->default(fn () => session('active_event_id'))
                             ->required()
                             ->live(),
                         Forms\Components\Select::make('category_id')
@@ -151,17 +156,17 @@ class RegistrationResource extends Resource
                                 ->active()
                                 ->ordered()
                                 ->pluck('name', 'id')),
-                        Forms\Components\FileUpload::make('photo_path')
-                            ->label('Photo')
-                            ->image()
-                            ->directory('registrations/photos')
-                            ->maxSize(2048)
-                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
-                            ->nullable(),
-                        Forms\Components\Select::make('registration_source')
-                            ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
-                            ->default('admin_manual')
-                            ->required(),
+                        // Forms\Components\FileUpload::make('photo_path')
+                        //     ->label('Photo')
+                        //     ->image()
+                        //     ->directory('registrations/photos')
+                        //     ->maxSize(2048)
+                        //     ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        //     ->nullable(),
+                        // Forms\Components\Select::make('registration_source')
+                        //     ->options(['self' => 'Self-Registered', 'csv' => 'CSV Import', 'admin_manual' => 'Admin Manual'])
+                        //     ->default('admin_manual')
+                        //     ->required(),
                         Forms\Components\Select::make('approval_status')
                             ->options(['approved' => 'Approved', 'pending' => 'Pending Approval', 'waitlisted' => 'Waitlisted', 'rejected' => 'Rejected'])
                             ->default('approved')
@@ -179,6 +184,16 @@ class RegistrationResource extends Resource
                         Forms\Components\Select::make('invitation_category_id')
                             ->label('Invitation Category')
                             ->relationship('invitationCategory', 'name')
+                            ->options(function (?Registration $record) {
+                                $order = [InvitationCategory::CallEmail, InvitationCategory::PhysicalEmail];
+
+                                return InvitationCategory::where(fn ($q) => $q->whereIn('key', $order)
+                                    ->orWhere('id', $record?->invitation_category_id))
+                                    ->get()
+                                    ->sortBy(fn ($category) => ($i = array_search($category->key, $order, true)) === false ? 99 : $i)
+                                    ->pluck('name', 'id');
+                            })
+                            ->default(fn () => InvitationCategory::where('key', InvitationCategory::CallEmail)->value('id'))
                             ->live()
                             ->required(),
                         Forms\Components\Placeholder::make('thirdfactor_status')
@@ -373,12 +388,14 @@ class RegistrationResource extends Resource
                     ->label('Face Verification')
                     ->badge()
                     ->formatStateUsing(fn (Registration $record) => $record->faceVerificationLabel())
+                    ->description(fn (Registration $record) => $record->thirdfactor_enrolled_at?->format('M j, Y H:i'))
                     ->color(fn (?string $state) => match ($state) {
                         'approved' => 'success',
                         'declined' => 'danger',
                         'review' => 'warning',
                         default => 'gray',
                     })
+                    ->sortable(query: fn ($query, string $direction) => $query->orderBy('thirdfactor_enrolled_at', $direction))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('card_delivered')
                     ->label('Card')
@@ -457,6 +474,30 @@ class RegistrationResource extends Resource
                                 ->whereDoesntHave('communications', $faceQuery),
                             default => $query,
                         };
+                    }),
+                Tables\Filters\SelectFilter::make('thirdfactor_status')
+                    ->label('Face Verification')
+                    ->options([
+                        'not_sent' => 'Not sent',
+                        'not_started' => 'Not started',
+                        'review' => 'In review',
+                        'approved' => 'Verified',
+                        'declined' => 'Declined',
+                        'expired' => 'Expired',
+                        'abandoned' => 'Abandoned',
+                    ])
+                    ->query(function ($query, array $data) {
+                        $state = $data['value'] ?? null;
+
+                        if (blank($state)) {
+                            return $query;
+                        }
+
+                        if ($state === 'not_sent') {
+                            return $query->where(fn ($q) => $q->whereNull('thirdfactor_status')->orWhere('thirdfactor_status', ''));
+                        }
+
+                        return $query->where('thirdfactor_status', $state);
                     }),
                 Tables\Filters\TrashedFilter::make(),
             ])

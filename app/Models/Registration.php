@@ -63,7 +63,7 @@ class Registration extends Model
     }
 
     /** Titles offered in the registration forms. Add to this list, not to each form. */
-    public const SALUTATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Er.', 'Prof.', 'Prof. Dr.', 'Adv.', 'Hon.', 'CA.', 'H.E.'];
+    public const SALUTATIONS = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Er.', 'Prof.', 'Prof. Dr.', 'Adv.', 'Hon.', 'Hon. Dr.', 'CA.', 'H.E.'];
 
     public const CARD_READY = 'ready';
 
