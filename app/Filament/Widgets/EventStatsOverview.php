@@ -22,6 +22,8 @@ class EventStatsOverview extends BaseWidget
         $totalRegistrations = (clone $regQuery)->count();
         $totalEntries = (clone $regQuery)->whereNotNull('entry_time')->count();
         $attendanceRate = $totalRegistrations > 0 ? round(($totalEntries / $totalRegistrations) * 100, 1) : 0;
+        $lunchCount = (clone $regQuery)->whereNotNull('lunch_used_at')->count();
+        $dinnerCount = (clone $regQuery)->whereNotNull('dinner_used_at')->count();
 
         return [
             Stat::make('Total Events', (clone $eventQuery)->count())
@@ -40,6 +42,14 @@ class EventStatsOverview extends BaseWidget
                 ->description($totalEntries.' of '.$totalRegistrations.' checked in')
                 ->descriptionIcon('heroicon-o-check-circle')
                 ->color($attendanceRate >= 70 ? 'success' : ($attendanceRate >= 40 ? 'warning' : 'danger')),
+            Stat::make('Lunch Served', $lunchCount)
+                ->description($totalRegistrations - $lunchCount.' remaining')
+                ->descriptionIcon('heroicon-o-sun')
+                ->color('warning'),
+            Stat::make('Dinner Served', $dinnerCount)
+                ->description($totalRegistrations - $dinnerCount.' remaining')
+                ->descriptionIcon('heroicon-o-moon')
+                ->color('warning'),
             Stat::make('Pending Payments', (clone $payQuery)->where('payment_status', 'pending')->count())
                 ->description((clone $payQuery)->where('payment_status', 'failed')->count().' failed')
                 ->descriptionIcon('heroicon-o-clock')
