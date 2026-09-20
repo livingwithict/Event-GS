@@ -453,6 +453,22 @@ class RegistrationResource extends Resource
                         true: fn ($query) => $query->whereHas('scanLogs.actionType', fn ($q) => $q->where('action_code', 'CARD_DELIVERY')),
                         false: fn ($query) => $query->whereDoesntHave('scanLogs.actionType', fn ($q) => $q->where('action_code', 'CARD_DELIVERY')),
                     ),
+                Tables\Filters\TernaryFilter::make('lunch_used_at')
+                    ->label('Lunch')
+                    ->trueLabel('Served')
+                    ->falseLabel('Not served')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('lunch_used_at'),
+                        false: fn ($query) => $query->whereNull('lunch_used_at'),
+                    ),
+                Tables\Filters\TernaryFilter::make('dinner_used_at')
+                    ->label('Dinner')
+                    ->trueLabel('Served')
+                    ->falseLabel('Not served')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('dinner_used_at'),
+                        false: fn ($query) => $query->whereNull('dinner_used_at'),
+                    ),
                 Tables\Filters\SelectFilter::make('invitation_status')
                     ->label('Invitation Status')
                     ->options([
