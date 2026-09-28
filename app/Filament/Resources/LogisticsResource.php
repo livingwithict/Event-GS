@@ -203,10 +203,10 @@ class LogisticsResource extends Resource
                         ->label('Export CSV')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records) {
-                            $csv = "Name,Guest #,Category,Invitation Category,Sectors,Phone,Address,Delivery Branch,Delivery Area,Order Created,Order ID,Tracking Number,Tracking URL,Status\n";
+                            $csv = "Name,Guest #,Category,Invitation Category,Sectors,Phone,Address,Delivery Means,Delivery Branch,Delivery Area,Order Created,Order ID,Tracking Number,Tracking URL,Status\n";
                             foreach ($records as $registration) {
                                 $csv .= sprintf(
-                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                                    "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
                                     str_replace('"', '""', $registration->name ?? ''),
                                     str_replace('"', '""', $registration->guest_number ?? ''),
                                     str_replace('"', '""', $registration->category?->name ?? ''),
@@ -214,6 +214,7 @@ class LogisticsResource extends Resource
                                     str_replace('"', '""', $registration->sectors->pluck('name')->implode(', ')),
                                     str_replace('"', '""', $registration->phone ?? ''),
                                     str_replace('"', '""', str_replace(["\r", "\n"], ' ', $registration->address ?? '')),
+                                    str_replace('"', '""', $registration->deliveryMean?->name ?? 'Not set'),
                                     str_replace('"', '""', $registration->destination_branch ?? 'Not set'),
                                     str_replace('"', '""', $registration->destination_area ?? 'Not set'),
                                     $registration->pickndrop_order_id ? 'Yes' : 'No',
