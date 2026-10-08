@@ -17,8 +17,8 @@ class PublicRegistrationRequest extends FormRequest
         return [
             'salutation' => 'nullable|string|max:20',
             'name' => 'required|string|max:255',
-            'email' => ['nullable', 'max:255', new MultiEmail],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'email' => ['required', 'max:255', new MultiEmail],
+            'phone' => ['required', 'string', 'max:50'],
             'category_id' => 'nullable|exists:participant_categories,id',
             'designation' => 'nullable|string|max:255',
             'organization' => 'nullable|string|max:255',
@@ -33,17 +33,5 @@ class PublicRegistrationRequest extends FormRequest
             'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'consent' => 'required|accepted',
         ];
-    }
-
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator) {
-            $email = $this->input('email');
-            $phone = $this->input('phone');
-
-            if (empty($email) && empty($phone)) {
-                $validator->errors()->add('email', 'At least email or phone is required.');
-            }
-        });
     }
 }

@@ -41,15 +41,19 @@
 <body>
     <div class="container">
         <div class="card">
-            <div class="header">
-                @if($logo = $event->logoUrl())
-                    <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:40px;margin-bottom:8px;">
-                @endif
-                <h1>{{ $event->name }}</h1>
-                <p>{{ $event->start_datetime?->format('M j, Y H:i') ?? '' }} &middot; {{ $event->venue }}</p>
-            </div>
+            @if($banner = $event->bannerUrl())
+                <img src="{{ $banner }}" alt="{{ $event->name }}" style="display:block;width:100%;height:auto;">
+            @endif
 
             <div class="body">
+                <div style="text-align:center;margin-bottom:20px;">
+                    @if($logo = $event->logoUrl())
+                        <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:40px;margin-bottom:8px;">
+                    @endif
+                    <h1 style="font-size:20px;font-weight:700;">{{ $event->name }}</h1>
+                    <p style="font-size:13px;color:#6b7280;margin-top:4px;">{{ $event->start_datetime?->format('M j, Y H:i') ?? '' }} &middot; {{ $event->venue }}</p>
+                </div>
+
                 @if(session('error'))
                     <div class="error-box">{{ session('error') }}</div>
                 @endif
@@ -65,67 +69,6 @@
                 <form method="POST" action="{{ route('register.store', $event->slug) }}" enctype="multipart/form-data">
                     @csrf
 
-                    @if($categories->count() > 0)
-                        <label>Select Category</label>
-                        <div class="categories">
-                            @foreach($categories as $cat)
-                                <label class="cat-card" onclick="this.querySelector('input').click()">
-                                    <div>
-                                        <input type="radio" name="category_id" value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'checked' : '' }}>
-                                        <span class="cat-name">{{ $cat->name }}</span>
-                                        @if($cat->description)
-                                            <div class="hint">{{ Str::limit($cat->description, 60) }}</div>
-                                        @endif
-                                    </div>
-                                    <div>
-                                        @if($cat->is_paid && $cat->price)
-                                            @if($cat->early_bird_price && $cat->early_bird_until && now()->lt($cat->early_bird_until))
-                                                <span class="cat-price">NPR {{ number_format($cat->early_bird_price, 0) }}</span>
-                                                <div class="hint">Early bird until {{ $cat->early_bird_until->format('M j') }}</div>
-                                            @else
-                                                <span class="cat-price">NPR {{ number_format($cat->price, 0) }}</span>
-                                            @endif
-                                        @else
-                                            <span class="cat-free">Free</span>
-                                        @endif
-                                    </div>
-                                </label>
-                            @endforeach
-                        </div>
-                    @endif
-
-                    <div class="field">
-                        <label for="promo_code">Promo Code</label>
-                        <input type="text" id="promo_code" name="promo_code" value="{{ old('promo_code') }}" placeholder="Enter promo code for discount">
-                        <div class="hint">Optional — enter a promo code if you have one</div>
-                        @error('promo_code')
-                            <div class="field-error">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="field">
-                        <label for="companion_count">Additional Companions</label>
-                        <select id="companion_count" name="companion_count" style="width:100%">
-                            <option value="0" {{ old('companion_count') === '0' ? 'selected' : '' }}>None</option>
-                            <option value="1" {{ old('companion_count') === '1' ? 'selected' : '' }}>1 companion</option>
-                            <option value="2" {{ old('companion_count') === '2' ? 'selected' : '' }}>2 companions</option>
-                            <option value="3" {{ old('companion_count') === '3' ? 'selected' : '' }}>3 companions</option>
-                            <option value="4" {{ old('companion_count') === '4' ? 'selected' : '' }}>4 companions</option>
-                            <option value="5" {{ old('companion_count') === '5' ? 'selected' : '' }}>5 companions</option>
-                        </select>
-                        <div class="hint">Additional guests sharing your registration (up to 5)</div>
-                    </div>
-
-                    <div class="field">
-                        <label for="salutation">Title</label>
-                        <select id="salutation" name="salutation">
-                            <option value="">None</option>
-                            @foreach (\App\Models\Registration::SALUTATIONS as $title)
-                                <option value="{{ $title }}" @selected(old('salutation') === $title)>{{ $title }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
                     <div class="field">
                         <label for="name">Full Name *</label>
                         <input type="text" id="name" name="name" value="{{ old('name') }}" required>
@@ -133,12 +76,12 @@
 
                     <div class="row">
                         <div class="field">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" value="{{ old('email') }}">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" value="{{ old('email') }}" required> 
                         </div>
                         <div class="field">
-                            <label for="phone">Phone</label>
-                            <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+97798XXXXXXXX">
+                            <label for="phone">Phone *</label>
+                            <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+97798XXXXXXXX" required>
                             <div class="hint">Nepali phone number</div>
                         </div>
                     </div>
@@ -159,51 +102,6 @@
                         <textarea id="address" name="address" rows="2">{{ old('address') }}</textarea>
                     </div>
 
-                    <div class="row">
-                        <div class="field">
-                            <label for="gender">Gender</label>
-                            <select id="gender" name="gender">
-                                <option value="">--</option>
-                                <option value="male" {{ old('gender') === 'male' ? 'selected' : '' }}>Male</option>
-                                <option value="female" {{ old('gender') === 'female' ? 'selected' : '' }}>Female</option>
-                                <option value="other" {{ old('gender') === 'other' ? 'selected' : '' }}>Other</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label for="meal_preference">Meal Preference</label>
-                            <select id="meal_preference" name="meal_preference">
-                                <option value="">--</option>
-                                <option value="veg" {{ old('meal_preference') === 'veg' ? 'selected' : '' }}>Vegetarian</option>
-                                <option value="non-veg" {{ old('meal_preference') === 'non-veg' ? 'selected' : '' }}>Non-Vegetarian</option>
-                                <option value="vegan" {{ old('meal_preference') === 'vegan' ? 'selected' : '' }}>Vegan</option>
-                                <option value="halal" {{ old('meal_preference') === 'halal' ? 'selected' : '' }}>Halal</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="field">
-                            <label for="pan_vat">PAN / VAT Number</label>
-                            <input type="text" id="pan_vat" name="pan_vat" value="{{ old('pan_vat') }}">
-                        </div>
-                        <div class="field">
-                            <label for="photo">Photo</label>
-                            <input type="file" id="photo" name="photo" accept="image/jpeg,image/png">
-                            <div class="hint">JPG or PNG, max 2MB</div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="field">
-                            <label for="notes">Notes</label>
-                            <textarea id="notes" name="notes" rows="2">{{ old('notes') }}</textarea>
-                        </div>
-                        <div class="field">
-                            <label for="special_assistance">Special Assistance</label>
-                            <input type="text" id="special_assistance" name="special_assistance" value="{{ old('special_assistance') }}" placeholder="e.g. wheelchair access">
-                        </div>
-                    </div>
-
                     <div class="consent-row">
                         <input type="checkbox" id="consent" name="consent" value="1" required>
                         <label for="consent">I agree to the registration terms and consent to receive event-related communications.</label>
@@ -213,8 +111,11 @@
                 </form>
             </div>
         </div>
+        @foreach($event->miscImageUrls() as $img)
+            <img src="{{ $img }}" alt="" style="display:block;width:100%;height:auto;margin-top:16px;border-radius:12px;">
+        @endforeach
         <div class="footer">
-            {{ $event->contact_info ?? config('app.name') }}
+            Global Spark | EventGS
         </div>
     </div>
 

@@ -187,6 +187,15 @@ class EventResource extends Resource
                             ->directory('events/partner-logos')
                             ->maxSize(2048)
                             ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp']),
+                        FileUpload::make('misc_images')
+                            ->label('Misc Images')
+                            ->multiple()
+                            ->reorderable()
+                            ->image()
+                            ->disk('public')
+                            ->directory('events/misc')
+                            ->maxSize(5120)
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp']),
                         FileUpload::make('banner_path')
                             ->label('Banner')
                             ->image()

@@ -21,7 +21,7 @@ class Event extends Model
 
     protected $fillable = [
         'name', 'slug', 'invitation_code_format', 'description',
-        'logo_path', 'partner_logos', 'banner_path', 'ticket_path',
+        'logo_path', 'partner_logos', 'misc_images', 'banner_path', 'ticket_path',
         'event_date', 'start_datetime', 'end_datetime',
         'registration_open_at', 'registration_close_at',
         'venue', 'contact_info',
@@ -40,6 +40,7 @@ class Event extends Model
             'registration_close_at' => 'datetime',
             'meal_types' => 'array',
             'partner_logos' => 'array',
+            'misc_images' => 'array',
             'settings' => 'array',
         ];
     }
@@ -78,6 +79,19 @@ class Event extends Model
         }
 
         return url(Storage::disk('public')->url($this->logo_path));
+    }
+
+    /** @return list<string> */
+    public function miscImageUrls(): array
+    {
+        return collect($this->misc_images ?? [])
+            ->map(fn ($p) => url(Storage::disk('public')->url($p)))
+            ->all();
+    }
+
+    public function bannerUrl(): ?string
+    {
+        return $this->banner_path ? url(Storage::disk('public')->url($this->banner_path)) : null;
     }
 
     /**
