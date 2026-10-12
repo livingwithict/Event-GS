@@ -17,41 +17,41 @@
 <body>
     <div class="container">
         <div class="header">
-            @if($logo = $event->logoUrl())
-                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px;margin-bottom:10px;">
-            @endif
+            {{#if logo_url}}
+                <img src="{{logo_url}}" alt="{{event_name}}" style="max-height:48px;margin-bottom:10px;">
+            {{/if}}
             <h1>Event Reminder</h1>
-            <p>{{ $event->name }}</p>
+            <p>{{event_name}}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->displayName() }},</p>
-            <p>This is a friendly reminder that <strong>{{ $event->name }}</strong> is happening soon!</p>
+            <p>Dear {{name}},</p>
+            <p>This is a friendly reminder that <strong>{{event_name}}</strong> is happening soon!</p>
 
             <div class="reminder-box">
-                <p style="margin:0; font-size:18px; font-weight:600;">{{ $event->start_datetime?->format('l, F j, Y') ?? $event->event_date?->format('l, F j, Y') }}</p>
-                <p style="margin:4px 0 0;">{{ $event->start_datetime?->format('g:i A') ?? '' }} at {{ $event->venue }}</p>
+                <p style="margin:0; font-size:18px; font-weight:600;">{{date}}</p>
+                <p style="margin:4px 0 0;">{{time}} at {{venue}}</p>
             </div>
 
             <table class="details-table">
                 <tr>
                     <td>Your Guest Number</td>
-                    <td><strong>{{ $registration->guest_number }}</strong></td>
+                    <td><strong>{{guest_number}}</strong></td>
                 </tr>
                 <tr>
                     <td>Venue</td>
-                    <td>{{ $event->venue }}</td>
+                    <td>{{venue}}</td>
                 </tr>
-                @if($registration->category)
+                {{#if category}}
                 <tr>
                     <td>Category</td>
-                    <td>{{ $registration->category->name }}</td>
+                    <td>{{category}}</td>
                 </tr>
-                @endif
+                {{/if}}
             </table>
 
             <p>Please keep your QR code handy for quick entry:</p>
             <div class="qr-code">
-                {!! $qrCodeSvg !!}
+                {{qr_svg}}
             </div>
 
             <p>We look forward to seeing you there!</p>

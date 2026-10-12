@@ -20,6 +20,7 @@ class SendBulkEmail implements ShouldQueue
         public int $eventId,
         public string $subject,
         public string $emailType = 'invitation',
+        public ?int $draftId = null,
     ) {
         $this->onQueue('high');
     }
@@ -27,6 +28,9 @@ class SendBulkEmail implements ShouldQueue
     public function handle(CommunicationService $service): void
     {
         $event = Event::findOrFail($this->eventId);
+
+        $draft = $this->draftId ? $event->emailDrafts()->find($this->draftId) : null;
+        $emailType = $draft?->communicationType() ?? $this->emailType;
 
         $first = true;
 
@@ -43,7 +47,7 @@ class SendBulkEmail implements ShouldQueue
             }
             $first = false;
 
-            $service->sendEmail($reg, $event, $this->subject, $this->emailType);
+            $service->sendEmail($reg, $event, $this->subject, $emailType, $draft);
         }
     }
 }

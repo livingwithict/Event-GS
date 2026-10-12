@@ -15,18 +15,18 @@
     <div class="container">
         <div class="header">
             <h1>Thank You!</h1>
-            <p>{{ $event->name }}</p>
+            <p>{{event_name}}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->displayName() }},</p>
-            <p>Thank you for attending <strong>{{ $event->name }}</strong>!</p>
+            <p>Dear {{name}},</p>
+            <p>Thank you for attending <strong>{{event_name}}</strong>!</p>
 
             <div class="thank-you">
                 <h2>We hope you had a great experience.</h2>
                 <p>Your participation made the event a success. We look forward to seeing you at future events organized by ICT Foundation Nepal.</p>
             </div>
 
-            <p>If you have any feedback or suggestions, please don't hesitate to reach out to us at {{ $event->contact_info ?? 'events@ictfoundation.org.np' }}.</p>
+            <p>If you have any feedback or suggestions, please don't hesitate to reach out to us at {{contact_info}}.</p>
 
             <p>Stay connected for upcoming events!</p>
         </div>

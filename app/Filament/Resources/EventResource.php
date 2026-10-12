@@ -31,6 +31,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -118,6 +119,31 @@ class EventResource extends Resource
                             ->helperText(fn () => 'Paste the sheet URL (including the tab you want — the "gid" in the link), then share it as an Editor with: '
                                 .(config('services.google_sheets.client_email') ?: '(service account email not configured)')),
                         Hidden::make('google_sheet_tab_gid'),
+                    ])->columns(2)
+                    ->columnSpan(1),
+
+                Section::make('Email sending')
+                    ->description('Leave blank to send from the app-wide Resend account.')
+                    ->schema([
+                        TextInput::make('mail_domain')
+                            ->label('Sending domain')
+                            ->placeholder('digitalconclave.org')
+                            ->maxLength(255)
+                            ->regex('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i')
+                            ->dehydrateStateUsing(fn (?string $state) => filled($state) ? Str::lower(trim($state)) : null)
+                            ->live(onBlur: true)
+                            ->helperText('Must be verified in the Resend account the key below belongs to. Sender addresses for this event are checked against it.'),
+                        TextInput::make('resend_api_key')
+                            ->label('Resend API key')
+                            ->password()
+                            ->revealable()
+                            ->autocomplete('new-password')
+                            ->maxLength(255)
+                            // Never sent back to the browser; blank on edit means "keep the current key".
+                            ->afterStateHydrated(fn (TextInput $component) => $component->state(null))
+                            ->dehydrated(fn (?string $state) => filled($state))
+                            ->placeholder(fn (?Event $record) => $record?->resend_api_key ? 'Key saved — type to replace' : 're_…')
+                            ->required(fn (Get $get, ?Event $record) => filled($get('mail_domain')) && ! $record?->resend_api_key),
                     ])->columns(2)
                     ->columnSpan(1),
 

@@ -15,11 +15,11 @@
     <div class="container">
         <div class="header">
             <h1>Payment Failed</h1>
-            <p>{{ $event->name }}</p>
+            <p>{{event_name}}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->displayName() }},</p>
-            <p>We were unable to process your payment for <strong>{{ $event->name }}</strong>.</p>
+            <p>Dear {{name}},</p>
+            <p>We were unable to process your payment for <strong>{{event_name}}</strong>.</p>
 
             <div class="alert">
                 <p style="margin:0;"><strong>What happened:</strong> The payment transaction could not be completed. This may be due to insufficient funds, a network issue, or the transaction being cancelled.</p>
@@ -32,7 +32,7 @@
                 <li>Contact your bank if the issue persists</li>
             </ul>
 
-            <p>If you need assistance, please contact us at {{ $event->contact_info ?? 'events@ictfoundation.org.np' }}.</p>
+            <p>If you need assistance, please contact us at {{contact_info}}.</p>
         </div>
         <div class="footer">
             <p>ICT Foundation Nepal</p>

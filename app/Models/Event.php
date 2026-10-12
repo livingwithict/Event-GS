@@ -28,7 +28,10 @@ class Event extends Model
         'meal_types', 'max_capacity',
         'settings', 'status', 'created_by',
         'google_sheet_id', 'google_sheet_tab_gid',
+        'mail_domain', 'resend_api_key',
     ];
+
+    protected $hidden = ['resend_api_key'];
 
     protected function casts(): array
     {
@@ -42,6 +45,7 @@ class Event extends Model
             'partner_logos' => 'array',
             'misc_images' => 'array',
             'settings' => 'array',
+            'resend_api_key' => 'encrypted',
         ];
     }
 
@@ -193,10 +197,16 @@ class Event extends Model
     {
         return LogOptions::defaults()
             ->logFillable()
+            ->logExcept(['resend_api_key'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->useLogName('event')
             ->setDescriptionForEvent(fn (string $eventName) => "Event {$this->name} was {$eventName}");
+    }
+
+    public function emailDrafts(): HasMany
+    {
+        return $this->hasMany(EmailDraft::class);
     }
 
     public function registrations(): HasMany

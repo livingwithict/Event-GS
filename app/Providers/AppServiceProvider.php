@@ -16,7 +16,10 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
+use Resend;
+use Resend\Laravel\Transport\ResendTransportFactory;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // resend-laravel's own "resend" driver ignores a per-call key and always uses the
+        // app-wide client, so events with their own Resend account need this one.
+        Mail::extend('resend-event', fn (array $config) => new ResendTransportFactory(Resend::client($config['key'])));
+
         // Behind the reverse proxy the app only ever sees a plain HTTP hop, so
         // generated URLs (assets, favicon, redirects) come out http:// and the
         // browser blocks them as mixed content. Follow APP_URL instead.

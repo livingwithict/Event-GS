@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Enums\Ability;
 use App\Enums\Role;
 use App\Jobs\SendBulkEmail;
+use App\Models\EmailDraft;
 use App\Models\Event;
 use App\Models\InvitationCategory;
 use App\Models\ParticipantCategory;
@@ -57,8 +58,6 @@ class SendInvitations extends Page
     {
         $this->form->fill([
             'event_id' => session('active_event_id') ?: Event::published()->orderBy('start_datetime')->value('id'),
-            'email_type' => 'invitation_face_verification',
-            'subject' => 'Invitation - Digital Nepal Conclave | 20th September, 2026',
             'approved_only' => true,
             'skip_already_sent' => true,
         ]);
@@ -76,7 +75,7 @@ class SendInvitations extends Page
                             ->options(fn () => Event::orderByDesc('start_datetime')->pluck('name', 'id'))
                             ->required()
                             ->live()
-                            ->afterStateUpdated(fn () => $this->form->fill([...$this->data, 'category_id' => null])),
+                            ->afterStateUpdated(fn () => $this->form->fill([...$this->data, 'category_id' => null, 'draft_id' => null, 'subject' => null])),
                         Select::make('category_id')
                             ->label('Category')
                             ->placeholder('All categories')
@@ -99,26 +98,33 @@ class SendInvitations extends Page
 
                 Section::make('What to send')
                     ->schema([
-                        Select::make('email_type')
+                        Select::make('draft_id')
                             ->label('Email')
-                            ->options([
-                                'invitation_face_verification' => 'Invitation with face verification (QR, ticket, and verification link in one email)',
-                                'registration_confirmation' => 'Registration confirmation (attaches the ticket)',
-                                'event_reminder' => 'Event reminder',
-                                'urgent_update' => 'Urgent update',
-                                'post_event_thank_you' => 'Post-event thank you',
-                            ])
+                            ->options(fn () => EmailDraft::where('event_id', $this->data['event_id'] ?? 0)->orderBy('name')->pluck('name', 'id'))
                             ->required()
                             ->live()
-                            ->afterStateUpdated(fn ($state, callable $set) => $state === 'urgent_update'
-                                ? $set('subject', 'IMPORTANT NOTICE: DIGITAL NEPAL CONCLAVE 2026 POSTPONED')
-                                : null),
+                            ->noOptionsMessage('This event has no draft emails yet — create one under Draft Emails.')
+                            ->helperText('Only this event\'s drafts are listed. Each carries its own sender, subject and message.')
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                $set('subject', $state ? EmailDraft::find($state)?->subject : null);
+                            }),
                         TextInput::make('subject')
                             ->label('Subject line')
                             ->required()
                             ->maxLength(150),
                     ])->columns(2),
             ]);
+    }
+
+    private function draft(): ?EmailDraft
+    {
+        return ($this->data['draft_id'] ?? null) ? EmailDraft::find($this->data['draft_id']) : null;
+    }
+
+    /** What Communication.email_type will record, so "skip already sent" matches per draft. */
+    private function emailType(): string
+    {
+        return $this->draft()?->communicationType() ?? 'invitation';
     }
 
     /** Guests this send would reach, given the current filters. */
@@ -143,7 +149,7 @@ class SendInvitations extends Page
         if ($this->data['skip_already_sent'] ?? false) {
             $query->whereDoesntHave('communications', fn ($q) => $q
                 ->where('type', 'email')
-                ->where('email_type', $this->data['email_type'] ?? 'invitation')
+                ->where('email_type', $this->emailType())
                 ->where('status', 'sent'));
         }
 
@@ -196,7 +202,8 @@ class SendInvitations extends Page
                             $chunk,
                             (int) $this->data['event_id'],
                             $this->data['subject'],
-                            $this->data['email_type'],
+                            $this->emailType(),
+                            $this->draft()?->id,
                         );
                     }
 

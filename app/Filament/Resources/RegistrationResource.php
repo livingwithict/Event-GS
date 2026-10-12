@@ -690,34 +690,27 @@ class RegistrationResource extends Resource
                         ->modalDescription('This sends real email to the selected guests and cannot be undone.')
                         ->modalSubmitActionLabel('Send now')
                         ->schema([
-                            \Filament\Forms\Components\Select::make('email_type')
+                            \Filament\Forms\Components\Select::make('draft_id')
                                 ->label('Email')
-                                ->options([
-                                    'invitation_face_verification' => 'Invitation with face verification (QR, ticket, and verification link in one email)',
-                                    'registration_confirmation' => 'Registration confirmation (attaches the ticket)',
-                                    'event_reminder' => 'Event reminder',
-                                    'urgent_update' => 'Urgent update',
-                                    'post_event_thank_you' => 'Post-event thank you',
-                                ])
-                                ->default('invitation_face_verification')
+                                ->options(fn () => \App\Models\EmailDraft::where('event_id', session('active_event_id') ?: 0)->orderBy('name')->pluck('name', 'id'))
                                 ->required()
                                 ->live()
-                                ->afterStateUpdated(fn ($state, callable $set) => $state === 'urgent_update'
-                                    ? $set('subject', 'IMPORTANT NOTICE: DIGITAL NEPAL CONCLAVE 2026 POSTPONED')
-                                    : null),
+                                ->noOptionsMessage('The active event has no draft emails yet — create one under Draft Emails.')
+                                ->helperText('Drafts of the active event. Guests from other events are skipped.')
+                                ->afterStateUpdated(fn ($state, callable $set) => $set('subject', $state ? \App\Models\EmailDraft::find($state)?->subject : null)),
                             \Filament\Forms\Components\TextInput::make('subject')
                                 ->label('Subject line')
-                                ->default('Invitation - Digital Nepal Conclave | 20th September, 2026')
                                 ->required()
                                 ->maxLength(150),
                         ])
                         ->action(function (Collection $records, array $data) {
-                            $byEvent = $records->filter(fn ($r) => filled($r->email))->groupBy('event_id');
+                            $draft = \App\Models\EmailDraft::findOrFail($data['draft_id']);
+                            $byEvent = $records->filter(fn ($r) => filled($r->email) && $r->event_id === $draft->event_id)->groupBy('event_id');
 
                             if ($byEvent->isEmpty()) {
                                 Notification::make()->warning()
-                                    ->title('No email addresses')
-                                    ->body('None of the selected guests have an email address.')
+                                    ->title('Nobody to send to')
+                                    ->body('None of the selected guests have an email address, or they belong to a different event than the chosen draft.')
                                     ->send();
 
                                 return;
@@ -727,7 +720,7 @@ class RegistrationResource extends Resource
 
                             foreach ($byEvent as $eventId => $group) {
                                 foreach ($group->pluck('id')->chunk(50) as $chunk) {
-                                    SendBulkEmail::dispatch($chunk->all(), (int) $eventId, $data['subject'], $data['email_type']);
+                                    SendBulkEmail::dispatch($chunk->all(), (int) $eventId, $data['subject'], $draft->communicationType(), $draft->id);
                                 }
                                 $queued += $group->count();
                             }

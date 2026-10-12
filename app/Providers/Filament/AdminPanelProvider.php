@@ -66,14 +66,14 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Attendees')
                     ->icon(Heroicon::OutlinedUsers),
                 NavigationGroup::make()
+                    ->label('Communications')
+                    ->icon(Heroicon::OutlinedEnvelope),
+                NavigationGroup::make()
                     ->label('Logistics')
                     ->icon(Heroicon::OutlinedTruck),
                 NavigationGroup::make()
                     ->label('Finance')
                     ->icon(Heroicon::OutlinedCreditCard),
-                NavigationGroup::make()
-                    ->label('Communications')
-                    ->icon(Heroicon::OutlinedEnvelope),
                 NavigationGroup::make()
                     ->label('Settings')
                     ->icon(Heroicon::OutlinedCog6Tooth)

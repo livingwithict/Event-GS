@@ -81,8 +81,8 @@
                         </div>
                         <div class="field">
                             <label for="phone">Phone *</label>
-                            <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" placeholder="+97798XXXXXXXX" required>
-                            <div class="hint">Nepali phone number</div>
+                            <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required>
+                            <!-- <div class="hint">Nepali phone number</div> -->
                         </div>
                     </div>
 

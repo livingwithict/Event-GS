@@ -19,58 +19,58 @@
 <body>
     <div class="container">
         <div class="header">
-            @if($logo = $event->logoUrl())
-                <img src="{{ $logo }}" alt="{{ $event->name }}" style="max-height:48px;margin-bottom:10px;">
-            @endif
+            {{#if logo_url}}
+                <img src="{{logo_url}}" alt="{{event_name}}" style="max-height:48px;margin-bottom:10px;">
+            {{/if}}
             <h1>Registration Confirmed</h1>
-            <p>{{ $event->name }}</p>
+            <p>{{event_name}}</p>
         </div>
         <div class="content">
-            <p>Dear {{ $registration->displayName() }},</p>
-            <p>Your registration for <strong>{{ $event->name }}</strong> has been confirmed. We're excited to have you!</p>
+            <p>Dear {{name}},</p>
+            <p>Your registration for <strong>{{event_name}}</strong> has been confirmed. We're excited to have you!</p>
 
             <div class="guest-number">
                 <p style="margin:0 0 4px;">Your Guest Number</p>
-                <code>{{ $registration->guest_number }}</code>
+                <code>{{guest_number}}</code>
             </div>
 
             <table class="details-table">
                 <tr>
                     <td>Event</td>
-                    <td>{{ $event->name }}</td>
+                    <td>{{event_name}}</td>
                 </tr>
                 <tr>
                     <td>Date</td>
-                    <td>{{ $event->start_datetime?->format('F j, Y') ?? $event->event_date?->format('F j, Y') }}</td>
+                    <td>{{date_short}}</td>
                 </tr>
-                @if($event->start_datetime)
+                {{#if time}}
                 <tr>
                     <td>Time</td>
-                    <td>{{ $event->start_datetime->format('g:i A') }}</td>
+                    <td>{{time}}</td>
                 </tr>
-                @endif
+                {{/if}}
                 <tr>
                     <td>Venue</td>
-                    <td>{{ $event->venue }}</td>
+                    <td>{{venue}}</td>
                 </tr>
-                @if($registration->category)
+                {{#if category}}
                 <tr>
                     <td>Category</td>
-                    <td>{{ $registration->category->name }}</td>
+                    <td>{{category}}</td>
                 </tr>
-                @endif
+                {{/if}}
             </table>
 
             <p>Please present the QR code below at the entrance, or download your ticket PDF (attached to this email):</p>
             <div class="qr-code">
-                {!! $qrCodeSvg !!}
+                {{qr_svg}}
             </div>
 
-            @if($registration->qr_hash)
+            {{#if download_url}}
             <div style="text-align:center;">
-                <a href="{{ config('app.url') }}/ticket/{{ $registration->qr_hash }}/download" class="download-btn">Download Your Ticket</a>
+                <a href="{{download_url}}" class="download-btn">Download Your Ticket</a>
             </div>
-            @endif
+            {{/if}}
         </div>
         <div class="footer">
             <p>ICT Foundation Nepal</p>
